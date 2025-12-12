@@ -105,3 +105,113 @@ Flight::route('POST /admin/actualizarOrdenMenu', function () {
 
     Flight::json(['success' => true]);
 });
+
+
+
+Flight::group('/api', function() {
+
+  // Menús por tipo de administrador
+  Flight::route('GET /menus/por-tipo/@tipo:[0-9]+', function($tipo) {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+      DB::query("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
+
+      $rows = DB::query(
+        "SELECT
+           m.menu_id,
+           m.titulo   AS menu_titulo,
+           m.orden    AS menu_orden,
+           s.submenu_id,
+           s.titulo   AS submenu_titulo,
+           s.url,
+           s.target,
+           s.orden    AS submenu_orden
+         FROM menu m
+         LEFT JOIN submenu s ON s.menu_id = m.menu_id
+         WHERE m.tipo_administrador_id = %i
+         ORDER BY m.orden, s.orden, s.submenu_id",
+        $tipo
+      );
+
+      // Agrupar por menú
+      $byMenu = [];
+      foreach ($rows as $r) {
+        $mid = (int)$r['menu_id'];
+        if (!isset($byMenu[$mid])) {
+          $byMenu[$mid] = [
+            'menu_id' => $mid,
+            'titulo'  => $r['menu_titulo'],
+            'orden'   => (int)$r['menu_orden'],
+            'lista_submenu' => []
+          ];
+        }
+        if (!is_null($r['submenu_id'])) {
+          $byMenu[$mid]['lista_submenu'][] = [
+            'submenu_id' => (int)$r['submenu_id'],
+            'titulo'     => $r['submenu_titulo'],
+            'url'        => $r['url'],
+            'target'     => $r['target'],
+            'orden'      => (int)$r['submenu_orden']
+          ];
+        }
+      }
+
+      $menus = array_values($byMenu);
+      echo json_encode(['ok' => true, 'menus' => $menus], JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $e) {
+      http_response_code(500);
+      echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+  });
+
+  // (Opcional) Todos los menús de un tipo con búsqueda simple ?q=texto
+  Flight::route('GET /menus/buscar/@tipo:[0-9]+', function($tipo) {
+    header('Content-Type: application/json; charset=utf-8');
+    $q = trim(Flight::request()->query['q'] ?? '');
+    $like = '%' . $q . '%';
+
+    try {
+      DB::query("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
+
+      $rows = DB::query(
+        "SELECT
+           m.menu_id, m.titulo AS menu_titulo, m.orden AS menu_orden,
+           s.submenu_id, s.titulo AS submenu_titulo, s.url, s.target, s.orden AS submenu_orden
+         FROM menu m
+         LEFT JOIN submenu s ON s.menu_id = m.menu_id
+         WHERE m.tipo_administrador_id = %i
+           AND (%ls = '' OR m.titulo LIKE %ss OR s.titulo LIKE %ss OR s.url LIKE %ss)
+         ORDER BY m.orden, s.orden, s.submenu_id",
+        $tipo, $q, $like, $like, $like
+      );
+
+      // (Idéntico agrupamiento)
+      $byMenu = [];
+      foreach ($rows as $r) {
+        $mid = (int)$r['menu_id'];
+        if (!isset($byMenu[$mid])) {
+          $byMenu[$mid] = [
+            'menu_id' => $mid,
+            'titulo'  => $r['menu_titulo'],
+            'orden'   => (int)$r['menu_orden'],
+            'lista_submenu' => []
+          ];
+        }
+        if (!is_null($r['submenu_id'])) {
+          $byMenu[$mid]['lista_submenu'][] = [
+            'submenu_id' => (int)$r['submenu_id'],
+            'titulo'     => $r['submenu_titulo'],
+            'url'        => $r['url'],
+            'target'     => $r['target'],
+            'orden'      => (int)$r['submenu_orden']
+          ];
+        }
+      }
+      echo json_encode(['ok' => true, 'menus' => array_values($byMenu)], JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $e) {
+      http_response_code(500);
+      echo json_encode(['ok' => false, 'error' => $e->getMessage()]);
+    }
+  });
+
+});

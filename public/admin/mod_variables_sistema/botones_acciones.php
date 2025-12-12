@@ -2,7 +2,7 @@
   
 // Enlace “Editar Variables Sistema”
 echo '<a ' . h2::parseAttributes([
-    'href'  => $apphost . "/admin/editarVariablesSistema/" . $variables_sistema['nombre_variable'],
+    'href'  => $apphost . "/admin/editarVariablesSistema/" . $variables_sistema['variables_sistema_id'],
     'class' => 'btn btn-info',
     'rel'   => 'facebox'
 ]) . '>'
@@ -11,7 +11,8 @@ echo '<a ' . h2::parseAttributes([
 
 // Enlace “Eliminar Variables Sistema”
 echo '<a ' . h2::parseAttributes([
-    'href'  => $variables_sistema['nombre_variable'],
+    'href'  => $apphost . "/admin/editarVariablesSistema/" . $variables_sistema['variables_sistema_id'],
+    'rel' => $variables_sistema['variables_sistema_id'],
     'class' => 'link_eliminar_variables_sistema btn btn-info'
 ]) . '>'
     . '<i class="icon-white icon-remove"></i>'

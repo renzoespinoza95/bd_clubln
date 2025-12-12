@@ -1,7 +1,7 @@
 <?php
 boot::datatables();
 ?>
-<table id="tbl_variables_sistema" class="table datatable">
+<table id="tbl_variables_sistema" class="table table-striped datatable">
     <thead>
     <tr>
 

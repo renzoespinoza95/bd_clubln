@@ -3,8 +3,7 @@
 <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>Login</title>
-      <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css">
+      <title>Login</title>      
       <base href="<?php echo $mBase ?>">
       <link rel="stylesheet" type="text/css" href="css/login.css">
       <?php
@@ -12,7 +11,8 @@
       boot::vuejs2();
       boot::apprise();
       boot::favicon();
-      h2::todohost($apphost, $varhost, $apihost);
+      boot::font_awesome();
+      h2::todohost($apphost, $varhost);
       ?>
 </head>
 <body>
@@ -53,7 +53,7 @@
       usuarioFocused: false,
       clavelFocused: false,
       success: false,
-      apphost: '<?php echo $apphost ?>' // Cambia esto por la URL base de tu API
+      apphost: apphost
     },
     methods: {
       onFocus(field) {
@@ -71,20 +71,28 @@
         };
 
         axios.post(`${this.apphost}/loginVault`, postData)
-          .then(response => {
-            if (response.data && response.data.res && response.data.res.includes('ok')) {
-              // Redirigir si la respuesta es "ok"
-              window.location.href = `${this.apphost}/admin/dash`;
-            } else {
-              // Mostrar alerta si la respuesta no es "ok"
-              apprise("Por favor, verifica tus credenciales");
-            }
-          })
-          .catch(error => {
-            // Mostrar alerta en caso de error en la solicitud
-            apprise("Error al comunicar con el servidor. Por favor, intenta más tarde");
-            console.error('Error al enviar los datos:', error);
-          });
+        .then(response => {
+          const data = response.data;
+          if (data.status && data.status === 'ok') {
+            // 1) Guarda el JWT en localStorage
+            localStorage.setItem('jwt', data.token);
+            // 2) Configura el header Authorization por defecto en Axios
+            axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+            // 3) Logueo en consola (opcional)
+            console.log('Token recibido:', data.token);
+            // 4) Redirige al dashboard
+            window.location.href = `${this.apphost}/admin/dash`;
+          } else {
+            // Si status !== 'ok', muestra alerta
+            apprise("Por favor, verifica tus credenciales");
+          }
+        })
+        .catch(error => {
+          // Manejo de errores en la petición
+          console.error('Error al enviar los datos:', error);
+          apprise("Error al comunicar con el servidor. Por favor, intenta más tarde");
+        });
+
       }
     }
   });

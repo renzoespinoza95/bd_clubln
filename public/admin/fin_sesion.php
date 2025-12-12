@@ -17,17 +17,22 @@ $redir = $apphost . "/loginVault";
   <body>
   </body>        
 <script type="text/javascript">
+  $(document).ready(function() {
+    termino_sesion('Su sesión ha terminado');
+  }); 
 
-$(document).ready(function() {
-	termino_sesion('Su sesion ha terminado');
-}); 
-
- 
-function termino_sesion(string, args) {
-apprise(string, args, function(r) {
-	if(r) {
-    location.href = "<?php echo $redir ?>";
-	} 
-});
-}
+  function termino_sesion(string, args) {
+    apprise(string, args, function(r) {
+      if (r) {
+        // 1) Eliminar JWT del almacenamiento local
+        localStorage.removeItem('jwt');
+        // 2) Quitar el header Authorization por defecto de Axios
+        if (window.axios && axios.defaults && axios.defaults.headers) {
+          delete axios.defaults.headers.common['Authorization'];
+        }
+        // 3) Redirigir
+        window.location.href = "<?php echo $redir ?>";
+      } 
+    });
+  }
 </script>

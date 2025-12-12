@@ -3,14 +3,13 @@
     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
     <h3 id="myModalLabel">Agregar Variables Sistema</h3>
   </div>
-  <div class="modal-body">
-    <p>La modificación de estas variables pueden hacer que el sistema no funcione correctamente.</p>
+  <div class="modal-body">    
 <?php
 boot::uniform();
 ?>
-<div class="row">
+<div class="row-fluid">
 
-<div class="span5">
+<div class="span12">
 <form class="well uniForm" method="post" action="<?php echo $apphost ?>/admin/agregarVariablesSistema" >
         
 <?php
@@ -22,7 +21,7 @@ echo h2::txt([
     'name'        => 'txt_nombre_variable',
     'type'        => 'text',           // antes 'input' => 'text'
     'value'       => '',
-    'class'       => 'span3 required',
+    'class'       => 'span12 required',
     'autocomplete'=> 'off'             // opcional, si quieres mantener el comportamiento por defecto
 ]);
 
@@ -33,7 +32,7 @@ echo h2::txt([
     'name'        => 'txt_valor',
     'type'        => 'text',
     'value'       => '',
-    'class'       => 'span3 required',
+    'class'       => 'span12 required',
     'autocomplete'=> 'off'
 ]);
 

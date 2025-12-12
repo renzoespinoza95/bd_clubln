@@ -18,13 +18,21 @@ action="<?php echo $apphost ?>/admin/editarVariablesSistema">
 <input type="hidden" id="txt_nombre_variable_id" name="txt_nombre_variable_id" value="<?php echo $nombre_variable ?>" />
 <?php
 // Campo “nombre_variable”
+echo h2::txt(array(
+    'id'           => 'txt_variables_sistema_id_ed',
+    'name'         => 'txt_variables_sistema_id_ed',
+    'type'         => 'text',
+    'value'        => $variables_sistema_id,
+    'class'        => 'span3',
+    'autocomplete' => 'off',
+));
 echo '<label for="txt_nombre_variable">nombre_variable</label>';
 echo h2::txt(array(
     'id'           => 'txt_nombre_variable',
     'name'         => 'txt_nombre_variable',
     'type'         => 'text',
     'value'        => $detalle_variables_sistema['nombre_variable'],
-    'class'        => 'span3 required',
+    'class'        => 'span3',
     'autocomplete' => 'off',
 ));
 
@@ -35,7 +43,7 @@ echo h2::txt(array(
     'name'         => 'txt_valor',
     'type'         => 'text',
     'value'        => util::mostrar_palabra_latina($detalle_variables_sistema['valor']),
-    'class'        => 'span3 required',
+    'class'        => 'span3',
     'autocomplete' => 'off',
 ));
 

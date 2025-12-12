@@ -1,4 +1,4 @@
-<tr id="tr_nombre_variable_<?php echo $variables_sistema['nombre_variable'] ?>">
+<tr>
 
 <td>
 <?php  

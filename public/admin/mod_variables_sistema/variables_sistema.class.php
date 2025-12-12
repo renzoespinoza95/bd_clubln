@@ -25,10 +25,10 @@ $valor)
     $res = DB::insertId();    
     return $res;
 }            
- public static function detalle_variables_sistema($nombre_variable)
+ public static function detalle_variables_sistema($variables_sistema_id)
 {            
     $query = <<<EOF
-SELECT * FROM variables_sistema WHERE nombre_variable = '$nombre_variable'
+SELECT * FROM variables_sistema WHERE variables_sistema_id = '$variables_sistema_id'
 EOF;
 
     $res = DB::queryFirstRow($query);
@@ -57,16 +57,16 @@ EOF;
     return $res;    
 }
 
-public static function editar_variables_sistema($nombre_variable, $nombre_campo, $valor)
+public static function editar_variables_sistema($variables_sistema_id, $nombre_campo, $valor)
 {
   DB::update('variables_sistema', array(
   $nombre_campo => $valor
-  ), "nombre_variable=%s", $nombre_variable);
+  ), "variables_sistema_id=%s", $variables_sistema_id);
 }  
 
-public static function eliminar_variables_sistema($nombre_variable)
+public static function eliminar_variables_sistema($variables_sistema_id)
 {   
-    DB::delete('variables_sistema', 'nombre_variable=%s', $nombre_variable);
+    DB::delete('variables_sistema', 'variables_sistema_id=%s', $variables_sistema_id);
 }  
 
 

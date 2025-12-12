@@ -23,7 +23,8 @@ Flight::route('POST /admin/agregarVariablesSistema', function() {
     $post_enviado = array_map('trim', $_POST);
     extract($post_enviado);
 
-    $txt_nombre_variable = trim($txt_nombre_variable);
+    $txt_nombre_variable = util::guardar_palabra_latina($txt_nombre_variable);
+    $txt_valor = util::guardar_html($txt_valor);
 
     if (variables_sistema::cantidad_variables_sistema(" WHERE nombre_variable = '$txt_nombre_variable'") == 0) {
         variables_sistema::agregar_variables_sistema($txt_nombre_variable, $txt_valor);
@@ -34,11 +35,11 @@ Flight::route('POST /admin/agregarVariablesSistema', function() {
 });
 
 // GET: Editar variable por nombre
-Flight::route('GET /admin/editarVariablesSistema/@nombre_variable', function($nombre_variable) {
+Flight::route('GET /admin/editarVariablesSistema/@variables_sistema_id', function($variables_sistema_id) {
     include DEFINITION;
     login_admin::autentificar_administrador();
     global $path_public;
-    $detalle_variables_sistema = variables_sistema::detalle_variables_sistema($nombre_variable);
+    $detalle_variables_sistema = variables_sistema::detalle_variables_sistema($variables_sistema_id);
     include $path_public . "/admin/mod_variables_sistema/editar_variables_sistema.php";
 });
 
@@ -49,8 +50,14 @@ Flight::route('POST /admin/editarVariablesSistema', function() {
     $post_enviado = array_map('trim', $_POST);
     extract($post_enviado);
 
-    variables_sistema::editar_variables_sistema($txt_nombre_variable_id, 'nombre_variable', $txt_nombre_variable);
-    variables_sistema::editar_variables_sistema($txt_nombre_variable_id, 'valor', util::guardar_palabra_latina($txt_valor));
+    $variables_sistema_id = $txt_variables_sistema_id_ed;
+    $txt_nombre_variable = util::guardar_palabra_latina($txt_nombre_variable);
+    $txt_valor = util::guardar_html($txt_valor);
+
+    variables_sistema::editar_variables_sistema($variables_sistema_id, 
+        'nombre_variable', $txt_nombre_variable);
+    variables_sistema::editar_variables_sistema($variables_sistema_id, 
+        'valor', $txt_valor);
 
     Flight::redirect('/admin/listavariables_sistema');
 });
@@ -62,5 +69,6 @@ Flight::route('POST /admin/eliminarVariablesSistema', function() {
     $post_enviado = array_map('trim', $_POST);
     extract($post_enviado);
 
-    variables_sistema::eliminar_variables_sistema($nombre_variable);
+    variables_sistema::eliminar_variables_sistema($variables_sistema_id);
+    echo poke();
 });

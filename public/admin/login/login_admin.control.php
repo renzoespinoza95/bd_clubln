@@ -1,4 +1,13 @@
 <?php
+// Vista login
+
+Flight::route('GET /', function() {    
+    include DEFINITION;
+
+    $mBase = $varhost . "/public/admin/login/";
+    include $path_public . "/admin/login/inicio.php";
+});
+
 // Dashboard de administrador
 Flight::route('GET /admin/dash', function() {
     include DEFINITION;
@@ -24,38 +33,53 @@ Flight::route('GET /loginVault', function() {
     include $path_public . "/admin/login/inicio.php";
 });
 
-// Procesa login
-Flight::route('POST /loginVault', function() {
-    include DEFINITION;
+    // Procesa login
+    Flight::route('POST /loginVault', function() {
+        include DEFINITION;
 
-    $json = Flight::request()->getBody();
-    $datos_usuario = json_decode($json);
+        // 1) Leer body JSON
+        $json = Flight::request()->getBody();
+        $datos_usuario = json_decode($json);
+        $usuario = $datos_usuario->usuario  ?? '';
+        $clavel  = $datos_usuario->clavel   ?? '';
 
-    $usuario = $datos_usuario->usuario ?? '';
-    $clavel = $datos_usuario->clavel ?? '';
+        // 2) Verificar credenciales
+        $is_valido = login_admin::verificar_datos_usuarios($usuario, $clavel);
 
-    $is_valido = login_admin::verificar_datos_usuarios($usuario, $clavel);
+        if (!$is_valido) {
+            // 401 Unauthorized
+            Flight::halt(401, util::error());
+        }
 
-    if ($is_valido) {
+        // 3) Recuperar info del admin
         global $nombre_app;
-
         $info_admin = login_admin::informacion_administrador_por_email($usuario);
-        $valor_key = $nombre_app . vari("KEY");
 
-        $email = util::preparar_para_encriptar($usuario);
-        $enc_email = util::encrypt($usuario, $valor_key);
+        // 4) Construir el secreto de firma (como ya hacías)
+        $valor_key = $nombre_app . vari("KEY");        
 
-        $info_admin['administrador_id'] = util::preparar_para_encriptar($info_admin['administrador_id']);
-        $enc_info_admin_id = util::encrypt($info_admin['administrador_id'], $valor_key);
+        // 5) Generar JWT
+        $payload = [
+          'administrador_id' => (int)$info_admin['administrador_id'],
+          'email'            => $usuario,
+          // puedes añadir más claims si los necesitas...
+        ];
+        // expiración en 1 hora (3600 s)
+        $token = JWT::encode($payload, $secreto_jwt, 3600*10);
 
-        setcookie("sesion_admin_administrador_email_" . $nombre_app, $enc_email, 0, "/");
-        setcookie("sesion_admin_administrador_id_" . $nombre_app, $enc_info_admin_id, 0, "/");
+        // 6) (Opcional) seguir poniendo la cookie si aún la necesitas
+        $enc_email = util::encrypt(util::preparar_para_encriptar($usuario), $valor_key);
+        setcookie("sesion_admin_administrador_email_{$nombre_app}", $enc_email, 0, "/");
 
-        echo util::ok();
-    } else {
-        echo util::error();
-    }
-});
+        $enc_info_admin_id = util::encrypt(util::preparar_para_encriptar($info_admin['administrador_id']), $valor_key);
+        setcookie("sesion_admin_administrador_id_{$nombre_app}", $enc_info_admin_id, 0, "/");
+
+        // 7) Responder JSON con el token
+        Flight::json([
+          'status' => 'ok',
+          'token'  => $token
+        ]);
+    });
 
 // Cerrar sesión
 Flight::route('GET /finAdmin', function() {
@@ -78,13 +102,6 @@ Flight::route('GET /tt01', function() {
 
     $res = login_admin::verificar_datos_usuarios($usuario, $clavel);
     var_dump($res);
-});
-
-// OPTIONS para CORS (si es necesario)
-Flight::route('OPTIONS /api/login_admin/j_login_app', function() {
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: POST, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type');
 });
 
 // API Login Admin (POST)

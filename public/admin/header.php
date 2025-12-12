@@ -15,6 +15,9 @@
 </style>
 
 <?php    
+    boot::vuejs2();
+    boot::vue_select();
+    boot::apprise();
     boot::start();
     boot::favicon();
     boot::font_awesome();
@@ -25,6 +28,34 @@
     boot::block_ui();
     boot::perso();
     boot::notify();
-    h2::todohost($apphost, $varhost, $apihost);
+    h2::todohost($apphost, $varhost);
+    boot::datatables();
+    boot::summernote();
 ?>		    
   </head>
+<style>
+  /* Bootstrap 2.3.2: el modal debe estar sobre el backdrop */
+  .modal { position: fixed; z-index: 1060 !important; }
+  .modal.fade.in { z-index: 1060 !important; }
+  .modal-backdrop { z-index: 1050 !important; }
+
+  /* opcional: si tienes algún overlay de facebox, mantenlo debajo */
+  #facebox, #facebox .popup { z-index: 1020 !important; }
+  #facebox_overlay { z-index: 1015 !important; }
+</style>
+<script>
+  $(function () {
+    var $m = $('#modalBusquedaMenu');
+    // En BS 2.3 el evento es 'show'
+    $m.on('show', function () {
+      $(this).appendTo('body');   // evita stacking context del contenedor
+    });
+    // Limpieza por si quedaron backdrops huérfanos en algún cierre previo
+    $m.on('hidden', function () {
+      $('.modal-backdrop').remove();
+      $('body').removeClass('modal-open');
+    });
+  });
+</script>
+
+  
