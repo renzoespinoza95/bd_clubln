@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDatePicker</title>
+    <link rel="stylesheet" href="./css/date-picker.css" />
+  </head>
+  <body>
+    <div>
+      <input type="date" name="" id="datePicker" />
+    </div>
+    <!-- BOOT JQUERY 2.0.0 -->
+<script src='http://localhost/prob/primitivos/public/bootstrap/assets/js/jquery2.0.0.js'></script>
+    <script src="./js/date-picker.js"></script>
+    <script>
+
+      $("#datePicker").pDatePicker({
+          range: {
+            startDate: new Date(2020, 0, 1), // default null
+            // endDate: new Date(), // default null
+          },
+          showDate: new Date(2023, 1), // show picker to Feb 2023, default show current month
+          selected: new Date(2023, 1, 2), // selected date to 2nd Feb 2023 , default null
+          lang: "es", // set language to Bahasa Indonesia, defaut en
+          // type : "month", // set date piker view to date, default date or element type attribute. Available "date", "month", "year"
+          showTodayButton: true, // show select current date button, default true
+          themeClass: "dark", // add class dark to wrapper for theming, default null. Another class may be added in css
+          mondayFirst: true, // set first column to monday, default false (sunday is first column)
+        });
+
+    </script>
+  </body>
+</html>

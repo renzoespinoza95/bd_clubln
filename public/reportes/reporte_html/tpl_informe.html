@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Untitled</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<meta name="generator" content="Web Page Maker">
+<style type="text/css">
+table#detalle_libro {
+  border-collapse: collapse;
+}
+
+table#detalle_libro, #detalle_libro th, #detalle_libro td {
+  border: 1px solid black;
+}
+
+table#detalle_libro img {
+	max-width: 100%;
+}
+
+.horas {
+	font-size: 15px;
+	font-weight: bold;	
+}
+//---
+.ws6 {
+  font-size: 8px;
+}
+.ws7 {
+  font-size: 9.3px;
+}
+//---
+.ws8 {
+  font-size: 11px;
+}
+//---
+.ws9 {
+  font-size: 12px;
+}
+//---
+.ws10 {
+  font-size: 13px;
+}
+//---
+.ws11 {font-size: 15px;}
+//---
+.ws12 {font-size: 16px;}
+//---
+.ws14 {font-size: 19px;}
+//---
+.ws16 {font-size: 21px;}
+.ws18 {font-size: 24px;}
+.ws20 {font-size: 27px;}
+.ws22 {font-size: 29px;}
+.ws24 {font-size: 32px;}
+.ws26 {font-size: 35px;}
+.ws28 {font-size: 37px;}
+.ws36 {font-size: 48px;}
+.ws48 {font-size: 64px;}
+.ws72 {font-size: 96px;}
+.wpmd {font-size: 13px;font-family: Arial,Helvetica,Sans-Serif;font-style: normal;font-weight: normal;}
+/*----------Para Styles----------*/
+DIV,UL,OL /* Left */
+{
+ margin-top: 0px;
+ margin-bottom: 0px;
+}
+</style>
+
+</head>
+<body>
+<div id="text1" style="position:absolute; overflow:hidden; left:205px; top:81px; width:475px; height:64px; z-index:0">
+<div class="wpmd">
+<div align=center><font class="ws12"><B>UNIVERSIDAD NACIONAL DEL CALLAO</B></font></div>
+<div align=center><font class="ws12"><B>OFICINA DE SERVICIOS ACADEMICOS</B></font></div>
+<div align=center><font class="ws12"><B>OFICINA DE DESARROLLO INFORMATICO</B></font></div>
+</div></div>
+{{#informacion}}
+<div id="image4" style="position:absolute; overflow:hidden; left:152px; top:82px; width:51px; height:58px; z-index:2"><img src="{{ logo_unac }}" alt="" title="" border=0 width=51 height=58></div>
+
+<div id="image10" style="position:absolute; overflow:hidden; left:687px; top:82px; width:51px; height:58px; z-index:2"><img src="{{ logo_bc }}" alt="" title="" border=0 width=51 height=58></div>
+
+<div id="hr1" style="position:absolute; overflow:hidden; left:152px; top:132px; width:586px; height:17px; z-index:3">
+<hr size=1 width=586 NOSHADE=true color="#000000">
+</div>
+
+<div id="text7" style="position:absolute; overflow:hidden; left:149px; top:257px; 
+width:600px; z-index:4">
+<div class="wpmd">
+<div><font class="ws12"><B>DE: </B></font><font class="ws12">Tco. Renzo Espinoza Murga</font></div>
+<div><font class="ws12">Administrador de Red</font></div>
+<div><font class="ws12">Programador del SGBUNAC</font></div>
+<div><font class="ws12"><BR></font></div>
+<div><font class="ws12"><B>PARA: </B></font><font class="ws12">
+{{ nombre_director }}  
+</font></div>
+<div><font class="ws12">{{ cargo }}</font></div>
+<div><font class="ws12"><BR></font></div>
+<div><font class="ws12"><B>FECHA:&nbsp; </B></font><font class="ws12">{{ fecha }}</font></div>
+<div><font class="ws12"><BR></font></div>
+<div><font class="ws12"><B>ASUNTO:&nbsp; </B></font><font class="ws12">{{ asunto }}</font></div>
+{{/informacion}}
+<div><font class="ws12"><BR></font></div>
+<div><font class="ws12"><BR></font></div>
+<div><font class="ws12"><B>Saludos Cordiales-</B></font></div>
+<div>
+{{ parrafo_saludo }}
+</div>
+</div></div>
+
+<div id="text2" style="position:absolute; overflow:hidden; left:150px; top:196px; width:590px; height:38px; z-index:5">
+<div class="wpmd">
+<div align=center><font class="ws14"><B>{{ titulo_informe }}</B></font></div>
+</div></div>
+
+{{#listado}}
+<div  style="position:relative; overflow:hidden; left:140px; top:503px; width:692px; z-index:6; margin-bottom: 6px;">
+<div class="wpmd">
+<div><TABLE id="detalle_libro">
+<TR valign=top style="background-color: #1997AD; color: white;font-weight: bold">
+<TD width=100><div class="wpmd">
+<div><B>Nro</B></div>
+</div>
+</TD>
+<TD width=566><div class="wpmd">
+<div><b>{{ indice }}</b></div>
+</div>
+</TD>
+</TR>
+<TR valign=top>
+<TD width=100><div class="wpmd">
+<div><B>Fecha</B></div>
+</div>
+</TD>
+<TD width=566><div class="wpmd">
+<div>{{ fecha }}</div>
+</div>
+</TD>
+</TR>
+<TR valign=top>
+<TD width=100><div class="wpmd">
+<div><B>Solicitante</B></div>
+</div>
+</TD>
+<TD width=566><div class="wpmd">
+<div>{{ solicitante }}</div>
+</div>
+</TD>
+</TR>
+<TR valign=top>
+<TD width=100><div class="wpmd">
+<div><B>Descripción</B></div>
+</div>
+</TD>
+<TD width=566><div class="wpmd">
+<div>{{{ trabajo }}}</div>
+</div>
+</TD>
+</TR>
+
+</TABLE>
+</div>
+</div></div>
+{{/listado}}
+
+</body>
+</html>

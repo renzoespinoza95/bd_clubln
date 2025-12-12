@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html class="" lang="en"><head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta http-equiv="imagetoolbar" content="no">
+
+    <title>fancyBox - Fancy jQuery Lightbox Alternative</title>
+
+	<meta name="description" content="fancyapps.com - Fancy App Store">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<link rel="icon" href="http://fancyapps.com/favicon.ico" type="image/x-icon">
+
+	<!-- Add jQuery library -->
+	<script async="" src="demo2_files/cbgapi.loaded_1"></script><script async="" src="demo2_files/cbgapi.loaded_0"></script><script src="demo2_files/ga.js" async="" type="text/javascript"></script><script gapi_processed="true" src="demo2_files/plusone.js" async="" type="text/javascript"></script><script type="text/javascript" src="demo2_files/jquery-latest.js"></script>
+
+	<!-- Add mousewheel plugin (this is optional) -->
+	<script type="text/javascript" src="demo2_files/jquery.js"></script>
+
+	<!-- Add fancyBox main JS and CSS files -->
+	<script type="text/javascript" src="demo2_files/jquery_002.js"></script>
+	<link rel="stylesheet" type="text/css" href="demo2_files/jquery.css" media="screen">
+
+	<!-- Add fancyBox - button helper (this is optional) -->
+	<link rel="stylesheet" type="text/css" href="demo2_files/jquery_002.css">
+	<script type="text/javascript" src="demo2_files/jquery_003.js"></script>
+
+	<!-- Add fancyBox - thumbnail helper (this is optional) -->
+	<link rel="stylesheet" type="text/css" href="demo2_files/jquery_003.css">
+	<script type="text/javascript" src="demo2_files/jquery_004.js"></script>
+
+	<!-- Add fancyBox - media helper (this is optional) -->
+	<script type="text/javascript" src="demo2_files/jquery_005.js"></script>
+
+	<!-- Next files are only for this website! -->
+	<link rel="stylesheet" href="demo2_files/web.css" type="text/css" media="screen">
+	<script type="text/javascript" src="demo2_files/web.js"></script>
+
+	<!-- Add prettify -->
+	<script type="text/javascript" src="demo2_files/prettify.js"></script>
+
+<script type="text/javascript">
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-4230547-3']);
+	_gaq.push(['_trackPageview']);
+
+	(function() {
+	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	})();
+</script>
+<style type="text/css">.fancybox-margin{margin-right:17px !important;}</style></head>
+<body data-twttr-rendered="true">
+	<div id="page">
+		<div id="nav">
+			<p>
+				<a href="http://fancyapps.com/">fancyApps</a>
+			</p>
+			<ul>
+				<li><a href="http://fancyapps.com/">fancyBox</a></li>
+				<li><a href="http://fancyapps.com/contact/">Contact</a></li>
+				<li><a href="http://fancyapps.com/store/">Store</a></li>
+			</ul>
+		</div>	<div class="block">
+		<h1><a href="http://fancyapps.com/fancybox/">fancyBox</a><span class="hidden">- Fancy jQuery Lightbox Alternative</span></h1>
+
+		<p>
+			fancyBox is a tool that offers a nice and elegant way to add zooming 
+functionality for images, html content and multi-media on your webpages.
+			It is built on the top of the popular JavaScript framework jQuery and
+ is both easy to implement and a snap to customize.
+		</p>
+
+		<p>
+			<iframe style="width: 109px; height: 20px;" data-twttr-rendered="true" title="Twitter Tweet Button" class="twitter-share-button twitter-tweet-button twitter-count-horizontal" src="demo2_files/tweet_button.htm" allowtransparency="true" id="twitter-widget-0" frameborder="0" scrolling="no"></iframe><script type="text/javascript" src="demo2_files/widgets.js"></script>
+
+			<div id="___plusone_0" style="text-indent: 0px; margin: 0px; padding: 0px; background: none repeat scroll 0% 0% transparent; border-style: none; float: none; line-height: normal; font-size: 1px; vertical-align: baseline; display: inline-block; width: 90px; height: 20px;"><iframe title="+1" data-gapiattached="true" src="demo2_files/fastbutton.htm" name="I0_1396903027423" id="I0_1396903027423" vspace="0" tabindex="0" style="position: static; top: 0px; width: 90px; margin: 0px; border-style: none; left: 0px; visibility: visible; height: 20px;" marginwidth="0" marginheight="0" hspace="0" frameborder="0" scrolling="no" width="100%"></iframe></div>
+
+<!--			<fb:like send="false" layout="button_count" width="450" show_faces="false"></fb:like>-->
+		</p>
+
+		<ul>
+			<li><a href="#news" title="news">what`s new</a></li>
+			<li><a href="#instructions" title="instructions">instructions</a></li>
+			<li><a href="#useful" title="useful">tips &amp; tricks</a></li>
+			<li><a href="#examples" title="examples">examples</a></li>
+			<li><a href="#license" title="license">license &amp; download</a></li>
+			<li><a href="#docs" title="docs">documentation</a></li>
+			<li><a href="#support" title="support">support</a></li>
+		</ul>
+	</div>
+
+	<div id="news" class="block">
+		<h2>What's new</h2>
+
+		<p>
+			Version 2 is completely rewritten with new features and updated graphics.
+		</p>
+
+		<h3>Notable changes</h3>
+
+		<ul>
+			<li>Extendable using helpers</li>
+			<li>Responsive (try resizing window while fancyBox is open)</li>
+			<li>Integrated slideshow</li>
+			<li>New gallery transitions</li>
+			<li>Uses CSS3 (shadows, round corners)</li>
+			<li>Updated plugin options (not compatible with previous versions)</li>
+			<li>Now licensed under <a target="_blank" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative Commons Attribution-NonCommercial 3.0</a></li>
+		</ul>
+
+		<h3>Road Map</h3>
+
+		<ul>
+			<li>Basic WordPress plugin</li>
+			<li>Rewrite website and documentation</li>
+			<li>Improve thumbnail helper (to function like slider)</li>
+			<li>fancyBox for mobile (probably)</li>
+			<li>fancyBox 3.0</li>
+		</ul>
+	</div>
+
+	<div id="instructions" class="block">
+		<h2>Instructions</h2>
+
+		<p>
+			Download the plugin, unzip it, copy files and include fancyBox script
+ and stylesheet in your document (you will need to make sure the css and
+ js files are on your server, and adjust the paths in the script and 
+link tag). Make sure you also load the jQuery library. Example:
+		</p>
+
+<pre class="prettyprint"><span class="com">&lt;!-- Add jQuery library --&gt;</span><span class="pln">
+</span><span class="tag">&lt;script</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/javascript"</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://code.jquery.com/jquery-latest.min.js"</span><span class="tag">&gt;&lt;/script&gt;</span><span class="pln">
+
+</span><span class="com">&lt;!-- Add mousewheel plugin (this is optional) --&gt;</span><span class="pln">
+</span><span class="tag">&lt;script</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/javascript"</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"/fancybox/lib/jquery.mousewheel-3.0.6.pack.js"</span><span class="tag">&gt;&lt;/script&gt;</span><span class="pln">
+
+</span><span class="com">&lt;!-- Add fancyBox --&gt;</span><span class="pln">
+</span><span class="tag">&lt;link</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"stylesheet"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"/fancybox/source/jquery.fancybox.css?v=2.1.5"</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/css"</span><span class="pln"> </span><span class="atn">media</span><span class="pun">=</span><span class="atv">"screen"</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;script</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/javascript"</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"</span><span class="tag">&gt;&lt;/script&gt;</span><span class="pln">
+
+</span><span class="com">&lt;!-- Optionally add helpers - button, thumbnail and/or media --&gt;</span><span class="pln">
+</span><span class="tag">&lt;link</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"stylesheet"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"/fancybox/source/helpers/jquery.fancybox-buttons.css?v=1.0.5"</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/css"</span><span class="pln"> </span><span class="atn">media</span><span class="pun">=</span><span class="atv">"screen"</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;script</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/javascript"</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"/fancybox/source/helpers/jquery.fancybox-buttons.js?v=1.0.5"</span><span class="tag">&gt;&lt;/script&gt;</span><span class="pln">
+</span><span class="tag">&lt;script</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/javascript"</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"/fancybox/source/helpers/jquery.fancybox-media.js?v=1.0.6"</span><span class="tag">&gt;&lt;/script&gt;</span><span class="pln">
+
+</span><span class="tag">&lt;link</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"stylesheet"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"/fancybox/source/helpers/jquery.fancybox-thumbs.css?v=1.0.7"</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/css"</span><span class="pln"> </span><span class="atn">media</span><span class="pun">=</span><span class="atv">"screen"</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;script</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/javascript"</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"/fancybox/source/helpers/jquery.fancybox-thumbs.js?v=1.0.7"</span><span class="tag">&gt;&lt;/script&gt;</span></pre>
+
+	<p>Create link elements whose href attributes will contain the path of the element you wish to open within the fancyBox.</p>
+
+<pre class="prettyprint"><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"group"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"big_image_1.jpg"</span><span class="tag">&gt;&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"small_image_1.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"group"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"big_image_2.jpg"</span><span class="tag">&gt;&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"small_image_2.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;&lt;/a&gt;</span></pre>
+
+	<p>Attach fancyBox when the document is loaded. If you are not familiar with jQuery, please, read <a target="_blank" href="http://docs.jquery.com/Tutorials:How_jQuery_Works">this tutorial for beginners</a>.</p>
+
+<pre class="prettyprint"><span class="tag">&lt;script</span><span class="pln"> </span><span class="atn">type</span><span class="pun">=</span><span class="atv">"text/javascript"</span><span class="tag">&gt;</span><span class="pln">
+	$</span><span class="pun">(</span><span class="pln">document</span><span class="pun">).</span><span class="pln">ready</span><span class="pun">(</span><span class="kwd">function</span><span class="pun">()</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+		$</span><span class="pun">(</span><span class="str">".fancybox"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">();</span><span class="pln">
+	</span><span class="pun">});</span><span class="pln">
+</span><span class="tag">&lt;/script&gt;</span></pre>
+
+	</div>
+	<div id="useful" class="block">
+
+		<h2>Tips &amp; tricks</h2>
+
+		<p>A collection of the demos created in response to questions</p>
+
+		<ol>
+			<li><a target="_blank" href="http://jsfiddle.net/jRsjK/">Change overlay color and opacity</a></li>
+			<li>Title -
+				<ul>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/vkDcG/">Use different attribute as value</a>
+					</li>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/2LXNh/">Get thumbnail "<b>alt</b>" attribute and use it</a>
+					</li>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/cWNw9/">Use element instead of attribute</a>
+					</li>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/ZePx5/">Change title type</a>
+					</li>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/b9Ts8/">Disable title</a>
+					</li>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/JYzqR/">Set title at the top</a>
+					</li>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/zAe6Z/">Add something to the title (add download link)</a>
+					</li>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/aR22D/">Stretch and show/hide on mouse hover</a>
+					</li>
+				</ul>
+			</li>
+			<li>
+				<a target="_blank" href="http://jsfiddle.net/DBvt7/">Disable right click</a>
+				(<a target="_blank" href="http://jsfiddle.net/w5gQS/">add watermark</a>)
+			</li>
+			<li><a target="_blank" href="http://jsfiddle.net/nJfAZ/">Remove white border around content</a></li>
+			<li>Move navigation arrows outside -
+				<ul>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/Xh3B2/">For all items</a>
+					</li>
+					<li>
+						<a target="_blank" href="http://jsfiddle.net/VNPzA/">Only for type "iframe"</a>
+					</li>
+				</ul>
+			</li>
+			<li>
+Customize/change the content - 
+<ul>
+<li><a target="_blank" href="http://jsfiddle.net/G5TC3/">Social buttons (twitter and fb)</a></li>
+<li><a target="_blank" href="http://jsfiddle.net/54EaH/">Add custom icon (full-screen)</a></li>
+<li><a target="_blank" href="http://jsfiddle.net/svsdx/">Append custom content</a></li>
+<li><a target="_blank" href="http://jsfiddle.net/PudLq/">Use 3rd party script (query-Oembed-All) to embed content from other website</a></li>
+</ul>
+</li>
+			<li><a target="_blank" href="http://jsfiddle.net/PwMjP/">Fade content when changing gallery items</a></li>
+			<li><a target="_blank" href="http://jsfiddle.net/bG4gR/">Apply fancyBox on all images</a></li>
+			<li>Start the gallery with only one preview picture:
+				<ul>
+					<li><a target="_blank" href="http://jsfiddle.net/uZCC6/">Method one - Hide other images</a> (<a target="_blank" href="http://jsfiddle.net/T6NKD/">multiple galleries</a>)</li>
+					<li><a target="_blank" href="http://jsfiddle.net/wg4MD/">Method two - Open fancyBox manually</a>  (<a target="_blank" href="http://jsfiddle.net/jekAe/">multiple galleries</a>)</li>
+				</ul>
+			</li>
+			<li>Launch fancyBox on page load:
+				<ul>
+					<li><a target="_blank" href="http://jsfiddle.net/Py2RA/">Method one - Trigger one of the elements</a></li>
+					<li><a target="_blank" href="http://jsfiddle.net/STgGM/">Method two - Open fancyBox manually</a></li>
+				</ul>
+			</li>
+			
+			<li><a target="_blank" href="http://jsfiddle.net/EWTxv/">Reload page after closing</a></li>
+			<li>Set parameters (like width and height) individually - 
+				<ul>
+					<li><a target="_blank" href="http://jsfiddle.net/wgPTR/">HTML5 data attributes</a></li>
+					<li><a target="_blank" href="http://jsfiddle.net/BJNYr/">URL parameters</a></li>
+					<li><a target="_blank" href="http://jsfiddle.net/eNFSL/">Metadata Plugin</a></li>
+					<li><a target="_blank" href="http://jsfiddle.net/Se8Yu/">Based on element ID</a></li>
+				</ul>
+			</li>
+			<li><a target="_blank" href="http://jsfiddle.net/2XhjG/">Supersized effect</a></li>
+			<li><a target="_blank" href="http://jsfiddle.net/M78zz/">Using YouTube API - go to the next video after the current one is finished playing</a></li>
+			<li><a target="_blank" href="http://jsfiddle.net/RHaAX/">Open PDF (inside iframe)</a></li>
+			<li>
+				<a target="_blank" href="http://jsfiddle.net/XaWZE/">Disable "locked" feature</a> - the content is locked in the overlay by default
+			</li>
+			<li>
+				<a target="_blank" href="http://jsfiddle.net/deseA/">Simple "dotted" navigation</a>
+			</li>
+
+
+<!--
+			<li>
+				<a target="_blank" href="http://jsfiddle.net/q2rya/">Change scrollbars</a>
+			</li>
+
+-->
+		</ol>
+
+	</div>
+
+	<div id="examples" class="block">
+		<h2>Examples</h2>
+
+		<p>
+			You can also go straight into action and open a <a target="_blank" href="http://fancyapps.com/fancybox/demo/">standalone version</a> of demo and view its source code.
+		</p>
+
+		<ul class="tabs">
+			<li class="active"><a href="javascript:;" class="tab-output">Single images</a></li>
+			<li><a href="javascript:;" class="tab-html">HTML</a></li>
+			<li><a href="javascript:;" class="tab-js">JavaScript</a></li>
+		</ul>
+
+		<div class="tab_container">
+			<p>
+						<a id="single_1" href="http://farm4.staticflickr.com/3712/9032543579_1217e6566b_b.jpg" title="Singapore from the air (Andrew Tan 2011)">
+				<img src="demo2_files/9032543579_1217e6566b_m.jpg" alt="">			</a>
+						<a id="single_2" href="http://farm4.staticflickr.com/3818/9036037912_83576fe5ab_b.jpg" title="forest mood (halina-anna)">
+				<img src="demo2_files/9036037912_83576fe5ab_m.jpg" alt="">			</a>
+						<a id="single_3" href="http://farm7.staticflickr.com/6115/6309906627_b5706c42e4_b.jpg" title="311111 AUTUMN AT OSBORNE (THE ANCIENT MATELOT)">
+				<img src="demo2_files/6309906627_b5706c42e4_m.jpg" alt="">			</a>
+						<a id="single_4" href="http://farm8.staticflickr.com/7412/8732133694_0c7e400022_b.jpg" title="Lake Shirakawako (白川湖) [Explored] (Yukimomiji@もみぢ)">
+				<img src="demo2_files/8732133694_0c7e400022_m.jpg" alt="">			</a>
+						</p>
+			<pre class="prettyprint" style="display: none;"><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">id</span><span class="pun">=</span><span class="atv">"single_1"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3712/9032543579_1217e6566b_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Singapore from the air (Andrew Tan 2011)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3712/9032543579_1217e6566b_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">id</span><span class="pun">=</span><span class="atv">"single_2"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3818/9036037912_83576fe5ab_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"forest mood (halina-anna)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3818/9036037912_83576fe5ab_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">id</span><span class="pun">=</span><span class="atv">"single_3"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm7.staticflickr.com/6115/6309906627_b5706c42e4_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"311111 AUTUMN AT OSBORNE (THE ANCIENT MATELOT)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm7.staticflickr.com/6115/6309906627_b5706c42e4_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">id</span><span class="pun">=</span><span class="atv">"single_4"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm8.staticflickr.com/7412/8732133694_0c7e400022_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Lake Shirakawako (白川湖) [Explored] (Yukimomiji@もみぢ)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm8.staticflickr.com/7412/8732133694_0c7e400022_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span></pre>
+		<pre style="display: none;" class="prettyprint"><span class="pln">$</span><span class="pun">(</span><span class="pln">document</span><span class="pun">).</span><span class="pln">ready</span><span class="pun">(</span><span class="kwd">function</span><span class="pun">()</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+    $</span><span class="pun">(</span><span class="str">"#single_1"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+          helpers</span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+              title </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+                  type </span><span class="pun">:</span><span class="pln"> </span><span class="str">'float'</span><span class="pln">
+              </span><span class="pun">}</span><span class="pln">
+          </span><span class="pun">}</span><span class="pln">
+      </span><span class="pun">});</span><span class="pln">
+
+    $</span><span class="pun">(</span><span class="str">"#single_2"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+    	openEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'elastic'</span><span class="pun">,</span><span class="pln">
+    	closeEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'elastic'</span><span class="pun">,</span><span class="pln">
+
+    	helpers </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+    		title </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+    			type </span><span class="pun">:</span><span class="pln"> </span><span class="str">'inside'</span><span class="pln">
+    		</span><span class="pun">}</span><span class="pln">
+    	</span><span class="pun">}</span><span class="pln">
+    </span><span class="pun">});</span><span class="pln">
+
+    $</span><span class="pun">(</span><span class="str">"#single_3"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+    	openEffect </span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+    	closeEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+    	helpers </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+    		title </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+    			type </span><span class="pun">:</span><span class="pln"> </span><span class="str">'outside'</span><span class="pln">
+    		</span><span class="pun">}</span><span class="pln">
+    	</span><span class="pun">}</span><span class="pln">
+    </span><span class="pun">});</span><span class="pln">
+
+    $</span><span class="pun">(</span><span class="str">"#single_4"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+    	helpers </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+    		title </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+    			type </span><span class="pun">:</span><span class="pln"> </span><span class="str">'over'</span><span class="pln">
+    		</span><span class="pun">}</span><span class="pln">
+    	</span><span class="pun">}</span><span class="pln">
+    </span><span class="pun">});</span><span class="pln">
+</span><span class="pun">});</span></pre></div>
+<script type="text/javascript">
+$(document).ready(function() {
+    $("#single_1").fancybox({
+          helpers: {
+              title : {
+                  type : 'float'
+              }
+          }
+      });
+
+    $("#single_2").fancybox({
+    	openEffect	: 'elastic',
+    	closeEffect	: 'elastic',
+
+    	helpers : {
+    		title : {
+    			type : 'inside'
+    		}
+    	}
+    });
+
+    $("#single_3").fancybox({
+    	openEffect : 'none',
+    	closeEffect	: 'none',
+    	helpers : {
+    		title : {
+    			type : 'outside'
+    		}
+    	}
+    });
+
+    $("#single_4").fancybox({
+    	helpers : {
+    		title : {
+    			type : 'over'
+    		}
+    	}
+    });
+});
+</script>
+		<p>
+			Note: ID's are single use and are only applied to one element.<br>
+			Galleries are created from elements who have the same "data-fancybox-group" or "rel" attribute value.
+		</p>
+
+		<ul class="tabs">
+			<li class="active"><a href="javascript:;" class="tab-output">Image gallery</a></li>
+			<li><a href="javascript:;" class="tab-html">HTML</a></li>
+			<li><a href="javascript:;" class="tab-js">JavaScript</a></li>
+		</ul>
+
+		<div class="tab_container">
+			<p>
+						<a class="fancybox" rel="gallery1" href="http://farm6.staticflickr.com/5471/9036958611_fa1bb7f827_b.jpg" title="Westfield Waterfalls - Middletown CT Lower (Graham_CS)">
+				<img src="demo2_files/9036958611_fa1bb7f827_m.jpg" alt="">			</a>
+						<a class="fancybox" rel="gallery1" href="http://farm4.staticflickr.com/3824/9041440555_2175b32078_b.jpg" title="Calm Before The Storm (One Shoe Photography Ltd.)">
+				<img src="demo2_files/9041440555_2175b32078_m.jpg" alt="">			</a>
+						<a class="fancybox" rel="gallery1" href="http://farm3.staticflickr.com/2870/8985207189_01ea27882d_b.jpg" title="Lambs Valley (JMImagesonline.com)">
+				<img src="demo2_files/8985207189_01ea27882d_m.jpg" alt="">			</a>
+						<a class="fancybox" rel="gallery1" href="http://farm4.staticflickr.com/3677/8962691008_7f489395c9_b.jpg" title="Grasmere Lake (Phil 'the link' Whittaker (gizto29))">
+				<img src="demo2_files/8962691008_7f489395c9_m.jpg" alt="">			</a>
+						</p>
+			<pre class="prettyprint" style="display: none;"><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"gallery1"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm6.staticflickr.com/5471/9036958611_fa1bb7f827_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Westfield Waterfalls - Middletown CT Lower (Graham_CS)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm6.staticflickr.com/5471/9036958611_fa1bb7f827_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"gallery1"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3824/9041440555_2175b32078_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Calm Before The Storm (One Shoe Photography Ltd.)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3824/9041440555_2175b32078_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"gallery1"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm3.staticflickr.com/2870/8985207189_01ea27882d_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Lambs Valley (JMImagesonline.com)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm3.staticflickr.com/2870/8985207189_01ea27882d_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"gallery1"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3677/8962691008_7f489395c9_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Grasmere Lake (Phil 'the link' Whittaker (gizto29))"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3677/8962691008_7f489395c9_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span></pre>
+		<pre style="display: none;" class="prettyprint"><span class="pln">$</span><span class="pun">(</span><span class="pln">document</span><span class="pun">).</span><span class="pln">ready</span><span class="pun">(</span><span class="kwd">function</span><span class="pun">()</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+	$</span><span class="pun">(</span><span class="str">".fancybox"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+		openEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+		closeEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pln">
+	</span><span class="pun">});</span><span class="pln">
+</span><span class="pun">});</span></pre></div>
+
+<script type="text/javascript">
+$(document).ready(function() {
+	$(".fancybox").fancybox({
+		openEffect	: 'none',
+		closeEffect	: 'none'
+	});
+});
+</script>
+
+		<p>
+			Script uses the `href` or `data-fancybox-href` attribute of the 
+matched elements to obtain the location of the content and to figure out
+ content type you want to display.
+			You can specify type directly by adding classname (fancybox.image, 
+fancybox.iframe, etc) or `data-fancybox-type` attribute. 
+			Use `title` or `data-fancybox-title` attribute to specify item 
+caption.<br>
+		</p>
+
+		<div id="inline" style="display:none;width:500px;">
+			<h2>Lorem ipsum dolor sit amet</h2>
+
+			<p>
+				<a id="add_paragraph" title="Add" class="button button-blue" href="javascript:;">Add new paragraph</a>
+				&nbsp;
+				<a href="javascript:$.fancybox.close();">Close</a>
+			</p>
+			<p>
+				Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+			</p>
+		</div>
+
+		<ul class="tabs">
+			<li class=""><a href="javascript:;" class="tab-output">Various types</a></li>
+			<li class="active"><a href="javascript:;" class="tab-html">HTML</a></li>
+			<li><a href="javascript:;" class="tab-js">JavaScript</a></li>
+		</ul>
+
+		<div class="tab_container">
+			<div style="display: none;">
+				<ul class="list">
+					<li>
+						<a class="various fancybox.ajax" data-fancybox-type="ajax" href="http://fancyapps.com/demo/ajax.txt">Ajax</a>
+					</li>
+					<li>
+						<a class="various" data-fancybox-type="iframe" href="http://fancyapps.com/demo/iframe.html">Iframe</a>
+					</li>
+					<li>
+						<a class="various" href="#inline">Inline</a>
+					</li>
+					<li>
+						<a class="various" href="http://www.adobe.com/jp/events/cs3_web_edition_tour/swfs/perform.swf">SWF</a>
+					</li>
+				</ul>
+
+				<ul class="list">
+					<li>
+						<a class="various fancybox.iframe" href="http://www.youtube.com/embed/L9szn1QQfas?autoplay=1">Youtube (iframe)</a>
+					</li>
+					<li>
+						<a class="various fancybox.iframe" href="http://maps.google.com/?output=embed&amp;f=q&amp;source=s_q&amp;hl=en&amp;geocode=&amp;q=London+Eye,+County+Hall,+Westminster+Bridge+Road,+London,+United+Kingdom&amp;hl=lv&amp;ll=51.504155,-0.117749&amp;spn=0.00571,0.016512&amp;sll=56.879635,24.603189&amp;sspn=10.280244,33.815918&amp;vpsrc=6&amp;hq=London+Eye&amp;radius=15000&amp;t=h&amp;z=17">Google maps (iframe)</a>
+					</li>
+					<li>
+						<a class="various" href="http://fancyapps.com/data/non_existing_image.jpg">Non-existing url</a>
+					</li>
+				</ul>
+			</div>
+			<pre class="prettyprint" style=""><span class="tag">&lt;ul</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"list"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;</span><span class="pln">
+		</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"various fancybox.ajax"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"/demo/ajax.php"</span><span class="tag">&gt;</span><span class="pln">Ajax</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+	</span><span class="tag">&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;</span><span class="pln">
+		</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"various"</span><span class="pln"> </span><span class="atn">data-fancybox-type</span><span class="pun">=</span><span class="atv">"iframe"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"/demo/iframe.html"</span><span class="tag">&gt;</span><span class="pln">Iframe</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+	</span><span class="tag">&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;</span><span class="pln">
+		</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"various"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"#inline"</span><span class="tag">&gt;</span><span class="pln">Inline</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+	</span><span class="tag">&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;</span><span class="pln">
+		</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"various"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://www.adobe.com/jp/events/cs3_web_edition_tour/swfs/perform.swf"</span><span class="tag">&gt;</span><span class="pln">SWF</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+	</span><span class="tag">&lt;/li&gt;</span><span class="pln">
+</span><span class="tag">&lt;/ul&gt;</span><span class="pln">
+
+</span><span class="tag">&lt;ul</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"list"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;</span><span class="pln">
+		</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"various fancybox.iframe"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://www.youtube.com/embed/L9szn1QQfas?autoplay=1"</span><span class="tag">&gt;</span><span class="pln">Youtube (iframe)</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+	</span><span class="tag">&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;</span><span class="pln">
+		</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"various fancybox.iframe"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://maps.google.com/?output=embed&amp;f=q&amp;source=s_q&amp;hl=en&amp;geocode=&amp;q=London+Eye,+County+Hall,+Westminster+Bridge+Road,+London,+United+Kingdom&amp;hl=lv&amp;ll=51.504155,-0.117749&amp;spn=0.00571,0.016512&amp;sll=56.879635,24.603189&amp;sspn=10.280244,33.815918&amp;vpsrc=6&amp;hq=London+Eye&amp;radius=15000&amp;t=h&amp;z=17"</span><span class="tag">&gt;</span><span class="pln">Google maps (iframe)</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+	</span><span class="tag">&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;</span><span class="pln">
+		</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"various"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"/data/non_existing_image.jpg"</span><span class="tag">&gt;</span><span class="pln">Non-existing url</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+	</span><span class="tag">&lt;/li&gt;</span><span class="pln">
+</span><span class="tag">&lt;/ul&gt;</span></pre>
+		<pre style="display: none;" class="prettyprint"><span class="pln">$</span><span class="pun">(</span><span class="pln">document</span><span class="pun">).</span><span class="pln">ready</span><span class="pun">(</span><span class="kwd">function</span><span class="pun">()</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+	$</span><span class="pun">(</span><span class="str">".various"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+		maxWidth	</span><span class="pun">:</span><span class="pln"> </span><span class="lit">800</span><span class="pun">,</span><span class="pln">
+		maxHeight	</span><span class="pun">:</span><span class="pln"> </span><span class="lit">600</span><span class="pun">,</span><span class="pln">
+		fitToView	</span><span class="pun">:</span><span class="pln"> </span><span class="kwd">false</span><span class="pun">,</span><span class="pln">
+		width		</span><span class="pun">:</span><span class="pln"> </span><span class="str">'70%'</span><span class="pun">,</span><span class="pln">
+		height		</span><span class="pun">:</span><span class="pln"> </span><span class="str">'70%'</span><span class="pun">,</span><span class="pln">
+		autoSize	</span><span class="pun">:</span><span class="pln"> </span><span class="kwd">false</span><span class="pun">,</span><span class="pln">
+		closeClick	</span><span class="pun">:</span><span class="pln"> </span><span class="kwd">false</span><span class="pun">,</span><span class="pln">
+		openEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+		closeEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pln">
+	</span><span class="pun">});</span><span class="pln">
+</span><span class="pun">});</span></pre></div>
+<script type="text/javascript">
+$(document).ready(function() {
+	$(".various").fancybox({
+		maxWidth	: 800,
+		maxHeight	: 600,
+		fitToView	: false,
+		width		: '70%',
+		height		: '70%',
+		autoSize	: false,
+		closeClick	: false,
+		openEffect	: 'none',
+		closeEffect	: 'none'
+	});
+});
+</script>
+
+		<p>
+			Alternatively, you can set content type as an option: <code>$(".open_ajax").fancybox({type: 'ajax'});</code>.<br>
+		</p>
+		<p>
+</p><p>Note, ajax requests are subject to the <a href="http://en.wikipedia.org/wiki/Same_origin_policy">same origin policy</a>.
+If fancyBox will not be able to get content type, it will try to guess 
+based on 'href' and will quit silently if would not succeed
+(this is different from previous versions where 'ajax' was used as 
+default type or an error message was displayed).
+		</p>
+
+		<h3>Extended functionality</h3>
+		<p>
+<b>Remember to include the necessary files!</b> Each helper is located in separate files.
+</p>
+		<ul class="tabs">
+			<li class="active"><a href="javascript:;" class="tab-output">Button helper</a></li>
+			<li><a href="javascript:;" class="tab-html">HTML</a></li>
+			<li><a href="javascript:;" class="tab-js">JavaScript</a></li>
+		</ul>
+
+		<div class="tab_container">
+			<p>
+						<a class="fancybox-button" rel="fancybox-button" href="http://farm4.staticflickr.com/3787/9028269192_9b4ddf345d_b.jpg" title="Tolpis barbata (mariluzpicado)">
+				<img src="demo2_files/9028269192_9b4ddf345d_m.jpg" alt="">			</a>
+						<a class="fancybox-button" rel="fancybox-button" href="http://farm4.staticflickr.com/3745/8971419780_cb88b22947_b.jpg" title="(dSavin)">
+				<img src="demo2_files/8971419780_cb88b22947_m.jpg" alt="">			</a>
+						<a class="fancybox-button" rel="fancybox-button" href="http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_b.jpg" title="a ride in blue? (cembayir_photography)">
+				<img src="demo2_files/8478415115_152c6f5e55_m.jpg" alt="">			</a>
+						<a class="fancybox-button" rel="fancybox-button" href="http://farm9.staticflickr.com/8366/8483546751_86494ae914_b.jpg" title="reedit... (h_di)">
+				<img src="demo2_files/8483546751_86494ae914_m.jpg" alt="">			</a>
+						</p>
+			<pre class="prettyprint" style="display: none;"><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-button"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"fancybox-button"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3787/9028269192_9b4ddf345d_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Tolpis barbata (mariluzpicado)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3787/9028269192_9b4ddf345d_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-button"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"fancybox-button"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3745/8971419780_cb88b22947_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"(dSavin)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm4.staticflickr.com/3745/8971419780_cb88b22947_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-button"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"fancybox-button"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"a ride in blue? (cembayir_photography)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8522/8478415115_152c6f5e55_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-button"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"fancybox-button"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8366/8483546751_86494ae914_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"reedit... (h_di)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8366/8483546751_86494ae914_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span></pre>
+		<pre style="display: none;" class="prettyprint"><span class="pln">$</span><span class="pun">(</span><span class="pln">document</span><span class="pun">).</span><span class="pln">ready</span><span class="pun">(</span><span class="kwd">function</span><span class="pun">()</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+	$</span><span class="pun">(</span><span class="str">".fancybox-button"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+		prevEffect		</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+		nextEffect		</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+		closeBtn		</span><span class="pun">:</span><span class="pln"> </span><span class="kwd">false</span><span class="pun">,</span><span class="pln">
+		helpers		</span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+			title	</span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln"> type </span><span class="pun">:</span><span class="pln"> </span><span class="str">'inside'</span><span class="pln"> </span><span class="pun">},</span><span class="pln">
+			buttons	</span><span class="pun">:</span><span class="pln"> </span><span class="pun">{}</span><span class="pln">
+		</span><span class="pun">}</span><span class="pln">
+	</span><span class="pun">});</span><span class="pln">
+</span><span class="pun">});</span></pre></div>
+<script type="text/javascript">
+$(document).ready(function() {
+	$(".fancybox-button").fancybox({
+		prevEffect		: 'none',
+		nextEffect		: 'none',
+		closeBtn		: false,
+		helpers		: {
+			title	: { type : 'inside' },
+			buttons	: {}
+		}
+	});
+});
+</script>
+
+		<ul class="tabs">
+			<li class="active"><a href="javascript:;" class="tab-output">Thumbnail helper</a></li>
+			<li><a href="javascript:;" class="tab-html">HTML</a></li>
+			<li><a href="javascript:;" class="tab-js">JavaScript</a></li>
+		</ul>
+
+		<div class="tab_container">
+			<p>
+						<a class="fancybox-thumb" rel="fancybox-thumb" href="http://farm9.staticflickr.com/8507/8454547519_f8116520e1_b.jpg" title="Ayvalık, Turkey (Nejdet Düzen)">
+				<img src="demo2_files/8454547519_f8116520e1_m.jpg" alt="">			</a>
+						<a class="fancybox-thumb" rel="fancybox-thumb" href="http://farm8.staticflickr.com/7152/6394238505_c94fdd1d89_b.jpg" title="Sicilian Scratches   erice (italianoadoravel on/off coming back)">
+				<img src="demo2_files/6394238505_c94fdd1d89_m.jpg" alt="">			</a>
+						<a class="fancybox-thumb" rel="fancybox-thumb" href="http://farm9.staticflickr.com/8481/8215602321_69d9939b8b_b.jpg" title="The Trail (Msjunior-Check out my galleries)">
+				<img src="demo2_files/8215602321_69d9939b8b_m.jpg" alt="">			</a>
+						<a class="fancybox-thumb" rel="fancybox-thumb" href="http://farm9.staticflickr.com/8200/8220393833_e52cabfe80_b.jpg" title="Trees (Joerg Marx)">
+				<img src="demo2_files/8220393833_e52cabfe80_m.jpg" alt="">			</a>
+						</p>
+			<pre class="prettyprint" style="display: none;"><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-thumb"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"fancybox-thumb"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8507/8454547519_f8116520e1_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Ayvalık, Turkey (Nejdet Düzen)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8507/8454547519_f8116520e1_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-thumb"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"fancybox-thumb"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm8.staticflickr.com/7152/6394238505_c94fdd1d89_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Sicilian Scratches   erice (italianoadoravel on/off coming back)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm8.staticflickr.com/7152/6394238505_c94fdd1d89_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-thumb"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"fancybox-thumb"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8481/8215602321_69d9939b8b_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"The Trail (Msjunior-Check out my galleries)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8481/8215602321_69d9939b8b_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span><span class="pln">
+</span><span class="tag">&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-thumb"</span><span class="pln"> </span><span class="atn">rel</span><span class="pun">=</span><span class="atv">"fancybox-thumb"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8200/8220393833_e52cabfe80_b.jpg"</span><span class="pln"> </span><span class="atn">title</span><span class="pun">=</span><span class="atv">"Trees (Joerg Marx)"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;img</span><span class="pln"> </span><span class="atn">src</span><span class="pun">=</span><span class="atv">"http://farm9.staticflickr.com/8200/8220393833_e52cabfe80_m.jpg"</span><span class="pln"> </span><span class="atn">alt</span><span class="pun">=</span><span class="atv">""</span><span class="pln"> </span><span class="tag">/&gt;</span><span class="pln">
+</span><span class="tag">&lt;/a&gt;</span></pre>
+		<pre style="display: none;" class="prettyprint"><span class="pln">$</span><span class="pun">(</span><span class="pln">document</span><span class="pun">).</span><span class="pln">ready</span><span class="pun">(</span><span class="kwd">function</span><span class="pun">()</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+	$</span><span class="pun">(</span><span class="str">".fancybox-thumb"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+		prevEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+		nextEffect	</span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+		helpers	</span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+			title	</span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+				type</span><span class="pun">:</span><span class="pln"> </span><span class="str">'outside'</span><span class="pln">
+			</span><span class="pun">},</span><span class="pln">
+			thumbs	</span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+				width	</span><span class="pun">:</span><span class="pln"> </span><span class="lit">50</span><span class="pun">,</span><span class="pln">
+				height	</span><span class="pun">:</span><span class="pln"> </span><span class="lit">50</span><span class="pln">
+			</span><span class="pun">}</span><span class="pln">
+		</span><span class="pun">}</span><span class="pln">
+	</span><span class="pun">});</span><span class="pln">
+</span><span class="pun">});</span></pre></div>
+<script type="text/javascript">
+$(document).ready(function() {
+	$(".fancybox-thumb").fancybox({
+		prevEffect	: 'none',
+		nextEffect	: 'none',
+		helpers	: {
+			title	: {
+				type: 'outside'
+			},
+			thumbs	: {
+				width	: 50,
+				height	: 50
+			}
+		}
+	});
+});
+</script>
+
+		<ul class="tabs">
+			<li class="active"><a href="javascript:;" class="tab-output">Media helper</a></li>
+			<li class=""><a href="javascript:;" class="tab-html">HTML</a></li>
+			<li class=""><a href="javascript:;" class="tab-js">JavaScript</a></li>
+		</ul>
+
+		<div class="tab_container">
+			<div style="display: block;">
+				<ul class="list">
+					<li><a class="fancybox-media" href="http://www.youtube.com/watch?v=opj24KnzrWo">Youtube</a></li>
+					<li><a class="fancybox-media" href="http://vimeo.com/36031564">Vimeo</a></li>
+					<li><a class="fancybox-media" href="http://www.metacafe.com/watch/7635964/">Metacafe</a></li>
+					<li><a class="fancybox-media" href="http://www.dailymotion.com/video/xoeylt_electric-guest-this-head-i-hold_music">Dailymotion</a></li>
+					<li><a class="fancybox-media" href="http://twitvid.com/QY7MD">Twitvid</a></li>
+					<li><a class="fancybox-media" href="http://twitpic.com/7p93st">Twitpic</a></li>
+					<li><a class="fancybox-media" href="http://instagr.am/p/IejkuUGxQn">Instagram</a></li>
+					<li>
+						Google maps
+						<ul>
+							<li><a class="fancybox-media" href="http://maps.google.com/maps?q=Eiffel+Tower,+Avenue+Gustave+Eiffel,+Paris,+France&amp;t=h&amp;z=17">Search results</a></li>
+							<li><a class="fancybox-media" href="http://maps.google.com/?ll=48.85796,2.295231&amp;spn=0.003833,0.010568&amp;t=h&amp;z=17">Direct link</a></li>
+							<li><a class="fancybox-media" href="http://maps.google.com/?ll=48.859463,2.292626&amp;spn=0.000965,0.002642&amp;t=m&amp;z=19&amp;layer=c&amp;cbll=48.859524,2.292532&amp;panoid=YJ0lq28OOy3VT2IqIuVY0g&amp;cbp=12,151.58,,0,-15.56">Street view</a></li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+			<pre class="prettyprint" style="display: none;"><span class="tag">&lt;ul</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"list"</span><span class="tag">&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://www.youtube.com/watch?v=opj24KnzrWo"</span><span class="tag">&gt;</span><span class="pln">Youtube</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://vimeo.com/36031564"</span><span class="tag">&gt;</span><span class="pln">Vimeo</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://www.metacafe.com/watch/7635964/"</span><span class="tag">&gt;</span><span class="pln">Metacafe</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://www.dailymotion.com/video/xoeylt_electric-guest-this-head-i-hold_music"</span><span class="tag">&gt;</span><span class="pln">Dailymotion</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://twitvid.com/QY7MD"</span><span class="tag">&gt;</span><span class="pln">Twitvid</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://twitpic.com/7p93st"</span><span class="tag">&gt;</span><span class="pln">Twitpic</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://instagr.am/p/IejkuUGxQn"</span><span class="tag">&gt;</span><span class="pln">Instagram</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+	</span><span class="tag">&lt;li&gt;</span><span class="pln">
+		Google maps
+		</span><span class="tag">&lt;ul&gt;</span><span class="pln">
+			</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://maps.google.com/maps?q=Eiffel+Tower,+Avenue+Gustave+Eiffel,+Paris,+France&amp;t=h&amp;z=17"</span><span class="tag">&gt;</span><span class="pln">Search results</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+			</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://maps.google.com/?ll=48.85796,2.295231&amp;spn=0.003833,0.010568&amp;t=h&amp;z=17"</span><span class="tag">&gt;</span><span class="pln">Direct link</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+			</span><span class="tag">&lt;li&gt;&lt;a</span><span class="pln"> </span><span class="atn">class</span><span class="pun">=</span><span class="atv">"fancybox-media"</span><span class="pln"> </span><span class="atn">href</span><span class="pun">=</span><span class="atv">"http://maps.google.com/?ll=48.859463,2.292626&amp;spn=0.000965,0.002642&amp;t=m&amp;z=19&amp;layer=c&amp;cbll=48.859524,2.292532&amp;panoid=YJ0lq28OOy3VT2IqIuVY0g&amp;cbp=12,151.58,,0,-15.56"</span><span class="tag">&gt;</span><span class="pln">Street view</span><span class="tag">&lt;/a&gt;&lt;/li&gt;</span><span class="pln">
+		</span><span class="tag">&lt;/ul&gt;</span><span class="pln">
+	</span><span class="tag">&lt;/li&gt;</span><span class="pln">
+</span><span class="tag">&lt;/ul&gt;</span></pre>
+		<pre style="display: none;" class="prettyprint"><span class="pln">$</span><span class="pun">(</span><span class="pln">document</span><span class="pun">).</span><span class="pln">ready</span><span class="pun">(</span><span class="kwd">function</span><span class="pun">()</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+	$</span><span class="pun">(</span><span class="str">'.fancybox-media'</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+		openEffect  </span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+		closeEffect </span><span class="pun">:</span><span class="pln"> </span><span class="str">'none'</span><span class="pun">,</span><span class="pln">
+		helpers </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+			media </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{}</span><span class="pln">
+		</span><span class="pun">}</span><span class="pln">
+	</span><span class="pun">});</span><span class="pln">
+</span><span class="pun">});</span></pre></div>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('.fancybox-media').fancybox({
+		openEffect  : 'none',
+		closeEffect : 'none',
+		helpers : {
+			media : {}
+		}
+	});
+});
+</script>
+
+	</div>
+
+	<div id="license" class="block">
+		<h2>License / Download</h2>
+
+		<p>
+			fancyBox licensed under <a target="_blank" href="http://creativecommons.org/licenses/by-nc/3.0/">Creative Commons Attribution-NonCommercial 3.0</a> license. <br>
+			You are <b>free</b> to use fancyBox for your personal or non-profit website projects. <br> You can get the author's permission to use fancyBox for commercial websites by <a href="http://fancyapps.com/store/">paying a fee</a>.
+		</p>
+
+		<p>
+			The latest source code is available on <a target="_blank" href="https://github.com/fancyapps/fancyBox">GitHub</a>.
+					</p>
+
+		<p>
+			<a href="https://github.com/fancyapps/fancyBox/zipball/v2.1.5" class="button button-blue">Download v2.1.5</a>
+
+			<a href="http://fancyapps.com/store/" class="button button-green">View Licensing Options</a>
+		</p>
+
+	</div>
+
+	<div id="docs" class="block">
+		<h2>Documentation</h2>
+
+		<ul class="tabs">
+			<li class=""><a href="javascript:;" class="tab-output">Available options</a></li>
+			<li class="active"><a href="javascript:;">API Methods</a></li>
+			<li><a href="javascript:;">Callbacks</a></li>
+		</ul>
+
+		<div class="tab_container">
+			<div style="display: none;">
+				<p>
+					You can pass these options as key/value object to fancybox() 
+method. It is also possible to modify defaults directly at fancyBox JS 
+file or <code>$.fancybox.defaults</code>
+				</p>
+
+				<table class="options" cellpadding="0" cellspacing="0">
+				<colgroup>
+					<col width="140">
+					<col width="">
+				</colgroup>
+				<tbody>
+					<tr>
+						<th>Name</th>
+						<th>Description</th>
+					</tr>
+										<tr>
+						<td>
+							padding						</td>
+						<td>
+							Space inside fancyBox around content. Can be set as array - [top, right, bottom, left].							<br>
+							<span style="color:#888">Integer, Array; Default value: 15							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							margin						</td>
+						<td>
+							Minimum space between viewport and fancyBox. Can be set as array -
+ [top, right, bottom, left]. Right and bottom margins are ignored if 
+content dimensions exceeds viewport							<br>
+							<span style="color:#888">Integer, Array; Default value: 20							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							width						</td>
+						<td>
+							Default width for 'iframe' and 'swf' content. Also for 'inline', 
+'ajax' and 'html' if 'autoSize' is set to 'false'. Can be numeric or 
+'auto'.							<br>
+							<span style="color:#888">Number, String; Default value: 800							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							height						</td>
+						<td>
+							Default height for 'iframe' and 'swf' content. Also for 'inline',
+ 'ajax' and 'html' if 'autoSize' is set to 'false'. Can be numeric or 
+'auto'							<br>
+							<span style="color:#888">Number, String; Default value: 600							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							minWidth						</td>
+						<td>
+							Minimum width fancyBox should be allowed to resize to							<br>
+							<span style="color:#888">Number; Default value: 100							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							minHeight						</td>
+						<td>
+							Minimum height fancyBox should be allowed to resize to							<br>
+							<span style="color:#888">Number; Default value: 100							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							maxWidth						</td>
+						<td>
+							Maximum width fancyBox should be allowed to resize to							<br>
+							<span style="color:#888">Number; Default value: 9999							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							maxHeight						</td>
+						<td>
+							Maximum height fancyBox should be allowed to resize to							<br>
+							<span style="color:#888">Number; Default value: 9999							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							autoSize						</td>
+						<td>
+							If true, then sets both autoHeight and autoWidth to true							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							autoHeight						</td>
+						<td>
+							If set to true, for 'inline', 'ajax' and 'html' type content 
+width is auto determined. If no dimensions set this may give unexpected 
+results							<br>
+							<span style="color:#888">Boolean; Default value: false							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							autoWidth						</td>
+						<td>
+							If set to true, for 'inline', 'ajax' and 'html' type content 
+height is auto determined. If no dimensions set this may give unexpected
+ results							<br>
+							<span style="color:#888">Boolean; Default value: false							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							autoResize						</td>
+						<td>
+							If set to true, the content will be resized after window resize event							<br>
+							<span style="color:#888">Boolean; Default value: !isTouch							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							autoCenter						</td>
+						<td>
+							If set to true, the content will always be centered							<br>
+							<span style="color:#888">Boolean; Default value: !isTouch							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							fitToView						</td>
+						<td>
+							If set to true, fancyBox is resized to fit inside viewport before opening							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							aspectRatio						</td>
+						<td>
+							If set to true, resizing is constrained by the original aspect ratio (images always keep ratio; see this example - <a href="http://jsfiddle.net/WHr9J/" target="_blank">if you want to change ratio for other media</a>)							<br>
+							<span style="color:#888">Boolean; Default value: false							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							topRatio						</td>
+						<td>
+							Top space ratio for vertical centering. If set to 0.5, then 
+vertical and bottom space will be equal. If 0 - fancyBox will be at the 
+viewport top							<br>
+							<span style="color:#888">Number; Default value: 0.5							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							leftRatio						</td>
+						<td>
+							Left space ratio for horizontal centering. If set to 0.5, then 
+left and right space will be equal. If 0 - fancyBox will be at the 
+viewport left							<br>
+							<span style="color:#888">Number; Default value: 0.5							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							scrolling						</td>
+						<td>
+							Set the overflow CSS property to create or hide scrollbars. Can be set to 'auto', 'yes', 'no' or 'visible'							<br>
+							<span style="color:#888">String; Default value: 'auto'							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							wrapCSS						</td>
+						<td>
+							Customizable CSS class for wrapping element (useful for custom styling)							<br>
+							<span style="color:#888">string; Default value: 							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							arrows						</td>
+						<td>
+							If set to true, navigation arrows will be displayed							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							closeBtn						</td>
+						<td>
+							If set to true, close button will be displayed							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							closeClick						</td>
+						<td>
+							If set to true, fancyBox will be closed when user clicks the content							<br>
+							<span style="color:#888">Boolean; Default value: false							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							nextClick						</td>
+						<td>
+							If set to true, will navigate to next gallery item when user clicks the content							<br>
+							<span style="color:#888">Boolean; Default value: false							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							mouseWheel						</td>
+						<td>
+							If set to true, you will be able to navigate gallery using the mouse wheel							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							autoPlay						</td>
+						<td>
+							If set to true, slideshow will start after opening the first gallery item							<br>
+							<span style="color:#888">Boolean; Default value: false							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							playSpeed						</td>
+						<td>
+							Slideshow speed in milliseconds							<br>
+							<span style="color:#888">Integer; Default value: 3000							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							preload						</td>
+						<td>
+							Number of gallery images to preload							<br>
+							<span style="color:#888">Integer; Default value: 3							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							modal						</td>
+						<td>
+							If set to true, will disable navigation and closing							<br>
+							<span style="color:#888">Boolean; Default value: false							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							loop						</td>
+						<td>
+							If set to true, enables cyclic navigation. This means, if you 
+click "next" after you reach the last element, first element will be 
+displayed (and vice versa).							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							ajax						</td>
+						<td>
+							Options for ajax request							<br>
+							<span style="color:#888">Object; Default value: <pre class="prettyprint"><span class="pun">{</span><span class="pln">
+	dataType </span><span class="pun">:</span><span class="pln"> </span><span class="str">'html'</span><span class="pun">,</span><span class="pln">
+	headers  </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln"> </span><span class="str">'X-fancyBox'</span><span class="pun">:</span><span class="pln"> </span><span class="kwd">true</span><span class="pln"> </span><span class="pun">}</span><span class="pln">
+</span><span class="pun">}</span></pre>							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							iframe						</td>
+						<td>
+							Options for content type "iframe"							<br>
+							<span style="color:#888">Object; Default value: <pre class="prettyprint"><span class="pun">{</span><span class="pln">
+	scrolling </span><span class="pun">:</span><span class="pln"> </span><span class="str">'auto'</span><span class="pun">,</span><span class="pln">
+	preload   </span><span class="pun">:</span><span class="pln"> </span><span class="kwd">true</span><span class="pln">
+</span><span class="pun">}</span></pre>							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							swf						</td>
+						<td>
+							Options for content type "swf"							<br>
+							<span style="color:#888">Object; Default value: <pre class="prettyprint"><span class="pun">{</span><span class="pln">
+	wmode</span><span class="pun">:</span><span class="pln"> </span><span class="str">'transparent'</span><span class="pun">,</span><span class="pln">
+	allowfullscreen   </span><span class="pun">:</span><span class="pln"> </span><span class="str">'true'</span><span class="pun">,</span><span class="pln">
+	allowscriptaccess </span><span class="pun">:</span><span class="pln"> </span><span class="str">'always'</span><span class="pln">
+</span><span class="pun">}</span></pre>							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							keys						</td>
+						<td>
+							Define keyboard keys for gallery navigation, closing and slideshow							<br>
+							<span style="color:#888">Object; Default value: <pre class="prettyprint"><span class="pun">{</span><span class="pln">
+	</span><span class="kwd">next</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+		</span><span class="lit">13</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">'left'</span><span class="pun">,</span><span class="pln"> </span><span class="com">// enter</span><span class="pln">
+		</span><span class="lit">34</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">'up'</span><span class="pun">,</span><span class="pln">   </span><span class="com">// page down</span><span class="pln">
+		</span><span class="lit">39</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">'left'</span><span class="pun">,</span><span class="pln"> </span><span class="com">// right arrow</span><span class="pln">
+		</span><span class="lit">40</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">'up'</span><span class="pln">    </span><span class="com">// down arrow</span><span class="pln">
+	</span><span class="pun">},</span><span class="pln">
+	prev </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+		</span><span class="lit">8</span><span class="pln">  </span><span class="pun">:</span><span class="pln"> </span><span class="str">'right'</span><span class="pun">,</span><span class="pln">  </span><span class="com">// backspace</span><span class="pln">
+		</span><span class="lit">33</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">'down'</span><span class="pun">,</span><span class="pln">   </span><span class="com">// page up</span><span class="pln">
+		</span><span class="lit">37</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">'right'</span><span class="pun">,</span><span class="pln">  </span><span class="com">// left arrow</span><span class="pln">
+		</span><span class="lit">38</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">'down'</span><span class="pln">    </span><span class="com">// up arrow</span><span class="pln">
+	</span><span class="pun">},</span><span class="pln">
+	close  </span><span class="pun">:</span><span class="pln"> </span><span class="pun">[</span><span class="lit">27</span><span class="pun">],</span><span class="pln"> </span><span class="com">// escape key</span><span class="pln">
+	play   </span><span class="pun">:</span><span class="pln"> </span><span class="pun">[</span><span class="lit">32</span><span class="pun">],</span><span class="pln"> </span><span class="com">// space - start/stop slideshow</span><span class="pln">
+	toggle </span><span class="pun">:</span><span class="pln"> </span><span class="pun">[</span><span class="lit">70</span><span class="pun">]</span><span class="pln">  </span><span class="com">// letter "f" - toggle fullscreen</span><span class="pln">
+</span><span class="pun">}</span></pre>							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							direction						</td>
+						<td>
+							Default navigation direction (for navigation arrows, too)							<br>
+							<span style="color:#888">Object; Default value: <pre class="prettyprint"><span class="pun">{</span><span class="pln">
+	</span><span class="pun">{</span><span class="pln">
+		</span><span class="kwd">next</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">'left'</span><span class="pun">,</span><span class="pln">
+		prev </span><span class="pun">:</span><span class="pln"> </span><span class="str">'right'</span><span class="pln">
+	</span><span class="pun">}</span><span class="pln">
+</span><span class="pun">}</span></pre>							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							scrollOutside						</td>
+						<td>
+							If true, the script will try to avoid horizontal scrolling for iframes and html content							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							index						</td>
+						<td>
+							Overrides group start index							<br>
+							<span style="color:#888">Integer; Default value: 0							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							type						</td>
+						<td>
+							Overrides type for content. Supported types are 'image', 'inline', 'ajax', 'iframe', 'swf' and 'html'							<br>
+							<span style="color:#888">String; Default value: null							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							href						</td>
+						<td>
+							Overrides content source link							<br>
+							<span style="color:#888">String; Default value: null							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							content						</td>
+						<td>
+							Overrides content to be displayed							<br>
+							<span style="color:#888">String; Default value: null							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							title						</td>
+						<td>
+							Overrides title content, accepts any HTML							<br>
+							<span style="color:#888">String; Default value: null							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							tpl						</td>
+						<td>
+							Object containing various templates							<br>
+							<span style="color:#888">Object; Default value: <pre class="prettyprint"><span class="pun">{</span><span class="pln">
+	wrap     </span><span class="pun">:</span><span class="pln"> </span><span class="str">'&lt;div class="fancybox-wrap" tabIndex="-1"&gt;&lt;div class="fancybox-skin"&gt;&lt;div class="fancybox-outer"&gt;&lt;div class="fancybox-inner"&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;'</span><span class="pun">,</span><span class="pln">
+	image    </span><span class="pun">:</span><span class="pln"> </span><span class="str">'&lt;img class="fancybox-image" src="{href}" alt="" /&gt;'</span><span class="pun">,</span><span class="pln">
+	iframe   </span><span class="pun">:</span><span class="pln"> </span><span class="str">'&lt;iframe id="fancybox-frame{rnd}" name="fancybox-frame{rnd}" class="fancybox-iframe" frameborder="0" vspace="0" hspace="0"'</span><span class="pln"> </span><span class="pun">+</span><span class="pln"> </span><span class="pun">(</span><span class="pln">$</span><span class="pun">.</span><span class="pln">browser</span><span class="pun">.</span><span class="pln">msie </span><span class="pun">?</span><span class="pln"> </span><span class="str">' allowtransparency="true"'</span><span class="pln"> </span><span class="pun">:</span><span class="pln"> </span><span class="str">''</span><span class="pun">)</span><span class="pln"> </span><span class="pun">+</span><span class="pln"> </span><span class="str">'&gt;&lt;/iframe&gt;'</span><span class="pun">,</span><span class="pln">
+	error    </span><span class="pun">:</span><span class="pln"> </span><span class="str">'&lt;p class="fancybox-error"&gt;The requested content cannot be loaded.&lt;br/&gt;Please try again later.&lt;/p&gt;'</span><span class="pun">,</span><span class="pln">
+	closeBtn </span><span class="pun">:</span><span class="pln"> </span><span class="str">'&lt;a title="Close" class="fancybox-item fancybox-close" href="javascript:;"&gt;&lt;/a&gt;'</span><span class="pun">,</span><span class="pln">
+	</span><span class="kwd">next</span><span class="pln">     </span><span class="pun">:</span><span class="pln"> </span><span class="str">'&lt;a title="Next" class="fancybox-nav fancybox-next" href="javascript:;"&gt;&lt;span&gt;&lt;/span&gt;&lt;/a&gt;'</span><span class="pun">,</span><span class="pln">
+	prev     </span><span class="pun">:</span><span class="pln"> </span><span class="str">'&lt;a title="Previous" class="fancybox-nav fancybox-prev" href="javascript:;"&gt;&lt;span&gt;&lt;/span&gt;&lt;/a&gt;'</span><span class="pln">
+</span><span class="pun">}</span></pre>							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							openEffect / closeEffect / nextEffect / prevEffect						</td>
+						<td>
+							Animation effect ('elastic', 'fade' or 'none') for each transition type							<br>
+							<span style="color:#888">String; Default value: 'fade', 'fade', 'elastic', 'elastic'							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							openSpeed / closeSpeed / nextSpeed / prevSpeed						</td>
+						<td>
+							The time it takes (in ms, or "slow", "normal", "fast") to complete transition							<br>
+							<span style="color:#888">Integer; Default value: 250							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							openEasing / closeEasing / nextEasing / prevEasing						</td>
+						<td>
+							Easing method for each transition type. You have numerous choices if easing plugin is included							<br>
+							<span style="color:#888">String; Default value: 'swing'							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							openOpacity / closeOpacity						</td>
+						<td>
+							If set to true, transparency is changed for elastic transitions							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							openMethod / closeMethod / nextMethod / prevMethod						</td>
+						<td>
+							Method from $.fancybox.transitions() that handles transition (you can add custom effects there)							<br>
+							<span style="color:#888">String; Default value: 'zoomIn' / 'zoomOut' / 'changeIn' / 'changeOut'							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							helpers						</td>
+						<td>
+							Object containing enabled helpers and options for each of them							<br>
+							<span style="color:#888">Object; Default value: <pre class="prettyprint"><span class="pun">{</span><span class="pln">
+	overlay </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+		closeClick </span><span class="pun">:</span><span class="pln"> </span><span class="kwd">true</span><span class="pun">,</span><span class="pln">  </span><span class="com">// if true, fancyBox will be closed when user clicks on the overlay</span><span class="pln">
+		speedOut   </span><span class="pun">:</span><span class="pln"> </span><span class="lit">200</span><span class="pun">,</span><span class="pln">   </span><span class="com">// duration of fadeOut animation</span><span class="pln">
+		showEarly  </span><span class="pun">:</span><span class="pln"> </span><span class="kwd">true</span><span class="pun">,</span><span class="pln">  </span><span class="com">// indicates if should be opened immediately or wait until the content is ready</span><span class="pln">
+		css        </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{},</span><span class="pln">    </span><span class="com">// custom CSS properties</span><span class="pln">
+		locked     </span><span class="pun">:</span><span class="pln"> </span><span class="kwd">true</span><span class="pln">   </span><span class="com">// if true, the content will be locked into overlay</span><span class="pln">
+	</span><span class="pun">},</span><span class="pln">
+	title </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+		type </span><span class="pun">:</span><span class="pln"> </span><span class="str">'float'</span><span class="pln"> </span><span class="com">// 'float', 'inside', 'outside' or 'over'</span><span class="pln">
+	</span><span class="pun">}</span><span class="pln">
+</span><span class="pun">}</span></pre>							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							live						</td>
+						<td>
+							If set to true, fancyBox uses "live" to assign click event. Set 
+to "false", if you need to apply only to current collection, e.g., if 
+using something like - <pre class="prettyprint"><span class="pln">$</span><span class="pun">(</span><span class="str">"#page"</span><span class="pun">).</span><span class="pln">children</span><span class="pun">().</span><span class="pln">filter</span><span class="pun">(</span><span class="str">'a'</span><span class="pun">).</span><span class="pln">eq</span><span class="pun">(</span><span class="lit">0</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">();</span></pre>							<br>
+							<span style="color:#888">Boolean; Default value: true							</span>
+						</td>
+					</tr>
+										<tr>
+						<td>
+							parent						</td>
+						<td>
+							Parent element of the container. This is useful for ASP.NET where the top element is "form" - <pre class="prettyprint"><span class="pln">$</span><span class="pun">(</span><span class="str">".fancybox"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+    parent</span><span class="pun">:</span><span class="pln"> </span><span class="str">"form:first"</span><span class="pln"> </span><span class="com">// jQuery selector</span><span class="pln">
+</span><span class="pun">});</span></pre>							<br>
+							<span style="color:#888">String; Default value: body							</span>
+						</td>
+					</tr>
+									</tbody>
+				</table>
+			</div>
+
+			<div style="display: block;">
+				<p>
+					The plugin comes with a number of public functions to help you utilize the plugin in a number of different scenarios.
+					Each of these functions can be called as a property of the <code>$.fancybox</code> object. <br>
+					To use from inside the iframe - <code>&lt;a href="javascript:parent.$.fancybox.close();"&gt;Close me&lt;/a&gt;</code>
+				</p>
+
+				<table class="options" cellpadding="0" cellspacing="0">
+				<colgroup>
+					<col width="140">
+					<col width="">
+				</colgroup>
+				<tbody>
+					<tr>
+						<th>Name</th>
+						<th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							open
+						</td>
+						<td>
+							<p><code>$.fancybox.open( [group], [options] )</code></p>
+							Launch fancyBox, the same as <code>$.fancybox([group], [options])</code> <br>
+							First parameter can be in various types, examples: <br>
+							<code>$.fancybox([
+	{href : 'img1.jpg', title : 'Title'},
+	{href : 'img2.jpg', title : 'Title'}
+]);</code> - array containing objects <br>
+							<code>$.fancybox( {href : 'image.jpg', title : 'Lorem lipsum'} );</code> - single object <br>
+							<code>$.fancybox( ['image.jpg', 'image.jpg'] );</code> - array containing links as strings<br>
+							<code>$.fancybox( 'image.jpg' );</code> - string as source link <br>
+							<code>$.fancybox( [jQuery object] );</code> <br>
+							<code>$.fancybox( '&lt;h1&gt;Lorem lipsum&lt;/h1&gt;' );</code>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							cancel
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.cancel()</code>
+							</p>
+
+							Cancel loading image or abort ajax request
+						</td>
+					</tr>
+					<tr>
+						<td>
+							close
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.close( [force] )</code>
+							</p>
+
+							If fancyBox is fully opened (open animation has ended) then start
+ closing animation. If not or closing is forced (e.g. called like <code>$.fancybox.close( true )</code>) than fancyBox is removed immediatly
+						</td>
+					</tr>
+					<tr>
+						<td>
+							play
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.play()</code>
+							</p>
+
+							Start or stop (if already running) slideshow
+						</td>
+					</tr>
+					<tr>
+						<td>
+							next
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.next()</code>
+							</p>
+
+							Navigate to next gallery item
+						</td>
+					</tr>
+					<tr>
+						<td>
+							prev
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.prev()</code>
+							</p>
+
+							Navigate to previous gallery item
+						</td>
+					</tr>
+					<tr>
+						<td>
+							jumpto
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.jumpto( [index] )</code>
+							</p>
+
+							Navigate to gallery item by index. Item counting starts from 0, e.g. <code>$.fancybox.jumpto( 0 );</code> will open the first, e.g. <code>$.fancybox.jumpto( 1 );</code> will second, etc
+						</td>
+					</tr>
+					<tr>
+						<td>
+							reposition
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.reposition()</code>
+							</p>
+							Will center fancyBox inside viewport and toggle position type to fixed or absolute if needed
+						</td>
+					</tr>
+					<tr>
+						<td>
+							update
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.update()</code>
+							</p>
+							Auto-sizes fancyBox height to match height of content
+						</td>
+					</tr>
+					<tr>
+						<td>
+							toggle
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.toggle()</code>
+							</p>
+							If content is resized to fit inside viewport than it will be expanded to full size (and vice verse)
+						</td>
+					</tr>
+					<tr>
+						<td>
+							showLoading
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.showLoading()</code>
+							</p>
+
+							Shows loading animation
+						</td>
+					</tr>
+					<tr>
+						<td>
+							hideLoading
+						</td>
+						<td>
+							<p>
+								<code>$.fancybox.hideLoading()</code>
+							</p>
+
+							Hides loading animation
+						</td>
+					</tr>
+				</tbody>
+				</table>
+			</div>
+			<div style="display: none;">
+				<p>
+					Also available are event driven callback methods, allowing you to extend functionality:
+				</p>
+
+				<table class="options" cellpadding="0" cellspacing="0">
+				<colgroup>
+					<col width="140">
+					<col width="">
+				</colgroup>
+				<tbody>
+					<tr>
+						<th>Name</th>
+						<th>Description</th>
+					</tr>
+					<tr>
+						<td>
+							onCancel
+						</td>
+						<td>
+							Called after user triggers canceling.
+							<br>
+							Note: If false is returned by the callback, the canceling will be halted
+						</td>
+					</tr>
+					<tr>
+						<td>
+							beforeLoad
+						</td>
+						<td>
+							Called before starting to load content.
+							<br>
+							Note: If false is returned by the callback, the loading will be halted
+						</td>
+					</tr>
+					<tr>
+						<td>
+							afterLoad
+						</td>
+						<td>
+							Called after content is loaded. Receives two arguments - upcoming and current object - <a href="http://jsfiddle.net/xW5gs/" target="_blank">http://jsfiddle.net/xW5gs/</a>
+							<br>
+							Note: If false is returned by the callback, the content will not be shown.
+						</td>
+					</tr>
+					<tr>
+						<td>
+							beforeShow
+						</td>
+						<td>
+							Called right before open animations has started
+						</td>
+					</tr>
+					<tr>
+						<td>
+							afterShow
+						</td>
+						<td>
+							Called after open animations has ended
+						</td>
+					</tr>
+					<tr>
+						<td>
+							beforeClose
+						</td>
+						<td>
+							Called right after closing has been triggered but not yet started
+							<br>
+							Note: If false is returned by the callback, the closing  will be halted.
+						</td>
+					</tr>
+					<tr>
+						<td>
+							afterClose
+						</td>
+						<td>
+							Called after closing animation has ended
+						</td>
+					</tr>
+					<tr>
+						<td>
+							onUpdate
+						</td>
+						<td>
+							Called after window resize, scroll or orientation change events are triggered
+						</td>
+					</tr>
+					<tr>
+						<td>
+							onPlayStart
+						</td>
+						<td>
+							Called after slideshdow has started
+						</td>
+					</tr>
+					<tr>
+						<td>
+							onPlayEnd
+						</td>
+						<td>
+							Called after slideshdow has stoped
+						</td>
+					</tr>
+				</tbody>
+				</table>
+
+			</div>
+		<pre style="display: none;" class="prettyprint"></pre></div>
+
+	</div>
+
+	<div id="helpers" class="block">
+		<h3>Helpers</h3>
+
+		<p>
+			Helpers provide a simple mechanism to extend the capabilities of 
+fancyBox. There are two built-in helpers - 'overlay' and 'title'. You 
+can disable them, set custom options or enable other helpers. Examples:
+		</p>
+
+<pre class="prettyprint"><span class="com">//Disable title helper</span><span class="pln">
+$</span><span class="pun">(</span><span class="str">".fancybox"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+    helpers</span><span class="pun">:</span><span class="pln">  </span><span class="pun">{</span><span class="pln">
+        title</span><span class="pun">:</span><span class="pln">  </span><span class="kwd">null</span><span class="pln">
+    </span><span class="pun">}</span><span class="pln">
+</span><span class="pun">});</span><span class="pln">
+
+</span><span class="com">//Disable overlay helper</span><span class="pln">
+$</span><span class="pun">(</span><span class="str">".fancybox"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+    helpers</span><span class="pun">:</span><span class="pln">  </span><span class="pun">{</span><span class="pln">
+        overlay </span><span class="pun">:</span><span class="pln"> </span><span class="kwd">null</span><span class="pln">
+    </span><span class="pun">}</span><span class="pln">
+</span><span class="pun">});</span><span class="pln">
+
+</span><span class="com">//Change title position; show overlay after content has loaded</span><span class="pln">
+$</span><span class="pun">(</span><span class="str">".fancybox"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+    helpers</span><span class="pun">:</span><span class="pln">  </span><span class="pun">{</span><span class="pln">
+        title </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+            type </span><span class="pun">:</span><span class="pln"> </span><span class="str">'inside'</span><span class="pln">
+        </span><span class="pun">},</span><span class="pln">
+        overlay </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+            showEarly </span><span class="pun">:</span><span class="pln"> </span><span class="kwd">false</span><span class="pln">
+        </span><span class="pun">}</span><span class="pln">
+    </span><span class="pun">}</span><span class="pln">
+</span><span class="pun">});</span><span class="pln">
+
+</span><span class="com">//Enable thumbnail helper and set custom options</span><span class="pln">
+$</span><span class="pun">(</span><span class="str">".fancybox"</span><span class="pun">).</span><span class="pln">fancybox</span><span class="pun">({</span><span class="pln">
+    helpers</span><span class="pun">:</span><span class="pln">  </span><span class="pun">{</span><span class="pln">
+        thumbs </span><span class="pun">:</span><span class="pln"> </span><span class="pun">{</span><span class="pln">
+            width</span><span class="pun">:</span><span class="pln"> </span><span class="lit">50</span><span class="pun">,</span><span class="pln">
+            height</span><span class="pun">:</span><span class="pln"> </span><span class="lit">50</span><span class="pln">
+        </span><span class="pun">}</span><span class="pln">
+    </span><span class="pun">}</span><span class="pln">
+</span><span class="pun">});</span><span class="pln">
+
+</span></pre>
+
+	<h3>Options for thumbnail helper</h3>
+		<table class="options" cellpadding="0" cellspacing="0">
+		<colgroup>
+			<col width="140">
+			<col width="">
+		</colgroup>
+		<tbody>
+			<tr>
+				<th>Name</th>
+				<th>Description</th>
+			</tr>
+						<tr>
+				<td>
+					width				</td>
+				<td>
+					Thumbnail width				</td>
+			</tr>
+						<tr>
+				<td>
+					height				</td>
+				<td>
+					Thumbnail height				</td>
+			</tr>
+						<tr>
+				<td>
+					source				</td>
+				<td>
+					Function to obtain the URL of the thumbnail image. By default, it 
+uses the first image inside anchor or loads destination url instead. <br><br><span style="color:#888">Examples: <a target="_blank" href="http://jsfiddle.net/PFVxK/">http://jsfiddle.net/PFVxK/</a>, <a target="_blank" href="http://jsfiddle.net/2k8EP/">http://jsfiddle.net/2k8EP/</a></span>				</td>
+			</tr>
+						<tr>
+				<td>
+					position				</td>
+				<td>
+					'top' or 'bottom'				</td>
+			</tr>
+					</tbody>
+		</table>
+
+		<h3>Options for button helper</h3>
+		<table class="options" cellpadding="0" cellspacing="0">
+		<colgroup>
+			<col width="140">
+			<col width="">
+		</colgroup>
+		<tbody>
+			<tr>
+				<th>Name</th>
+				<th>Description</th>
+			</tr>
+						<tr>
+				<td>
+					tpl				</td>
+				<td>
+					HTML template				</td>
+			</tr>
+						<tr>
+				<td>
+					position				</td>
+				<td>
+					'top' or 'bottom'				</td>
+			</tr>
+					</tbody>
+		</table>
+
+	</div>
+
+	<div id="support" class="block">
+		<h2>Support</h2>
+
+		<ul class="tabs">
+			<li class="active"><a href="javascript:;" class="tab-output">Help</a></li>
+			<li><a href="javascript:;">FAQ</a></li>
+		</ul>
+
+		<div class="tab_container">
+			<div>
+				<p>
+					You can <a href="http://stackoverflow.com/questions/ask?tags=jQuery,fancyBox" target="_blank">ask a questions</a>
+ using the StackOverflow site where you are most likely to get answer 
+quickly as many Javascript experts spend time on the site. Make sure you
+ add the tags "jquery" and "fancybox" when posting.
+				</p>
+				<p>
+					If you run into an issue and need to report a bug, please create an issue on <a href="https://github.com/fancyapps/fancyBox/issues">GitHub issues</a> and I will investigate.
+				</p>
+				<p>
+					Follow <a target="_blank" href="http://twitter.com/thefancyapps">@thefancyapps</a> for the latest updates.
+				</p>
+			</div>
+			<div style="display: none;">
+				<p class="h">1. It doesn't work at all. The image opens up in a new page. What's wrong?</p>
+				<p>Check if you have included all files and set up FancyBox correctly</p>
+
+
+				<p class="h">2. Can a FancyBox appear over the top of my Flash content?</p>
+				<p>Yes, read <a href="http://www.communitymx.com/content/article.cfm?cid=E5141">this explanation</a></p>
+
+
+				<p class="h">3. Can the script be called from an iframe?</p>
+				<p>
+					If all necessary files are included in the parent window, then you can, like:<br>
+					<em>&lt;a href="javascript:parent.$.fancybox.open({href : 'myurl'});"&gt;Open something&lt;/a&gt;</em>
+				</p>
+
+
+				<p class="h">4. How can I close FancyBox from other element? ?</p>
+				<p>
+					Just call <em>$.fancybox.close()</em> on your onClick event
+				</p>
+
+
+				<p class="h">5. I`m using custom urls for images (for example, <em>index.php?action=image&amp;id=123</em>) and FancyBox shows source of image. Why?</p>
+				<p>
+					FancyBox gueses content type from url but sometimes it can be wrong. The solution is to force your type, like so - <em>$(".selector").fancybox({'type' : 'image'});</em>
+				</p>
+
+				<p class="h">6. FancyBox is not working on all images, only first one opens. What's wrong?</p>
+				<p>
+					If you are using ID as selector <em>$("#selector").fancybox();</em> then switch to classes - <em>$(".selector").fancybox();</em>
+				</p>
+			</div>
+		<pre style="display: none;" class="prettyprint"></pre></div>
+	</div>
+
+	<div class="footer">
+		<p>
+			<a href="javascript:;" onclick="javascript:$('html, body').animate({ scrollTop: 0 }, 0);return false;">Back to the top</a>
+		</p>
+	</div>
+
+
+	</div>
+
+
+<iframe tabindex="-1" style="width: 1px; height: 1px; position: absolute; top: -100px;" src="demo2_files/postmessageRelay.htm" id="oauth2relay565236367" name="oauth2relay565236367"></iframe></body><iframe src="" style="display: none;"></iframe></html>

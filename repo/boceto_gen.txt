@@ -1,0 +1,37 @@
+
+
+regentis.app/trescorazonesdefe
+regentis.app/barsi
+regentis.app/puntomercado
+
+
+http://regentis.app/trescorazonesdefe/privacidad
+
+
+tramitar dni nuevo
+
+- mi app barsi tiene las siguientes caracteristicas:  tab 1: catalogo de chicas que se ofrecen para citas
+tab2: mensajeria y chats y tab3: tiene el mapa de las ubicaciones mas comunes de las chicas (tabla locales)
+la idea es que las chicas se inscribir y ponen lo que pueden ofrecer a cambio de regalos que son de 50, 80, 100 y 150 soles
+de alli ponen la ubicacion en la que se encuentran ahora para q puedan citarlas al momento y no tener q ir al lugar
+para ello hay una tabla de lugares comunes que las chicas ya conocen, los chicos tambien ya saben entonces seria mejor que en el tab3
+estuviera el lugar y luego cuando se hace click en el lugar muestre un modal con las chicas que actualmente estan alli para q puedan chatear
+derrepente hay chicos q ya estan alli:
+el usuario hace lo siguientes pasos:
+1. elige a la chica o puede elegir desde el mapa (todas las q estan online  y disponible)
+2. luego elige el regalo que desea darle  la chica
+3. si la chica acepta pone aceptar y le dice la hora si es ahora o en unos minutos max 30minutos, puede yapear
+antes si la conoce o yapea al momento de iniciar el encuentro; el regalo tiene condiciones x ejemplo el regalo
+de 50 tiene una duracion y el tipo de cariño
+
+pasos de la chica
+1. se presenta al lugar, puede ir de compras o algo y poner que esta activo
+2. espera a q el usuario le contacte y llegan a un acuerdo
+3. apenas llega el cliente, la chica solicita el regalo y comienza la cita
+
+
+
+
+
+
+
