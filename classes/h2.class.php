@@ -169,7 +169,7 @@ EOF;
 
 */
 
-public static function todohost($apphost, $varhost, $apihost, $adicional = null) {
+public static function todohost($apphost, $varhost, $apihost = null, $adicional = null) {
       com("TODOHOST");
 $aplicar = <<<EOF
 <script type="text/javascript">
@@ -178,6 +178,22 @@ $aplicar = <<<EOF
    let apihost = '$apihost';
    let adminhost = varhost + '/public/admin/';
    $adicional
+   let dt_language = {
+    search: "Buscar:",
+    lengthMenu: "Mostrar _MENU_ registros",
+    info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+    infoEmpty: "Mostrando 0 a 0 de 0 registros",
+    infoFiltered: "(filtrado de _MAX_ registros)",
+    loadingRecords: "Cargando...",
+    zeroRecords: "No se encontraron resultados",
+    emptyTable: "No hay datos disponibles",
+    paginate: {
+      first: "Primero",
+      last: "Último",
+      next: "Siguiente",
+      previous: "Anterior"
+    }
+  }
 </script>
 EOF;
     echo $aplicar;

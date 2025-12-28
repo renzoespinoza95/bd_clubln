@@ -13,6 +13,7 @@ require_once VARPATH."/inc/config.inc.php";
 require_once VARPATH."/classes/util.class.php";
 require_once VARPATH."/classes/h2.class.php";
 require_once VARPATH."/classes/Meekrodb2.class.php";
+require_once VARPATH."/classes/JWT.class.php";
 require_once VARPATH."/classes/paginator.class.php";
 require_once VARPATH."/classes/amarilis.class.php";
 require_once VARPATH."/classes/Mustache.class.php";
@@ -29,7 +30,7 @@ DB::$user = $username;
 DB::$password = $password;
 DB::$dbName = $dbname;
 DB::$host = $host;
-DB::query("SET NAMES 'utf8'");
+DB::query("SET NAMES utf8mb4");
 
 $path_public = VARPATH . "/public";
 
@@ -79,6 +80,20 @@ if($sesion_admin_administrador_id) {
     $info_admin = login_admin::informacion_administrador_por_id(util::decrypt($sesion_admin_administrador_id,$valor_key ));
 
 } 
+
+//=== WKHTML ===
+require_once VARPATH."/classes/WkHtmlToPdf.php";
+
+if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    //echo 'This is a server using Windows!';
+    $options['bin'] = 'C:\wkhtmltopdf\bin\wkhtmltopdf.exe';
+} else {
+    //echo 'This is a server not using Windows!';
+    $options['bin'] = '/usr/bin/wkhtmltopdf';
+}
+
+$wkh_pdf = new WkHtmlToPdf($options);
+
 
 $administrador_actual = login_admin::informacion_administrador_por_id($sesion_admin_administrador_id);
 

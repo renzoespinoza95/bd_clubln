@@ -4,60 +4,56 @@ class amarilis {
 
 //ej: $fecha = util::fecha_random('02/03/2022', '02/11/2022');
 public static function fecha_random($fecha_inicio, $fecha_final) {
-    // Separar día, mes y año de las fechas de entrada (dd/mm/yyyy)
-    list($dia_i, $mes_i, $anio_i) = explode('/', $fecha_inicio);
-    list($dia_f, $mes_f, $anio_f) = explode('/', $fecha_final);
+    // Explode original
+    list($p1_i, $p2_i, $anio_i) = explode('/', $fecha_inicio);
+    list($p1_f, $p2_f, $anio_f) = explode('/', $fecha_final);
 
-    // Convertir a enteros
+    // Detectar formato según segunda parte > 12
+    if ((int)$p2_i > 12) {
+        // era MM/DD/YYYY
+        $mes_i = (int)$p1_i;
+        $dia_i = (int)$p2_i;
+    } else {
+        // asumimos DD/MM/YYYY
+        $dia_i = (int)$p1_i;
+        $mes_i = (int)$p2_i;
+    }
+    if ((int)$p2_f > 12) {
+        $mes_f = (int)$p1_f;
+        $dia_f = (int)$p2_f;
+    } else {
+        $dia_f = (int)$p1_f;
+        $mes_f = (int)$p2_f;
+    }
+
+    // Años
     $anio_i = (int)$anio_i;
     $anio_f = (int)$anio_f;
-    $mes_i = (int)$mes_i;
-    $mes_f = (int)$mes_f;
-    $dia_i = (int)$dia_i;
-    $dia_f = (int)$dia_f;
 
-    // Generar un año aleatorio dentro del rango
+    // Año aleatorio
     $anio_random = rand($anio_i, $anio_f);
 
-    // Definir los meses disponibles según el año generado
-    if ($anio_random == $anio_i) {
-        $mes_min = $mes_i;
-    } else {
-        $mes_min = 1;
-    }
-
-    if ($anio_random == $anio_f) {
-        $mes_max = $mes_f;
-    } else {
-        $mes_max = 12;
-    }
-
-    // Generar un mes aleatorio dentro del rango permitido
+    // Rango de meses
+    $mes_min = ($anio_random === $anio_i) ? $mes_i : 1;
+    $mes_max = ($anio_random === $anio_f) ? $mes_f : 12;
     $mes_random = rand($mes_min, $mes_max);
 
-    // Definir los días disponibles según el mes y el año
-    if ($anio_random == $anio_i && $mes_random == $mes_i) {
-        $dia_min = $dia_i;
-    } else {
-        $dia_min = 1;
-    }
-
-    if ($anio_random == $anio_f && $mes_random == $mes_f) {
-        $dia_max = $dia_f;
-    } else {
-        $dia_max = cal_days_in_month(CAL_GREGORIAN, $mes_random, $anio_random);
-    }
-
-    // Generar un día aleatorio dentro del rango permitido
+    // Rango de días
+    $dia_min = ($anio_random === $anio_i && $mes_random === $mes_i)
+        ? $dia_i : 1;
+    $dia_max = ($anio_random === $anio_f && $mes_random === $mes_f)
+        ? $dia_f
+        : cal_days_in_month(CAL_GREGORIAN, $mes_random, $anio_random);
     $dia_random = rand($dia_min, $dia_max);
 
-    // Asegurar que los valores tengan 2 dígitos cuando corresponda
-    $mes_random = str_pad($mes_random, 2, "0", STR_PAD_LEFT);
-    $dia_random = str_pad($dia_random, 2, "0", STR_PAD_LEFT);
+    // Formatear
+    $mes_random = str_pad($mes_random, 2, '0', STR_PAD_LEFT);
+    $dia_random = str_pad($dia_random, 2, '0', STR_PAD_LEFT);
 
-    // Formar la fecha final en formato YYYY-MM-DD
-    return $anio_random . '-' . $mes_random . '-' . $dia_random;
+    return "{$anio_random}-{$mes_random}-{$dia_random}";
 }
+
+
 
 public static function hora_random() {
     // Convert to timetamps
@@ -254,6 +250,63 @@ public static function si_no() {
     }
 
     return $res;
+}
+
+/**
+ * Genera una coordenada aleatoria a una distancia máxima dada (en km)
+ * respecto a una lat/lng de referencia.
+ *
+ * @param float $lat0   Latitud de referencia (grados)
+ * @param float $lng0   Longitud de referencia (grados)
+ * @param float $radius Radio máximo en kilómetros (por defecto 1 km)
+ * @return array ['map_lat' => float, 'map_lng' => float]
+ */
+public static function random_maps(
+    float $lat0  = -12.050783175064453,
+    float $lng0  = -77.03881875997209,
+    float $radius = 1.0
+): array {
+
+    // Radio medio terrestre en km
+    $earthRadius = 6371.0;
+
+    // Distancia aleatoria (0 – $r) y rumbo aleatorio (0 – 2π)
+    $distance = $radius * (mt_rand() / mt_getrandmax());
+    $bearing  = 2 * M_PI * (mt_rand() / mt_getrandmax());
+
+    // Conversión a radianes
+    $lat0Rad = deg2rad($lat0);
+    $lng0Rad = deg2rad($lng0);
+    $angularDistance = $distance / $earthRadius;
+
+    // Fórmulas de desplazamiento sobre esfera
+    $latRad = asin(
+        sin($lat0Rad) * cos($angularDistance) +
+        cos($lat0Rad) * sin($angularDistance) * cos($bearing)
+    );
+
+    $lngRad = $lng0Rad + atan2(
+        sin($bearing) * sin($angularDistance) * cos($lat0Rad),
+        cos($angularDistance) - sin($lat0Rad) * sin($latRad)
+    );
+
+    // Normalizar longitud (–π a π)
+    $lngRad = fmod($lngRad + M_PI, 2 * M_PI) - M_PI;
+
+    // Convertir de nuevo a grados y devolver array
+    return [
+        'map_lat' => rad2deg($latRad),
+        'map_lng' => rad2deg($lngRad),
+    ];
+}
+
+
+public static function dos_numeros(mixed $numero1, mixed $numero2): mixed {
+    // Array con las dos opciones
+    $opciones = [$numero1, $numero2];
+    // Elige un índice aleatorio (0 o 1)
+    $indice  = random_int(0, 1);
+    return $opciones[$indice];
 }
 
 //+++++++++++++++

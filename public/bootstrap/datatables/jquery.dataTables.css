@@ -59,7 +59,7 @@ table.dataTable thead .sorting_desc_disabled {
 }
 
 table.dataTable tbody tr {
-    background-color: #494B4D;
+    background-color: #F2DCCE;
 }
 
 table.dataTable tbody tr.selected {

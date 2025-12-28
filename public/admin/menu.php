@@ -10,7 +10,7 @@ $tipo_admin = (int)$info_admin['tipo_administrador_id'];
       <!-- Botón lupa (a la izquierda del dropdown de usuario) -->
       <div class="btn-group pull-right" style="margin-right:8px;">
         <a href="#modalBusquedaMenu" class="btn" data-toggle="modal" title="Buscar en menús">
-          <i class="icon-list-alt icon-white"></i>
+          <i class="icon-list-alt icon-black"></i>
         </a>
       </div>
 
@@ -31,7 +31,7 @@ $tipo_admin = (int)$info_admin['tipo_administrador_id'];
     <ul class="nav">
         <?php 
         // Obtener los menús con sus submenús
-        $menus = menu::lista_menu_con_submenus_por_tipo_administrador_id(
+        $menus = lista_menu_con_submenus_por_tipo_administrador_id(
             $info_admin['tipo_administrador_id']); 
         
         foreach ($menus as $menu) { ?>

@@ -57,5 +57,13 @@
     });
   });
 </script>
+<script type="text/javascript">
+document.getElementById = new Proxy(document.getElementById, {
+  apply(target, thisArg, args) {
+    if (args[0] === "") return null;
+    return Reflect.apply(target, thisArg, args);
+  }
+});  
+</script>
 
   

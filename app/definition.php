@@ -37,5 +37,6 @@
   global $username;
   global $password;
   global $dbname;
+  global $secreto_jwt;
 
   global $file_log;

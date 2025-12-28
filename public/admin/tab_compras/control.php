@@ -1,0 +1,418 @@
+<?php
+// este es mi backend usando php8.2, flightphp y meekrodb2
+/* ============================================
+ *  VISTA PRINCIPAL /compras
+ * ============================================ */
+Flight::route('GET /compras', function () {
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    global $path_public;
+    include $path_public . '/admin/tab_compras/inicio.php';
+});
+
+
+/* ============================================
+ *  FUNCIÓN: registrar movimiento de inventario
+ * ============================================ */
+function registrar_movimiento_inventario(
+    $producto_id,
+    $tipo,
+    $origen,
+    $cantidad,
+    $precio_unitario,
+    $referencia_id,
+    $referencia_tabla
+) {
+    // obtener stock actual
+    $inv = DB::queryFirstRow("SELECT stock_actual FROM inventario WHERE producto_id=%i", $producto_id);
+    $stock_actual = $inv ? intval($inv['stock_actual']) : 0;
+
+    // calcular nuevo stock
+    if ($tipo === 'ENTRADA') {
+        $nuevo_stock = $stock_actual + $cantidad;
+    } elseif ($tipo === 'SALIDA') {
+        $nuevo_stock = $stock_actual - $cantidad;
+    } else {
+        $nuevo_stock = $stock_actual;
+    }
+
+    // guardar movimiento
+    DB::insert('inventario_movimiento', [
+        'producto_id'       => $producto_id,
+        'tipo'              => $tipo,
+        'origen'            => $origen,
+        'cantidad'          => $cantidad,
+        'precio_unitario'   => $precio_unitario,
+        'referencia_id'     => $referencia_id,
+        'referencia_tabla'  => $referencia_tabla,
+        'stock_resultante'  => $nuevo_stock,
+        'fecha'             => date('Y-m-d H:i:s')
+    ]);
+
+    // actualizar inventario
+    DB::query(
+        "UPDATE inventario SET stock_actual=%i WHERE producto_id=%i",
+        $nuevo_stock,
+        $producto_id
+    );
+}
+
+
+/* ============================================
+ *  GET /proveedor/listar
+ * ============================================ */
+Flight::route('GET /proveedor/listar', function () {
+    $rows = DB::query("SELECT * FROM proveedor WHERE is_activo=1 ORDER BY nombre ASC");
+    Flight::json($rows);
+});
+
+
+/* ============================================
+ *  GET /producto/listar (solo para compras)
+ * ============================================ */
+Flight::route('GET /producto/listar', function () {
+    $sql = "SELECT id, name, price, stock FROM product ORDER BY name ASC";
+    Flight::json(DB::query($sql));
+});
+
+
+/* ============================================
+ *  GET /compra/listar
+ * ============================================ */
+Flight::route('GET /compra/listar', function () {
+
+    $sql = "
+        SELECT 
+            c.compra_id,
+            p.nombre AS razon_social,
+            c.fecha_creacion AS fecha_compra,
+            c.total_compra AS total,
+            c.observaciones
+        FROM compra c
+        LEFT JOIN proveedor p ON p.proveedor_id = c.proveedor_id
+        ORDER BY c.compra_id DESC
+    ";
+
+    Flight::json(DB::query($sql));
+});
+
+
+
+/* ============================================
+ *  POST /compra/crear
+ * ============================================
+ *  BODY:
+ *  {
+ *    proveedor_id: 1,
+ *    fecha_creacion: "2025-01-01 10:00",
+ *    observaciones: "...",
+ *    items: [
+ *      { producto_id: 2, cantidad:10, precio_unitario: 5 }
+ *    ]
+ *  }
+ ============================================ */
+Flight::route('POST /compra/crear', function () {
+
+    $data = Flight::request()->data->getData();
+
+    $proveedor_id  = intval($data['proveedor_id']);
+    if (!empty($data['fecha_compra'])) {
+    $fecha = date('Y-m-d H:i:s', strtotime($data['fecha_compra']));
+    } else {
+        $fecha = date('Y-m-d H:i:s');
+    }
+
+    $items         = $data['items'] ?? [];
+    $observaciones = $data['observaciones'] ?? '';
+
+    if (empty($items)) {
+        Flight::json(['status'=>'error','msg'=>'No hay items'], 400);
+        return;
+    }
+
+    DB::startTransaction();
+    try {
+
+        DB::insert('compra', [
+            'proveedor_id'   => $proveedor_id,
+            'fecha_creacion' => $fecha,
+            'observaciones'  => $observaciones,
+            'total_compra'   => 0
+        ]);
+
+        $compra_id = DB::insertId();
+        $total = 0;
+
+        foreach ($items as $it) {
+            $producto_id = intval($it['product_id']);
+            $cantidad    = intval($it['cantidad']);
+            $costo       = floatval($it['costo_unitario']);
+            $subtotal    = $cantidad * $costo;
+            $total      += $subtotal;
+
+            DB::insert('compra_detalle', [
+                'compra_id'      => $compra_id,
+                'producto_id'    => $producto_id,
+                'cantidad'       => $cantidad,
+                'precio_unitario'=> $costo,
+                'subtotal'       => $subtotal
+            ]);
+
+            registrar_movimiento_inventario(
+                $producto_id,
+                'ENTRADA',
+                'COMPRA',
+                $cantidad,
+                $costo,
+                $compra_id,
+                'compra'
+            );
+        }
+
+        DB::update('compra', ['total_compra' => $total], "compra_id=%i", $compra_id);
+
+        DB::commit();
+        Flight::json(['status'=>'ok','compra_id'=>$compra_id]);
+
+    } catch (Exception $e) {
+        DB::rollback();
+        Flight::json(['status'=>'error','msg'=>$e->getMessage()], 500);
+    }
+});
+
+
+/* ============================================
+ *  GET /compra/detalle/@id
+ * ============================================ */
+Flight::route('GET /compra/detalle/@id', function ($compra_id) {
+
+    $cab = DB::queryFirstRow("
+        SELECT 
+            c.compra_id,
+            p.nombre AS razon_social,
+            c.fecha_creacion AS fecha_compra,
+            c.total_compra AS total,
+            c.observaciones
+        FROM compra c
+        LEFT JOIN proveedor p ON p.proveedor_id=c.proveedor_id
+        WHERE c.compra_id=%i
+    ", $compra_id);
+
+    $det = DB::query("
+        SELECT 
+            d.compra_detalle_id,
+            d.cantidad,
+            d.precio_unitario AS costo_unitario,
+            d.subtotal,
+            pr.name AS producto
+        FROM compra_detalle d
+        INNER JOIN product pr ON pr.id = d.producto_id
+        WHERE d.compra_id=%i
+    ", $compra_id);
+
+    Flight::json(['cabecera'=>$cab,'detalle'=>$det]);
+});
+
+
+
+/* ============================================
+ *  POST /compra/editar
+ * ============================================ */
+Flight::route('POST /compra/editar', function () {
+
+    $data = Flight::request()->data->getData();
+
+    DB::update('compra', [
+        'observaciones' => $data['observaciones']
+    ], "compra_id=%i", intval($data['compra_id']));
+
+    Flight::json(['status'=>'ok']);
+});
+
+
+/* ============================================
+ *  POST /compra/eliminar
+ * ============================================ */
+Flight::route('POST /compra/eliminar', function () {
+
+    $compra_id = intval(Flight::request()->data->compra_id);
+
+    DB::startTransaction();
+    try {
+
+        // obtener detalle
+        $det = DB::query("SELECT * FROM compra_detalle WHERE compra_id=%i", $compra_id);
+
+        foreach ($det as $it) {
+            registrar_movimiento_inventario(
+                $it['producto_id'],
+                'SALIDA',
+                'DEVOLUCION',
+                $it['cantidad'],
+                $it['precio_unitario'],
+                $compra_id,
+                'compra'
+            );
+        }
+
+        DB::delete('compra_detalle', "compra_id=%i", $compra_id);
+        DB::delete('compra', "compra_id=%i", $compra_id);
+
+        DB::commit();
+        Flight::json(['status'=>'ok']);
+
+    } catch (Exception $e) {
+        DB::rollback();
+        Flight::json(['status'=>'error','msg'=>$e->getMessage()], 500);
+    }
+});
+
+
+/* ============================================
+ *  GET /inventario/movimientos/@producto_id
+ * ============================================ */
+Flight::route('GET /inventario/movimientos/@producto_id', function ($producto_id) {
+
+    $rows = DB::query("
+        SELECT * 
+        FROM inventario_movimiento
+        WHERE producto_id=%i
+        ORDER BY fecha DESC
+    ", $producto_id);
+
+    Flight::json($rows);
+});
+
+Flight::route('GET /imp_compras_fecha', function(){
+
+  include DEFINITION;
+  login_admin::autentificar_administrador();
+
+  $ini = Flight::request()->query['ini'];
+  $fin = Flight::request()->query['fin'];
+
+  $fini = util::fecha_barra($ini);
+  $ffin = util::fecha_barra($fin);
+
+  $rows = DB::query("
+    SELECT 
+      c.compra_id,
+      p.nombre AS proveedor,
+      DATE_FORMAT(c.fecha_creacion, '%d/%m/%Y %H:%i') AS fecha_creacion,
+      c.total_compra
+    FROM compra c
+    LEFT JOIN proveedor p ON p.proveedor_id=c.proveedor_id
+    WHERE DATE(c.fecha_creacion) BETWEEN %s AND %s
+    ORDER BY c.fecha_creacion
+  ", $ini, $fin);
+
+  $template_data['informacion'] = [[
+    'razon_social'=>'CLUB SOCIAL LIMA NORTE S.A.C',
+    'ruc'=>'20202020',
+    'titulo_reporte'=>'REPORTE DE COMPRAS DEL ' . $fini . " AL " . $ffin,
+    'fecha'=>date('d/m/Y H:i'),
+    'total_items'=>count($rows)
+  ]];
+
+  $i=1;
+  foreach($rows as &$r){ $r['indice']=$i++; }
+
+  $template_data['listado']=$rows;
+
+  $html = (new Mustache)->render(
+    file_get_contents(VARPATH.'/public/reportes/reporte_html/imp_compras_fecha.html'),
+    $template_data
+  );
+
+  $pdf = VARPATH.'/public/reportes/archivos_temporales/compras_'.time().'.pdf';
+  $wkh_pdf->addPage($html);
+  exec($wkh_pdf->getCommand($pdf));
+
+  Flight::redirect($varhost.'/public/reportes/archivos_temporales/'.basename($pdf));
+});
+
+Flight::route('GET /imp_compras_fecha_excel', function(){
+
+  include DEFINITION;
+  login_admin::autentificar_administrador();
+
+  header("Content-Type: application/vnd.ms-excel");
+  header("Content-Disposition: attachment; filename=compras.xls");
+
+  $ini = Flight::request()->query['ini'];
+  $fin = Flight::request()->query['fin'];
+
+  $rows = DB::query("
+    SELECT c.compra_id, p.nombre, c.fecha_creacion, c.total_compra
+    FROM compra c
+    LEFT JOIN proveedor p ON p.proveedor_id=c.proveedor_id
+    WHERE DATE(c.fecha_creacion) BETWEEN %s AND %s
+    ORDER BY c.fecha_creacion ASC
+  ", $ini, $fin);
+
+  echo "<table border='1'>";
+  echo "<tr><th>ID</th><th>Proveedor</th><th>Fecha</th><th>Total</th></tr>";
+  foreach($rows as $r){
+    echo "<tr>
+      <td>{$r['compra_id']}</td>
+      <td>{$r['nombre']}</td>
+      <td>{$r['fecha_creacion']}</td>
+      <td>{$r['total_compra']}</td>
+    </tr>";
+  }
+  echo "</table>";
+});
+
+
+Flight::route('POST /compra/agregar-items', function(){
+
+  $data = Flight::request()->data->getData();
+  DB::startTransaction();
+
+  foreach($data['items'] as $it){
+    $subtotal = $it['cantidad']*$it['costo_unitario'];
+
+    DB::insert('compra_detalle',[
+      'compra_id'=>$data['compra_id'],
+      'producto_id'=>$it['product_id'],
+      'cantidad'=>$it['cantidad'],
+      'precio_unitario'=>$it['costo_unitario'],
+      'subtotal'=>$subtotal
+    ]);
+
+    registrar_movimiento_inventario(
+      $it['product_id'],'ENTRADA','COMPRA_ADICIONAL',
+      $it['cantidad'],$it['costo_unitario'],
+      $data['compra_id'],'compra'
+    );
+  }
+
+  DB::query("
+    UPDATE compra
+    SET total_compra = (
+      SELECT SUM(subtotal) FROM compra_detalle WHERE compra_id=%i
+    )
+    WHERE compra_id=%i
+  ",$data['compra_id'],$data['compra_id']);
+
+  DB::commit();
+  Flight::json(['status'=>'ok']);
+});
+
+Flight::route('GET /compra/items/@compra_id', function ($compra_id) {
+
+    $rows = DB::query("
+        SELECT 
+            d.producto_id,
+            p.name AS producto,
+            d.cantidad,
+            d.precio_unitario
+        FROM compra_detalle d
+        INNER JOIN product p ON p.id = d.producto_id
+        WHERE d.compra_id = %i
+    ", $compra_id);
+
+    Flight::json($rows);
+});
+
