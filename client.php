@@ -341,7 +341,7 @@ class CLIENT extends REST {
             /* ===============================
                2️⃣ GENERAR CODE
             =============================== */
-            $code = 'ORD-' . date('Ymd') . '-' . str_pad($order_id, 4, '0', STR_PAD_LEFT);
+            $code = str_pad((string)$order_id, 6, '0', STR_PAD_LEFT);
 
             $this->db->mysqli->query(
                 "UPDATE product_order 
