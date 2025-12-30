@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once realpath(dirname(__FILE__) . "/../conf.php");
+require_once realpath(dirname(__FILE__) . "/../../conf.php");
 
 class DB {
 

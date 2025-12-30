@@ -1,20 +1,20 @@
 <?php
 declare(strict_types=1);
 
-require_once "tools/rest.php";
-require_once "tools/db.php";
+require_once "services/tools/rest.php";
+require_once "services/tools/db.php";
 
-require_once "table/Product.php";
-require_once "table/ProductCategory.php";
-require_once "table/ProductOrder.php";
-require_once "table/ProductOrderDetail.php";
-require_once "table/ProductImage.php";
-require_once "table/Category.php";
-require_once "table/User.php";
-require_once "table/NewsInfo.php";
-require_once "table/AppVersion.php";
-require_once "table/Currency.php";
-require_once "table/Config.php";
+require_once "services/table/Product.php";
+require_once "services/table/ProductCategory.php";
+require_once "services/table/ProductOrder.php";
+require_once "services/table/ProductOrderDetail.php";
+require_once "services/table/ProductImage.php";
+require_once "services/table/Category.php";
+require_once "services/table/User.php";
+require_once "services/table/NewsInfo.php";
+require_once "services/table/AppVersion.php";
+require_once "services/table/Currency.php";
+require_once "services/table/Config.php";
 
 require_once "client.php";
 require_once "dashboard.php";

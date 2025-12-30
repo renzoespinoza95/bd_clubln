@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once realpath(dirname(__FILE__) . "/tools/rest.php");
+require_once "services/tools/rest.php";
 
 /*
  * Handle all communication with Android Client
