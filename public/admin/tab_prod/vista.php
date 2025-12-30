@@ -40,7 +40,7 @@
     <div id="modalDetalleProduct" class="modal hide fade">
       <div class="modal-header"><h3>Detalle del Producto</h3></div>
       <div class="modal-body">
-        <p><strong>ID:</strong> {{ detalle.id }}</p>
+        <p><strong>ID:</strong> {{ detalle.product_id  }}</p>
         <p><strong>Nombre:</strong> {{ detalle.name }}</p>
         <p><strong>Precio:</strong> S/ {{ detalle.price }}</p>
         <p><strong>Stock:</strong> {{ detalle.stock }}</p>
@@ -119,11 +119,15 @@
 
         <div class="control-group">
           <label>Categorías</label>
-          <v-select multiple :options="categorias"
-                    label="descripcion"
-                    v-model="form.categorias"
-                    class="input-xxlarge">
+          <v-select
+            multiple
+            :options="categorias"
+            label="descripcion"
+            v-model="form.categorias"
+            track-by="category_id"
+            class="input-xxlarge">
           </v-select>
+
         </div>
 
         <div class="control-group">
@@ -217,17 +221,17 @@ new Vue({
             $('#tablaProduct tbody')
               .on('click','a.detalle',function(e){
                 const id = $(this).data("id");
-                const p = self.productos.find(x=>x.id==id);
+                const p = self.productos.find(x => x.product_id == id);
                 self.abrirDetalle(p);
               })
               .on('click','a.editar',function(e){
                 const id = $(this).data("id");
-                const p = self.productos.find(x=>x.id==id);
+                const p = self.productos.find(x => x.product_id == id);
                 self.abrirEditar(p);
               })
               .on('click','a.eliminar',function(e){
                 const id = $(this).data("id");
-                const p = self.productos.find(x=>x.id==id);
+                const p = self.productos.find(x => x.product_id == id);
                 self.eliminar(p);
               });
           }
@@ -238,13 +242,13 @@ new Vue({
                <div class="btn-group">
                  <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">Opciones <span class="caret"></span></button>
                  <ul class="dropdown-menu">
-                   <li><a href="#" class="detalle" data-id="${p.id}">Detalle</a></li>
-                   <li><a href="#" class="editar"  data-id="${p.id}">Editar</a></li>
-                   <li><a href="#" class="eliminar" data-id="${p.id}">Eliminar</a></li>
+                   <li><a href="#" class="detalle" data-id="${p.product_id}">Detalle</a></li>
+                   <li><a href="#" class="editar"  data-id="${p.product_id}">Editar</a></li>
+                   <li><a href="#" class="eliminar" data-id="${p.product_id}">Eliminar</a></li>
                  </ul>
                </div>`;
             this.dt.row.add([
-              p.id, p.name, p.price, p.stock,
+              p.product_id, p.name, p.price, p.stock,
               p.categories_names, actions
             ]);
           });
@@ -265,9 +269,21 @@ new Vue({
     },
 
     abrirEditar(p){
-      this.form = JSON.parse(JSON.stringify(p));
-      this.form.categorias = p.categories_ids;
+      this.form = {
+        product_id: p.product_id,
+        name: p.name,
+        price: p.price,
+        description: p.description || '',
+        categorias: []   // 👈 vacío primero
+      };
+
       $('#modalEditarProduct').modal('show');
+
+      this.$nextTick(() => {
+        this.form.categorias = this.categorias.filter(c =>
+          p.categories_ids.includes(c.category_id)
+        );
+      });
     },
 
     guardarEdicion(){
@@ -276,7 +292,7 @@ new Vue({
     },
 
     abrirDetalle(p){
-      axios.get(`${this.apphost}/product/detalle/${p.id}`).then(r=>{
+      axios.get(`${this.apphost}/product/detalle/${p.product_id}`).then(r=>{
         this.detalle = r.data;
         $('#modalDetalleProduct').modal('show');
       });
@@ -285,7 +301,7 @@ new Vue({
     eliminar(p){
       apprise(`¿Eliminar producto <b>${p.name}</b>?`, {confirm:true}, ok=>{
         if(!ok) return;
-        axios.post(`${this.apphost}/product/eliminar`, {id:p.id})
+        axios.post(`${this.apphost}/product/eliminar`, { product_id: p.product_id })
         .finally(()=>this.listar());
       });
     },
@@ -327,5 +343,6 @@ new Vue({
     this.cargarCategorias();
     this.listar();
   }
+
 });
 </script>

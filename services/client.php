@@ -309,7 +309,7 @@ class CLIENT extends REST {
 
         if ($resp_po['status'] === "success") {
 
-            $order_id  = (int)($resp_po['data']['id'] ?? 0);
+            $order_id  = (int)($resp_po['data']['product_order_id'] ?? 0);
 
             $resp_pod = $this->product_order_detail->insertAllPlain($order_id, $data['product_order_detail']);
 

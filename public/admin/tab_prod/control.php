@@ -16,11 +16,11 @@ Flight::route('GET /product/listar', function () {
                GROUP_CONCAT(c.name SEPARATOR ', ') AS categories_names,
                IFNULL(i.stock_actual, 0) AS stock
         FROM product p
-        LEFT JOIN product_category pc ON pc.product_id = p.id
+        LEFT JOIN product_category pc ON pc.product_id = p.product_id
         LEFT JOIN category c ON c.id = pc.category_id
-        LEFT JOIN inventario i ON i.producto_id = p.id
-        GROUP BY p.id
-        ORDER BY p.id DESC
+        LEFT JOIN inventario i ON i.product_id = p.product_id
+        GROUP BY p.product_id
+        ORDER BY p.product_id DESC
     ");
 
     // Convertir a arrays
@@ -75,11 +75,11 @@ Flight::route('POST /product/crear', function () {
 
         // Insertar categorías seleccionadas
         if (!empty($d['categorias'])) {
-            foreach ($d['categorias'] as $cat_id) {
-                DB::insert('product_category', [
-                    'product_id'  => $product_id,
-                    'category_id' => intval($cat_id)
-                ]);
+            foreach ($d['categorias'] as $cat) {
+              DB::insert('product_category', [
+                'product_id'  => $product_id,
+                'category_id' => intval($cat['category_id'])
+              ]);
             }
         }
 
@@ -99,8 +99,8 @@ Flight::route('POST /product/editar', function () {
 
     $d = Flight::request()->data->getData();
 
-    if (!isset($d['id'])) {
-        Flight::json(['status'=>'error','msg'=>'ID requerido'], 400);
+    if (!isset($d['product_id'])) {
+        Flight::json(['status'=>'error','msg'=>'product_id requerido'], 400);
         return;
     }
 
@@ -112,24 +112,23 @@ Flight::route('POST /product/editar', function () {
     try {
 
         DB::update('product', [
-            'name'              => $d['name'],
-            'price'             => $d['price'],
-            'stock'             => $d['stock'],
-            'description'       => $d['description'],
-            'last_update'       => $now_unix,
-            'fecha_modificacion'=> $now_dt
-        ], "id=%i", $d['id']);
+            'name'               => $d['name'],
+            'price'              => $d['price'],
+            'description'        => $d['description'],
+            'last_update'        => $now_unix,
+            'fecha_modificacion' => $now_dt
+        ], "product_id=%i", $d['product_id']);
 
         // LIMPIAR CATEGORÍAS ANTERIORES
-        DB::delete('product_category', "product_id=%i", $d['id']);
+        DB::delete('product_category', "product_id=%i", $d['product_id']);
 
         // AGREGAR NUEVAS
         if (!empty($d['categorias'])) {
-            foreach ($d['categorias'] as $cat_id) {
-                DB::insert('product_category', [
-                    'product_id'  => $d['id'],
-                    'category_id' => intval($cat_id)
-                ]);
+            foreach ($d['categorias'] as $cat) {
+              DB::insert('product_category', [
+                'product_id'  => $d['product_id'],
+                'category_id' => intval($cat['category_id'])
+              ]);
             }
         }
 
@@ -145,16 +144,16 @@ Flight::route('POST /product/editar', function () {
 
 
 /* 🔵 5) DETALLE DEL PRODUCTO (categorías + imágenes) */
-Flight::route('GET /product/detalle/@id', function ($id) {
+Flight::route('GET /product/detalle/@product_id', function ($product_id) {
 
     $p = DB::queryFirstRow("
         SELECT 
           p.*,
           IFNULL(i.stock_actual,0) AS stock
         FROM product p
-        LEFT JOIN inventario i ON i.product_id = p.id
-        WHERE p.id=%i
-    ", $id);
+        LEFT JOIN inventario i ON i.product_id = p.product_id
+        WHERE p.product_id=%i
+    ", $product_id);
 
 
     if (!$p) {
@@ -168,14 +167,14 @@ Flight::route('GET /product/detalle/@id', function ($id) {
         FROM product_category pc
         JOIN category c ON c.id = pc.category_id
         WHERE pc.product_id=%i
-    ", $id);
+    ", $product_id);
 
     // Imágenes
     $imgs = DB::query("
         SELECT name AS image
         FROM product_image
         WHERE product_id=%i
-    ", $id);
+    ", $product_id);
 
     $p['categories'] = $cats;
     $p['images']     = $imgs;
@@ -189,12 +188,12 @@ Flight::route('POST /product/eliminar', function () {
 
     $d = Flight::request()->data->getData();
 
-    if (!isset($d['id'])) {
-        Flight::json(['status'=>'error','msg'=>'ID requerido'], 400);
+    if (!isset($d['product_id'])) {
+        Flight::json(['status'=>'error','msg'=>'product_id requerido'], 400);
         return;
     }
 
-    DB::delete('product', "id=%i", $d['id']);
+    DB::delete('product', "product_id=%i", $d['product_id']);
 
     Flight::json(['status'=>'ok']);
 });
@@ -250,16 +249,16 @@ Flight::route('GET /imp_lista_prod', function () {
     // ===============================
     $rows = DB::query("
         SELECT 
-            p.id,
+            p.product_id,
             p.name AS producto,
             p.price,
             IFNULL(i.stock_actual,0) AS stock,
             GROUP_CONCAT(c.name SEPARATOR ', ') AS categorias
         FROM product p
-        LEFT JOIN product_category pc ON pc.product_id = p.id
+        LEFT JOIN product_category pc ON pc.product_id = p.product_id
         LEFT JOIN category c ON c.id = pc.category_id
-        LEFT JOIN inventario i ON i.product_id = p.id
-        GROUP BY p.id
+        LEFT JOIN inventario i ON i.product_id = p.product_id
+        GROUP BY p.product_id
         ORDER BY p.name
     ");
 

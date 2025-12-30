@@ -23,7 +23,7 @@ class ProductOrder extends REST {
             $this->response('', 406);
         }
 
-        $query = "SELECT * FROM product_order po ORDER BY po.id DESC";
+        $query = "SELECT * FROM product_order po ORDER BY po.product_order_id DESC";
         $this->show_response($this->db->get_list($query));
     }
 
@@ -37,13 +37,13 @@ class ProductOrder extends REST {
         }
 
         $id    = (int)$this->_request['id'];
-        $query = "SELECT DISTINCT * FROM product_order po WHERE po.id=$id";
+        $query = "SELECT DISTINCT * FROM product_order po WHERE po.product_order_id=$id";
 
         $this->show_response($this->db->get_one($query));
     }
 
     public function findOnePlain(int $id) {
-        $query = "SELECT * FROM product_order po WHERE po.id=$id";
+        $query = "SELECT * FROM product_order po WHERE po.product_order_id=$id";
         return $this->db->get_one($query);
     }
 
@@ -70,12 +70,12 @@ class ProductOrder extends REST {
                     OR phone REGEXP '$q' 
                     OR comment REGEXP '$q' 
                     OR shipping REGEXP '$q' 
-                 ORDER BY po.id DESC 
+                 ORDER BY po.product_order_id DESC 
                  LIMIT $limit OFFSET $offset";
         } else {
             $query =
                 "SELECT DISTINCT * FROM product_order po 
-                 ORDER BY po.id DESC 
+                 ORDER BY po.product_order_id DESC 
                  LIMIT $limit OFFSET $offset";
         }
 
@@ -87,7 +87,7 @@ class ProductOrder extends REST {
             $this->response('', 406);
         }
 
-        $query = "SELECT COUNT(DISTINCT po.id) FROM product_order po";
+        $query = "SELECT COUNT(DISTINCT po.product_order_id) FROM product_order po";
         $count = $this->db->get_count($query);
         $this->show_response_plain(json_encode($count));
     }
@@ -108,21 +108,29 @@ class ProductOrder extends REST {
     }
 
     public function insertOnePlain(array $data) {
+
         $column_names = [
             'code', 'buyer', 'address', 'email',
             'shipping', 'date_ship', 'phone', 'comment',
             'status', 'total_fees', 'tax', 'serial',
-            'created_at', 'last_update'
+            'created_at', 'last_update',
+            'caja_id', 'administrador_id'
         ];
 
         $table_name = 'product_order';
-        $pk         = 'id';
+        $pk         = 'product_order_id';
 
         // Generar código único
         $data['code'] = $this->getRandomCode();
 
-        return $this->db->post_one($data, $pk, $column_names, $table_name);
+        // Insertar
+        $resp = $this->db->post_one($data, $pk, $column_names, $table_name);
+
+        // DEVOLVER SOLO EL ID
+        return (int)$resp['data'][$pk];
     }
+
+
 
     public function updateOne() {
         if ($this->get_request_method() !== "POST") {
@@ -144,7 +152,7 @@ class ProductOrder extends REST {
         ];
 
         $table_name = 'product_order';
-        $pk         = 'id';
+        $pk         = 'product_order_id';
 
         $this->show_response($this->db->post_update($id, $data, $pk, $column_names, $table_name));
     }
@@ -164,12 +172,12 @@ class ProductOrder extends REST {
 
     public function deleteOnePlain(int $id) {
         $table_name = 'product_order';
-        $pk         = 'id';
+        $pk         = 'product_order_id';
         return $this->db->delete_one($id, $pk, $table_name);
     }
 
     public function countByStatusPlain(string $status) {
-        $query = "SELECT COUNT(DISTINCT po.id) FROM product_order po WHERE po.status='$status'";
+        $query = "SELECT COUNT(DISTINCT po.product_order_id) FROM product_order po WHERE po.status='$status'";
         return $this->db->get_count($query);
     }
 
@@ -256,7 +264,7 @@ class ProductOrder extends REST {
         $final_key = $alpha1 . $middle . $alpha2;
 
         // Validar unicidad
-        $query = "SELECT COUNT(DISTINCT po.id) FROM product_order po WHERE po.code='$final_key'";
+        $query = "SELECT COUNT(DISTINCT po.product_order_id) FROM product_order po WHERE po.code='$final_key'";
         $exists = $this->db->get_count($query);
 
         return $exists > 0 ? $this->getRandomCode() : $final_key;

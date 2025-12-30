@@ -15,13 +15,13 @@ Flight::route('GET /inventario/listar', function () {
     $sql = "
         SELECT 
             i.inventario_id,
-            i.producto_id,
+            i.product_id,
             p.name AS producto,
             i.stock_actual,
             i.stock_min,
             i.stock_max
         FROM inventario i
-        INNER JOIN product p ON p.id = i.producto_id
+        INNER JOIN product p ON p.product_id = i.product_id
         ORDER BY p.name ASC
     ";
 
@@ -32,7 +32,7 @@ Flight::route('GET /inventario/listar', function () {
  * LISTAR PRODUCTOS (para combos)
  * ============================================================ */
 Flight::route('GET /inventario/productos', function () {
-    $rows = DB::query("SELECT id, name FROM product ORDER BY name ASC");
+    $rows = DB::query("SELECT product_id, name FROM product ORDER BY name ASC");
     Flight::json($rows);
 });
 
@@ -44,7 +44,7 @@ Flight::route('POST /inventario/crear', function () {
     $d = Flight::request()->data;
 
     DB::insert("inventario", [
-        "producto_id"  => $d["producto_id"],
+        "product_id"  => $d["product_id"],
         "stock_actual" => $d["stock_actual"],
         "stock_min"    => $d["stock_min"],
         "stock_max"    => $d["stock_max"]
@@ -63,16 +63,16 @@ Flight::route('GET /inventario/detalle/@id', function ($id) {
             i.*, 
             p.name AS producto
         FROM inventario i
-        INNER JOIN product p ON p.id = i.producto_id
+        INNER JOIN product p ON p.product_id = i.product_id
         WHERE inventario_id=%i
     ", $id);
 
     $mov = DB::query("
         SELECT *
         FROM inventario_movimiento
-        WHERE producto_id=%i
+        WHERE product_id=%i
         ORDER BY fecha DESC
-    ", $inv['producto_id']);
+    ", $inv['product_id']);
 
     Flight::json([
         'inventario' => $inv,
@@ -123,11 +123,11 @@ Flight::route('POST /inventario/eliminar', function () {
 Flight::route('POST /inventario/movimiento', function () {
 
     $d = Flight::request()->data;
-    $prod = intval($d['producto_id']);
+    $prod = intval($d['product_id']);
     $cant = intval($d['cantidad']);
 
     /* Obtener stock actual */
-    $inv = DB::queryFirstRow("SELECT * FROM inventario WHERE producto_id=%i", $prod);
+    $inv = DB::queryFirstRow("SELECT * FROM inventario WHERE product_id=%i", $prod);
 
     if (!$inv) {
         Flight::json(['status'=>'error','msg'=>'Inventario no encontrado'], 400);
@@ -148,7 +148,7 @@ Flight::route('POST /inventario/movimiento', function () {
 
         /* Registrar movimiento */
         DB::insert("inventario_movimiento", [
-            "producto_id"      => $prod,
+            "product_id"      => $prod,
             "tipo"             => $d["tipo"],
             "origen"           => $d["origen"],
             "cantidad"         => $cant,

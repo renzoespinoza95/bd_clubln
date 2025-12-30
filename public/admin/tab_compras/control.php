@@ -24,9 +24,27 @@ function registrar_movimiento_inventario(
     $referencia_id,
     $referencia_tabla
 ) {
-    // obtener stock actual
-    $inv = DB::queryFirstRow("SELECT stock_actual FROM inventario WHERE producto_id=%i", $producto_id);
-    $stock_actual = $inv ? intval($inv['stock_actual']) : 0;
+    // buscar inventario
+    $inv = DB::queryFirstRow(
+        "SELECT inventario_id, stock_actual 
+         FROM inventario 
+         WHERE product_id=%i",
+        $producto_id
+    );
+
+    // si NO existe, crear inventario
+    if (!$inv) {
+        DB::insert('inventario', [
+            'product_id'   => $producto_id,
+            'stock_actual' => 0,
+            'stock_min'    => 0,
+            'stock_max'    => 0
+        ]);
+
+        $stock_actual = 0;
+    } else {
+        $stock_actual = (int)$inv['stock_actual'];
+    }
 
     // calcular nuevo stock
     if ($tipo === 'ENTRADA') {
@@ -37,26 +55,28 @@ function registrar_movimiento_inventario(
         $nuevo_stock = $stock_actual;
     }
 
-    // guardar movimiento
+    // registrar movimiento
     DB::insert('inventario_movimiento', [
-        'producto_id'       => $producto_id,
-        'tipo'              => $tipo,
-        'origen'            => $origen,
-        'cantidad'          => $cantidad,
-        'precio_unitario'   => $precio_unitario,
-        'referencia_id'     => $referencia_id,
-        'referencia_tabla'  => $referencia_tabla,
-        'stock_resultante'  => $nuevo_stock,
-        'fecha'             => date('Y-m-d H:i:s')
+        'product_id'       => $producto_id,
+        'tipo'             => $tipo,
+        'origen'           => $origen,
+        'cantidad'         => $cantidad,
+        'precio_unitario'  => $precio_unitario,
+        'referencia_id'    => $referencia_id,
+        'referencia_tabla' => $referencia_tabla,
+        'stock_resultante' => $nuevo_stock,
+        'fecha'            => date('Y-m-d H:i:s')
     ]);
 
     // actualizar inventario
-    DB::query(
-        "UPDATE inventario SET stock_actual=%i WHERE producto_id=%i",
-        $nuevo_stock,
+    DB::update(
+        'inventario',
+        ['stock_actual' => $nuevo_stock],
+        "product_id=%i",
         $producto_id
     );
 }
+
 
 
 /* ============================================
@@ -72,7 +92,17 @@ Flight::route('GET /proveedor/listar', function () {
  *  GET /producto/listar (solo para compras)
  * ============================================ */
 Flight::route('GET /producto/listar', function () {
-    $sql = "SELECT id, name, price, stock FROM product ORDER BY name ASC";
+    $sql = "
+      SELECT 
+        p.product_id,
+        p.name,
+        p.price,
+        IFNULL(i.stock_actual,0) AS stock
+      FROM product p
+      LEFT JOIN inventario i ON i.product_id = p.product_id
+      ORDER BY p.name ASC
+    ";
+
     Flight::json(DB::query($sql));
 });
 
@@ -153,7 +183,7 @@ Flight::route('POST /compra/crear', function () {
 
             DB::insert('compra_detalle', [
                 'compra_id'      => $compra_id,
-                'producto_id'    => $producto_id,
+                'product_id'    => $producto_id,
                 'cantidad'       => $cantidad,
                 'precio_unitario'=> $costo,
                 'subtotal'       => $subtotal
@@ -207,7 +237,7 @@ Flight::route('GET /compra/detalle/@id', function ($compra_id) {
             d.subtotal,
             pr.name AS producto
         FROM compra_detalle d
-        INNER JOIN product pr ON pr.id = d.producto_id
+        INNER JOIN product pr ON pr.product_id = d.product_id
         WHERE d.compra_id=%i
     ", $compra_id);
 
@@ -246,7 +276,7 @@ Flight::route('POST /compra/eliminar', function () {
 
         foreach ($det as $it) {
             registrar_movimiento_inventario(
-                $it['producto_id'],
+                $it['product_id'],
                 'SALIDA',
                 'DEVOLUCION',
                 $it['cantidad'],
@@ -277,7 +307,7 @@ Flight::route('GET /inventario/movimientos/@producto_id', function ($producto_id
     $rows = DB::query("
         SELECT * 
         FROM inventario_movimiento
-        WHERE producto_id=%i
+        WHERE product_id=%i
         ORDER BY fecha DESC
     ", $producto_id);
 
@@ -375,7 +405,7 @@ Flight::route('POST /compra/agregar-items', function(){
 
     DB::insert('compra_detalle',[
       'compra_id'=>$data['compra_id'],
-      'producto_id'=>$it['product_id'],
+      'product_id'=>$it['product_id'],
       'cantidad'=>$it['cantidad'],
       'precio_unitario'=>$it['costo_unitario'],
       'subtotal'=>$subtotal
@@ -404,12 +434,12 @@ Flight::route('GET /compra/items/@compra_id', function ($compra_id) {
 
     $rows = DB::query("
         SELECT 
-            d.producto_id,
+            d.product_id,
             p.name AS producto,
             d.cantidad,
             d.precio_unitario
         FROM compra_detalle d
-        INNER JOIN product p ON p.id = d.producto_id
+        INNER JOIN product p ON p.product_id = d.product_id
         WHERE d.compra_id = %i
     ", $compra_id);
 

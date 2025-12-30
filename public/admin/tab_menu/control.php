@@ -102,21 +102,22 @@ Flight::group('/api', function() {
       DB::query("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");
 
       $rows = DB::query(
-        "SELECT
-           m.menu_id,
-           m.titulo   AS menu_titulo,
-           m.orden    AS menu_orden,
-           s.submenu_id,
-           s.titulo   AS submenu_titulo,
-           s.url,
-           s.target,
-           s.orden    AS submenu_orden
-         FROM menu m
-         LEFT JOIN submenu s ON s.menu_id = m.menu_id
-         WHERE m.tipo_administrador_id = %i
-         ORDER BY m.orden, s.orden, s.submenu_id",
-        $tipo
-      );
+          "SELECT
+             m.menu_id,
+             m.titulo   AS menu_titulo,
+             m.orden    AS menu_orden,
+             s.submenu_id,
+             s.titulo   AS submenu_titulo,
+             s.url,
+             s.target,
+             s.orden    AS submenu_orden
+           FROM menu m
+           INNER JOIN submenu s ON s.menu_id = m.menu_id
+           WHERE m.tipo_administrador_id = %i
+           ORDER BY m.orden, s.orden, s.submenu_id",
+          $tipo
+        );
+
 
       // Agrupar por menú
       $byMenu = [];

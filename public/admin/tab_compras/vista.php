@@ -105,10 +105,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="it in nuevo.items">
+            <tr v-for="(it,i) in nuevo.items" :key="i">
               <td>
                 <select v-model="it.product_id" class="input-large">
-                  <option v-for="pr in productos" :value="pr.id">{{ pr.name }}</option>
+                  <option v-for="pr in productos" :value="pr.product_id">{{ pr.name }}</option>
                 </select>
               </td>
               <td><input v-model="it.costo_unitario" class="input-mini"></td>
@@ -144,7 +144,7 @@
         <div class="control-group">
           <label>Observación</label>
           <div class="controls">
-            <textarea v-model="form.observacion" class="input-xxlarge"></textarea>
+            <textarea v-model="form.observaciones" class="input-xxlarge"></textarea>
           </div>
         </div>
 
@@ -213,7 +213,7 @@
             <tr v-for="it in compraAdd.items_nuevos">
               <td>
                 <select v-model="it.product_id" class="input-large">
-                  <option v-for="p in productos" :value="p.id">{{ p.name }}</option>
+                  <option v-for="p in productos" :value="p.product_id">{{ p.name }}</option>
                 </select>
               </td>
               <td><input v-model="it.costo_unitario" class="input-mini"></td>
@@ -428,7 +428,7 @@ new Vue({
     eliminarCompra(c){
       apprise(`¿Eliminar compra #${c.compra_id}?`, {confirm:true}, ok=>{
         if(!ok) return;
-        axios.post(`${this.apphost}/compra/eliminar`, { id:c.compra_id })
+        axios.post(`${this.apphost}/compra/eliminar`, { compra_id: c.compra_id })
         .finally(()=> this.listar());
       });
     },

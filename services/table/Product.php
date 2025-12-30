@@ -22,7 +22,7 @@ class Product extends REST {
             $this->response('', 406);
         }
 
-        $query = "SELECT * FROM product p ORDER BY p.id DESC";
+        $query = "SELECT * FROM product p ORDER BY p.product_id DESC";
         $this->show_response($this->db->get_list($query));
     }
 
@@ -30,9 +30,21 @@ class Product extends REST {
        FIND ONE
        ============================================================ */
     public function findOnePlain(int $id): array {
-        $query = "SELECT * FROM product p WHERE p.id=$id LIMIT 1";
+
+        $query = "
+            SELECT 
+                p.*,
+                IFNULL(i.stock_actual, 0) AS stock
+            FROM product p
+            LEFT JOIN inventario i 
+                ON i.product_id = p.product_id
+            WHERE p.product_id = $id
+            LIMIT 1
+        ";
+
         return $this->db->get_one($query);
     }
+
 
     public function findOne() {
         if ($this->get_request_method() !== "GET") {
@@ -72,11 +84,11 @@ class Product extends REST {
        COUNT (CLIENT)
        ============================================================ */
     public function allCountPlainForClient(string $q, int $category_id): int {
-        $query = "SELECT COUNT(DISTINCT p.id) FROM product p ";
+        $query = "SELECT COUNT(DISTINCT p.product_id) FROM product p ";
         $keyword = "(p.name REGEXP '$q' OR p.status REGEXP '$q' OR p.description REGEXP '$q') ";
 
         if ($category_id !== -1) {
-            $query .= ", product_category pc WHERE p.draft=0 AND pc.product_id=p.id AND pc.category_id=$category_id ";
+            $query .= ", product_category pc WHERE p.draft=0 AND pc.product_id=p.product_id AND pc.category_id=$category_id ";
             if ($q !== "") {
                 $query .= "AND $keyword";
             }
@@ -110,7 +122,7 @@ class Product extends REST {
         $keyword = "(p.name REGEXP '$q' OR p.status REGEXP '$q' OR p.description REGEXP '$q') ";
 
         if ($category_id !== -1) {
-            $query .= ", product_category pc WHERE pc.product_id=p.id AND pc.category_id=$category_id ";
+            $query .= ", product_category pc WHERE pc.product_id=p.product_id AND pc.category_id=$category_id ";
             if ($q !== "") {
                 $query .= "AND $keyword";
             }
@@ -120,7 +132,7 @@ class Product extends REST {
             }
         }
 
-        $query .= "ORDER BY p.id DESC LIMIT $limit OFFSET $offset ";
+        $query .= "ORDER BY p.product_id DESC LIMIT $limit OFFSET $offset ";
 
         return $this->db->get_list($query);
     }
@@ -143,7 +155,7 @@ class Product extends REST {
                 IFNULL(pi.name, '') AS image
             FROM product p
             LEFT JOIN product_image pi 
-                ON pi.product_id = p.id
+                ON pi.product_id = p.product_id
         ";
 
         $keyword = "(p.name REGEXP '$q' OR p.status REGEXP '$q' OR p.description REGEXP '$q') ";
@@ -151,7 +163,7 @@ class Product extends REST {
         if ($category_id !== -1) {
             $query .= "
                 INNER JOIN product_category pc 
-                    ON pc.product_id = p.id
+                    ON pc.product_id = p.product_id
                 WHERE p.draft = 0
                   AND pc.category_id = $category_id
             ";
@@ -165,7 +177,7 @@ class Product extends REST {
             }
         }
 
-        $query .= " ORDER BY p.id DESC LIMIT $limit OFFSET $offset ";
+        $query .= " ORDER BY p.product_id DESC LIMIT $limit OFFSET $offset ";
 
         return $this->db->get_list($query);
     }
@@ -211,7 +223,7 @@ class Product extends REST {
         ];
 
         $table_name = 'product';
-        $pk         = 'id';
+        $pk         = 'product_id';
 
         $resp = $this->db->post_one($data, $pk, $column_names, $table_name);
 
@@ -240,7 +252,7 @@ class Product extends REST {
         ];
 
         $table_name = 'product';
-        $pk         = 'id';
+        $pk         = 'product_id';
 
         $this->show_response(
             $this->db->post_update($id, $data, $pk, $column_names, $table_name)
@@ -262,7 +274,7 @@ class Product extends REST {
         $id = (int)$this->_request['id'];
 
         $table_name = 'product';
-        $pk         = 'id';
+        $pk         = 'product_id';
 
         $this->show_response(
             $this->db->delete_one($id, $pk, $table_name)
@@ -273,12 +285,12 @@ class Product extends REST {
        COUNTS
        ============================================================ */
     public function countByDraftPlain(int $i): int {
-        $query = "SELECT COUNT(DISTINCT p.id) FROM product p WHERE p.draft=$i";
+        $query = "SELECT COUNT(DISTINCT p.product_id) FROM product p WHERE p.draft=$i";
         return (int)$this->db->get_count($query);
     }
 
     public function countByStatusPlain(string $status): int {
-        $query = "SELECT COUNT(DISTINCT p.id) FROM product p WHERE p.status='$status'";
+        $query = "SELECT COUNT(DISTINCT p.product_id) FROM product p WHERE p.status='$status'";
         return (int)$this->db->get_count($query);
     }
 }

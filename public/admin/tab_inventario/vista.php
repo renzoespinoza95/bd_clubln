@@ -70,7 +70,7 @@
           <label>Producto</label>
           <div class="controls">
             <select v-model="nuevo.producto_id">
-              <option v-for="p in productos" :value="p.id">{{ p.name }}</option>
+              <option v-for="p in productos" :value="p.product_id">{{ p.name }}</option>
             </select>
           </div>
         </div>
