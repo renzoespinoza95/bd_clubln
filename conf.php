@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/inc/config.inc.php';
 
 class CONF {
 
@@ -6,10 +7,10 @@ class CONF {
     public $DEMO_VERSION = false;
 
     /* Data configuration for database */
-    public $DB_SERVER   = "localhost";
-    public $DB_USER     = "root";
-    public $DB_PASSWORD = "";
-    public $DB_NAME     = "bd_markeet";
+    public string $DB_SERVER;
+    public string $DB_USER;
+    public string $DB_PASSWORD;
+    public string $DB_NAME;
 
     /* FCM key for notification */
     public $FCM_KEY     = "AIzaSyCv-90mFpx3SCWlIKSXXXXXXXXXXXXXXXXX";
@@ -37,6 +38,22 @@ class CONF {
 
     public $SUBJECT_EMAIL_ORDER_UPDATED     = "Order Data Updated";
     public $TITLE_REPORT_ORDER_UPDATED      = "Order Data Updated By Admin";
+
+
+    public function __construct() {
+        // Variables vienen de config.inc.php
+        $this->DB_SERVER   = $GLOBALS['host'];
+        $this->DB_USER     = $GLOBALS['username'];
+        $this->DB_PASSWORD = $GLOBALS['password'];
+        $this->DB_NAME     = $GLOBALS['dbname'];
+
+        $this->API_KEY     = $GLOBALS['apiKey'];
+        $this->JWT_SECRET  = $GLOBALS['secreto_jwt'];
+        $this->APP_NAME    = $GLOBALS['nombre_app'];
+
+        $this->APP_HOST    = $GLOBALS['apphost'];
+        $this->URL_FLASK   = $GLOBALS['url_flask'];
+    }
 }
 
 ?>
