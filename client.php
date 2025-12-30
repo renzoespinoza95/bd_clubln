@@ -287,10 +287,27 @@ class CLIENT extends REST {
             $this->response('', 406);
         }
 
-        // =========================
-        // 1) Seguridad
-        // =========================
-        $security = $this->_header['Security'] ?? '';
+        // Leer payload JSON
+        $data = json_decode(file_get_contents("php://input") ?: "[]", true);
+
+        if (
+            !isset($data['product_order']) ||
+            !isset($data['product_order_detail']) ||
+            !is_array($data['product_order_detail'])
+        ) {
+            $this->show_response([
+                'status' => 'failed',
+                'msg'    => 'Invalid payload',
+                'data'   => null
+            ]);
+            return;
+        }
+
+        // ===============================
+        // 🔐 VALIDAR SECURITY HEADER
+        // ===============================
+        $security = $this->_header['Security'] ?? null;
+
         if ($security !== $this->conf->SECURITY_CODE) {
             $this->show_response([
                 'status' => 'failed',
@@ -300,119 +317,64 @@ class CLIENT extends REST {
             return;
         }
 
-        // =========================
-        // 2) Leer JSON
-        // =========================
-        $payload = json_decode(file_get_contents("php://input") ?: "[]", true);
+        // ===============================
+        // 🧾 INSERTAR PRODUCT_ORDER
+        // ===============================
+        $resp_po = $this->product_order->insertOnePlain($data['product_order']);
 
-        if (
-            !isset($payload['product_order']) ||
-            !isset($payload['product_order_detail'])
-        ) {
-            $this->responseInvalidParam();
-        }
-
-        $order  = $payload['product_order'];
-        $detail = $payload['product_order_detail'];
-
-        // =========================
-        // 3) Generar código pedido
-        // =========================
-        $code = 'POS-' . date('Ymd') . '-' . str_pad((string)rand(1, 999999), 6, '0', STR_PAD_LEFT);
-
-        // =========================
-        // 4) Insertar ORDER
-        // =========================
-        $sql_order = "
-            INSERT INTO product_order (
-                code, buyer, email, phone, address,
-                shipping, date_ship, comment, status,
-                tax, total_fees, serial,
-                administrador_id, caja_id,
-                created_at, last_update
-            ) VALUES (
-                '$code',
-                '{$this->db->real_escape($order['buyer'])}',
-                '{$this->db->real_escape($order['email'])}',
-                '{$this->db->real_escape($order['phone'])}',
-                '{$this->db->real_escape($order['address'])}',
-                '{$this->db->real_escape($order['shipping'])}',
-                {$order['date_ship']},
-                '{$this->db->real_escape($order['comment'])}',
-                '{$this->db->real_escape($order['status'])}',
-                {$order['tax']},
-                {$order['total_fees']},
-                '{$this->db->real_escape($order['serial'])}',
-                {$order['administrador_id']},
-                {$order['caja_id']},
-                {$order['created_at']},
-                {$order['last_update']}
-            )
-        ";
-
-        if (!$this->db->mysqli->query($sql_order)) {
+        if ($resp_po['status'] !== 'success') {
             $this->show_response([
                 'status' => 'failed',
-                'msg'    => $this->db->mysqli->error,
+                'msg'    => 'Failed when submit order',
                 'data'   => null
             ]);
             return;
         }
 
-        $order_id = $this->db->mysqli->insert_id;
+        // ID REAL DEL PEDIDO
+        $order_id = (int)$resp_po['data']['order_id'];
 
-        // =========================
-        // 5) Insertar DETALLES
-        // =========================
-        foreach ($detail as $d) {
+        // ===============================
+        // 📦 INSERTAR PRODUCT_ORDER_DETAIL
+        // ===============================
+        $details = [];
 
-            $sql_detail = "
-                INSERT INTO product_order_detail (
-                    product_order_id,
-                    product_id,
-                    product_name,
-                    amount,
-                    price_item,
-                    created_at,
-                    last_update
-                ) VALUES (
-                    $order_id,
-                    {$d['product_id']},
-                    '{$this->db->real_escape($d['product_name'])}',
-                    {$d['amount']},
-                    {$d['price_item']},
-                    {$d['created_at']},
-                    {$d['last_update']}
-                )
-            ";
-
-            if (!$this->db->mysqli->query($sql_detail)) {
-
-                // marcar pedido como fallido
-                $this->db->mysqli->query("
-                    UPDATE product_order
-                    SET status = 'FAILED'
-                    WHERE product_order_id = $order_id
-                ");
-
-                $this->show_response([
-                    'status' => 'failed',
-                    'msg'    => 'Failed inserting order detail',
-                    'data'   => null
-                ]);
-                return;
-            }
+        foreach ($data['product_order_detail'] as $d) {
+            $details[] = [
+                'order_id'     => $order_id,           // 👈 CLAVE CORRECTA
+                'product_id'   => (int)$d['product_id'],
+                'product_name' => $d['product_name'],
+                'amount'       => (int)$d['amount'],
+                'price_item'   => (float)$d['price_item'],
+                'created_at'   => (int)$d['created_at'],
+                'last_update'  => (int)$d['last_update']
+            ];
         }
 
-        // =========================
-        // 6) RESPUESTA PARA ANDROID
-        // =========================
+        $resp_pod = $this->product_order_detail->insertAllPlain($details);
+
+        if ($resp_pod['status'] !== 'success') {
+
+            // 🔥 rollback manual
+            $this->product_order->deleteOnePlain($order_id);
+
+            $this->show_response([
+                'status' => 'failed',
+                'msg'    => 'Failed when submit order',
+                'data'   => null
+            ]);
+            return;
+        }
+
+        // ===============================
+        // ✅ RESPUESTA PARA ANDROID
+        // ===============================
         $this->show_response([
             'status' => 'success',
-            'msg'    => 'Success submit product order',
+            'msg'    => 'Order created successfully',
             'data'   => [
                 'id'   => $order_id,
-                'code' => $code
+                'code' => 'ORD-' . str_pad((string)$order_id, 6, '0', STR_PAD_LEFT)
             ]
         ]);
     }
