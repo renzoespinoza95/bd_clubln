@@ -289,61 +289,58 @@ class CLIENT extends REST {
 
         $payload = json_decode(file_get_contents("php://input"), true);
 
-        if (
-            empty($payload['product_order']) ||
-            empty($payload['product_order_detail'])
-        ) {
+        if (empty($payload['product_order']) || empty($payload['product_order_detail'])) {
             $this->show_response([
                 'status' => 'failed',
-                'msg'    => 'Invalid payload',
-                'data'   => null
+                'msg' => 'Invalid payload',
+                'data' => null
             ]);
             return;
         }
 
-        // 🔐 Security header
+        // 🔐 Security
         $security = $this->_header['Security'] ?? null;
         if ($security !== $this->conf->SECURITY_CODE) {
             $this->show_response([
                 'status' => 'failed',
-                'msg'    => 'Invalid security code',
-                'data'   => null
+                'msg' => 'Invalid security code',
+                'data' => null
             ]);
             return;
         }
 
         try {
 
-            /* =====================================================
-               1️⃣ INSERT PRODUCT ORDER
-            ===================================================== */
-            $orderData = $payload['product_order'];
+            /* ===============================
+               1️⃣ INSERT ORDER
+            =============================== */
+            $o = $payload['product_order'];
 
             $columns = [
-                'buyer', 'email', 'phone', 'address',
-                'shipping', 'date_ship', 'comment',
-                'status', 'total_fees', 'tax',
-                'serial', 'administrador_id', 'caja_id',
-                'created_at', 'last_update'
+                'buyer','email','phone','address',
+                'shipping','date_ship','comment',
+                'status','total_fees','tax',
+                'serial','administrador_id','caja_id',
+                'created_at','last_update'
             ];
 
             $resp = $this->db->post_one(
-                $orderData,
+                $o,
                 'product_order_id',
                 $columns,
                 'product_order'
             );
 
             if ($resp['status'] !== 'success') {
-                throw new Exception('Failed inserting order');
+                throw new Exception($resp['msg']);
             }
 
             $order = $resp['data'];
             $order_id = (int)$order['product_order_id'];
 
-            /* =====================================================
-               2️⃣ GENERATE CODE
-            ===================================================== */
+            /* ===============================
+               2️⃣ GENERAR CODE
+            =============================== */
             $code = 'ORD-' . date('Ymd') . '-' . str_pad($order_id, 4, '0', STR_PAD_LEFT);
 
             $this->db->mysqli->query(
@@ -352,46 +349,46 @@ class CLIENT extends REST {
                  WHERE product_order_id = {$order_id}"
             );
 
-            /* =====================================================
-               3️⃣ INSERT ORDER DETAIL (UNO POR UNO)
-            ===================================================== */
-            foreach ($payload['product_order_detail'] as $item) {
+            /* ===============================
+               3️⃣ INSERT DETAILS
+            =============================== */
+            foreach ($payload['product_order_detail'] as $d) {
 
                 $detail = [
                     'order_id'     => $order_id,
-                    'product_id'   => $item['product_id'],
-                    'product_name' => $item['product_name'],
-                    'amount'       => $item['amount'],
-                    'price_item'   => $item['price_item'],
-                    'created_at'   => $item['created_at'],
-                    'last_update'  => $item['last_update'],
+                    'product_id'   => $d['product_id'],
+                    'product_name' => $d['product_name'],
+                    'amount'       => $d['amount'],
+                    'price_item'   => $d['price_item'],
+                    'created_at'   => $d['created_at'],
+                    'last_update'  => $d['last_update']
                 ];
 
-                $detailCols = [
-                    'order_id', 'product_id', 'product_name',
-                    'amount', 'price_item',
-                    'created_at', 'last_update'
+                $cols = [
+                    'order_id','product_id','product_name',
+                    'amount','price_item',
+                    'created_at','last_update'
                 ];
 
-                $respDetail = $this->db->post_one(
+                $r = $this->db->post_one(
                     $detail,
                     'product_order_detail_id',
-                    $detailCols,
+                    $cols,
                     'product_order_detail'
                 );
 
-                if ($respDetail['status'] !== 'success') {
-                    throw new Exception('Failed inserting order detail');
+                if ($r['status'] !== 'success') {
+                    throw new Exception($r['msg']);
                 }
             }
 
-            /* =====================================================
-               4️⃣ SUCCESS RESPONSE (ANDROID FRIENDLY ❤️)
-            ===================================================== */
+            /* ===============================
+               4️⃣ OK
+            =============================== */
             $this->show_response([
                 'status' => 'success',
-                'msg'    => 'Order created successfully',
-                'data'   => [
+                'msg' => 'Order created',
+                'data' => [
                     'id'   => $order_id,
                     'code' => $code
                 ]
@@ -399,23 +396,19 @@ class CLIENT extends REST {
 
         } catch (Exception $e) {
 
-            // 🔥 rollback manual
             if (!empty($order_id)) {
-                $this->db->mysqli->query(
-                    "DELETE FROM product_order_detail WHERE order_id = {$order_id}"
-                );
-                $this->db->mysqli->query(
-                    "DELETE FROM product_order WHERE product_order_id = {$order_id}"
-                );
+                $this->db->mysqli->query("DELETE FROM product_order_detail WHERE order_id = $order_id");
+                $this->db->mysqli->query("DELETE FROM product_order WHERE product_order_id = $order_id");
             }
 
             $this->show_response([
                 'status' => 'failed',
-                'msg'    => 'Failed when submit order',
-                'data'   => null
+                'msg' => 'Failed when submit order',
+                'data' => null
             ]);
         }
     }
+
     
 
     /* ============================================================
