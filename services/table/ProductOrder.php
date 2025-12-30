@@ -155,26 +155,7 @@ class ProductOrder extends REST {
         $pk         = 'product_order_id';
 
         $this->show_response($this->db->post_update($id, $data, $pk, $column_names, $table_name));
-    }
-
-    public function deleteOne() {
-        if ($this->get_request_method() !== "GET") {
-            $this->response('', 406);
-        }
-
-        if (!isset($this->_request['id'])) {
-            $this->responseInvalidParam();
-        }
-
-        $id = (int)$this->_request['id'];
-        $this->show_response($this->deleteOnePlain($id));
-    }
-
-    public function deleteOnePlain(int $id) {
-        $table_name = 'product_order';
-        $pk         = 'product_order_id';
-        return $this->db->delete_one($id, $pk, $table_name);
-    }
+    }  
 
     public function countByStatusPlain(string $status) {
         $query = "SELECT COUNT(DISTINCT po.product_order_id) FROM product_order po WHERE po.status='$status'";

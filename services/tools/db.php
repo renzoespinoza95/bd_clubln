@@ -134,7 +134,11 @@ class DB {
 
     /* ======================== INSERT MULTIPLE ======================== */
 
-public function post_array(array $obj_array, array $column_names, string $table_name): array {
+public function post_array(
+    array $obj_array,
+    array $column_names,
+    string $table_name
+): array {
 
     if (empty($obj_array)) {
         return [
@@ -144,44 +148,42 @@ public function post_array(array $obj_array, array $column_names, string $table_
         ];
     }
 
-    $query = "";
-
     foreach ($obj_array as $obj) {
 
         $cols = [];
         $vals = [];
 
         foreach ($column_names as $col) {
-            $val = $obj[$col] ?? '';
-            $cols[] = $col;
-            $vals[] = "'" . $this->real_escape((string)$val) . "'";
-        }
+            $val = $obj[$col] ?? null;
 
-        $query .= "INSERT INTO {$table_name} (" . implode(",", $cols) . ")
-                   VALUES (" . implode(",", $vals) . ");";
-    }
-
-    if ($this->mysqli->multi_query($query)) {
-
-        /* 🔥 LIMPIAR RESULTADOS PARA EVITAR "COMMANDS OUT OF SYNC" */
-        while ($this->mysqli->more_results()) {
-            $this->mysqli->next_result();
-            $result = $this->mysqli->use_result();
-            if ($result instanceof mysqli_result) {
-                $result->free();
+            if ($val === null) {
+                $vals[] = "NULL";
+            } else {
+                $vals[] = "'" . $this->real_escape((string)$val) . "'";
             }
+
+            $cols[] = $col;
         }
 
-        return [
-            'status' => 'success',
-            'msg'    => "{$table_name} created successfully",
-            'data'   => $obj_array
-        ];
+        $sql = "
+            INSERT INTO {$table_name}
+            (" . implode(',', $cols) . ")
+            VALUES
+            (" . implode(',', $vals) . ")
+        ";
+
+        if (!$this->mysqli->query($sql)) {
+            return [
+                'status' => 'failed',
+                'msg'    => $this->mysqli->error,
+                'data'   => $obj_array
+            ];
+        }
     }
 
     return [
-        'status' => 'failed',
-        'msg'    => $this->mysqli->error,
+        'status' => 'success',
+        'msg'    => "{$table_name} inserted successfully",
         'data'   => $obj_array
     ];
 }

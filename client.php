@@ -277,22 +277,29 @@ class CLIENT extends REST {
         ]);
     }
 
+
     /* ============================================================
-       SUBMIT PRODUCT ORDER — (SIN EMAIL)
+       SUBMIT PRODUCT ORDER — ESTABLE / SIN DELETE
        ============================================================ */
     public function submitProductOrder() {
 
+        // 1️⃣ Validar método
         if ($this->get_request_method() !== "POST") {
             $this->response('', 406);
         }
 
+        // 2️⃣ Leer JSON
         $data = json_decode(file_get_contents("php://input") ?: "[]", true);
 
-        if (!isset($data['product_order'], $data['product_order_detail'])) {
+        if (
+            !isset($data['product_order']) ||
+            !isset($data['product_order_detail']) ||
+            !is_array($data['product_order_detail'])
+        ) {
             $this->responseInvalidParam();
         }
 
-        // Validate security header
+        // 3️⃣ Validar header de seguridad
         $security = $this->_header['Security'] ?? null;
 
         if ($security !== $this->conf->SECURITY_CODE) {
@@ -304,12 +311,12 @@ class CLIENT extends REST {
             return;
         }
 
-        // ============================
-        // INSERT ORDER HEADER
-        // ============================
-        $order_id = $this->product_order->insertOnePlain($data['product_order']);
+        // 4️⃣ Insertar ORDER
+        $resp_po = $this->product_order->insertOnePlain(
+            $data['product_order']
+        );
 
-        if (!$order_id) {
+        if ($resp_po['status'] !== 'success') {
             $this->show_response([
                 'status' => 'failed',
                 'msg'    => 'Failed when submit order',
@@ -318,16 +325,32 @@ class CLIENT extends REST {
             return;
         }
 
-        // ============================
-        // INSERT ORDER DETAILS
-        // ============================
-        $resp_pod = $this->product_order_detail
-            ->insertAllPlain($order_id, $data['product_order_detail']);
+        // 5️⃣ Obtener ID del pedido
+        $order_id = (int)($resp_po['data']['product_order_id'] ?? 0);
 
-        if ($resp_pod !== true) {
+        if ($order_id <= 0) {
+            $this->show_response([
+                'status' => 'failed',
+                'msg'    => 'Invalid order id',
+                'data'   => null
+            ]);
+            return;
+        }
 
-            // rollback
-            $this->product_order->updateStatusPlain($order_id, 'FAILED');            
+        // 6️⃣ Insertar DETALLES (uno por uno, sin multi_query)
+        $resp_pod = $this->product_order_detail->insertAllPlain(
+            $order_id,
+            $data['product_order_detail']
+        );
+
+        if ($resp_pod['status'] !== 'success') {
+
+            // ⚠️ NO BORRAMOS
+            // Solo marcamos el pedido como fallido
+            $this->product_order->updateStatusPlain(
+                $order_id,
+                'FAILED'
+            );
 
             $this->show_response([
                 'status' => 'failed',
@@ -337,18 +360,15 @@ class CLIENT extends REST {
             return;
         }
 
-        // ============================
-        // SUCCESS
-        // ============================
+        // 7️⃣ TODO OK
         $this->show_response([
             'status' => 'success',
             'msg'    => 'Success submit product order',
-            'data'   => [
-                'product_order_id' => $order_id
-            ]
+            'data'   => $resp_po['data']
         ]);
     }
 
+    
 
     /* ============================================================
        Helper
