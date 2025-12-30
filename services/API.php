@@ -338,6 +338,7 @@ class API {
      * MAIN ROUTER
      * ============================================================
      */
+    /*
     public function processApi() {
 
         $func = $_REQUEST['x'] ?? null;
@@ -356,6 +357,42 @@ class API {
             exit;
         }
     }
+    */
+    public function processApi() {
+
+        // Obtener la acción solicitada
+        $func = $_REQUEST['x'] ?? null;
+
+        if (!$func) {
+            echo 'processApi - method not exist';
+            exit;
+        }
+
+        /*
+         * Normalización de la ruta:
+         * Ejemplos válidos:
+         *   services/getAllProductOrderDetailByOrderId
+         *   getAllProductOrderDetailByOrderId
+         *
+         * Resultado final:
+         *   getAllProductOrderDetailByOrderId
+         */
+        $func = trim($func, '/');
+
+        if (strpos($func, '/') !== false) {
+            $func = basename($func);
+        }
+
+        // Seguridad básica: solo métodos existentes
+        if (method_exists($this, $func)) {
+            $this->$func();
+        } else {
+            echo 'processApi - method not exist';
+            exit;
+        }
+    }
+
+
 }
 
 // Start API
