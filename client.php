@@ -287,13 +287,11 @@ class CLIENT extends REST {
             $this->response('', 406);
         }
 
-        // Leer payload JSON
-        $data = json_decode(file_get_contents("php://input") ?: "[]", true);
+        $payload = json_decode(file_get_contents("php://input"), true);
 
         if (
-            !isset($data['product_order']) ||
-            !isset($data['product_order_detail']) ||
-            !is_array($data['product_order_detail'])
+            empty($payload['product_order']) ||
+            empty($payload['product_order_detail'])
         ) {
             $this->show_response([
                 'status' => 'failed',
@@ -303,11 +301,8 @@ class CLIENT extends REST {
             return;
         }
 
-        // ===============================
-        // 🔐 VALIDAR SECURITY HEADER
-        // ===============================
+        // 🔐 Security header
         $security = $this->_header['Security'] ?? null;
-
         if ($security !== $this->conf->SECURITY_CODE) {
             $this->show_response([
                 'status' => 'failed',
@@ -317,68 +312,110 @@ class CLIENT extends REST {
             return;
         }
 
-        // ===============================
-        // 🧾 INSERTAR PRODUCT_ORDER
-        // ===============================
-        $resp_po = $this->product_order->insertOnePlain($data['product_order']);
+        try {
 
-        if ($resp_po['status'] !== 'success') {
-            $this->show_response([
-                'status' => 'failed',
-                'msg'    => 'Failed when submit order',
-                'data'   => null
-            ]);
-            return;
-        }
+            /* =====================================================
+               1️⃣ INSERT PRODUCT ORDER
+            ===================================================== */
+            $orderData = $payload['product_order'];
 
-        // ID REAL DEL PEDIDO
-        $order_id = (int)$resp_po['data']['order_id'];
-
-        // ===============================
-        // 📦 INSERTAR PRODUCT_ORDER_DETAIL
-        // ===============================
-        $details = [];
-
-        foreach ($data['product_order_detail'] as $d) {
-            $details[] = [
-                'order_id'     => $order_id,           // 👈 CLAVE CORRECTA
-                'product_id'   => (int)$d['product_id'],
-                'product_name' => $d['product_name'],
-                'amount'       => (int)$d['amount'],
-                'price_item'   => (float)$d['price_item'],
-                'created_at'   => (int)$d['created_at'],
-                'last_update'  => (int)$d['last_update']
+            $columns = [
+                'buyer', 'email', 'phone', 'address',
+                'shipping', 'date_ship', 'comment',
+                'status', 'total_fees', 'tax',
+                'serial', 'administrador_id', 'caja_id',
+                'created_at', 'last_update'
             ];
-        }
 
-        $resp_pod = $this->product_order_detail->insertAllPlain($details);
+            $resp = $this->db->post_one(
+                $orderData,
+                'product_order_id',
+                $columns,
+                'product_order'
+            );
 
-        if ($resp_pod['status'] !== 'success') {
+            if ($resp['status'] !== 'success') {
+                throw new Exception('Failed inserting order');
+            }
+
+            $order = $resp['data'];
+            $order_id = (int)$order['product_order_id'];
+
+            /* =====================================================
+               2️⃣ GENERATE CODE
+            ===================================================== */
+            $code = 'ORD-' . date('Ymd') . '-' . str_pad($order_id, 4, '0', STR_PAD_LEFT);
+
+            $this->db->mysqli->query(
+                "UPDATE product_order 
+                 SET code = '{$code}' 
+                 WHERE product_order_id = {$order_id}"
+            );
+
+            /* =====================================================
+               3️⃣ INSERT ORDER DETAIL (UNO POR UNO)
+            ===================================================== */
+            foreach ($payload['product_order_detail'] as $item) {
+
+                $detail = [
+                    'order_id'     => $order_id,
+                    'product_id'   => $item['product_id'],
+                    'product_name' => $item['product_name'],
+                    'amount'       => $item['amount'],
+                    'price_item'   => $item['price_item'],
+                    'created_at'   => $item['created_at'],
+                    'last_update'  => $item['last_update'],
+                ];
+
+                $detailCols = [
+                    'order_id', 'product_id', 'product_name',
+                    'amount', 'price_item',
+                    'created_at', 'last_update'
+                ];
+
+                $respDetail = $this->db->post_one(
+                    $detail,
+                    'product_order_detail_id',
+                    $detailCols,
+                    'product_order_detail'
+                );
+
+                if ($respDetail['status'] !== 'success') {
+                    throw new Exception('Failed inserting order detail');
+                }
+            }
+
+            /* =====================================================
+               4️⃣ SUCCESS RESPONSE (ANDROID FRIENDLY ❤️)
+            ===================================================== */
+            $this->show_response([
+                'status' => 'success',
+                'msg'    => 'Order created successfully',
+                'data'   => [
+                    'id'   => $order_id,
+                    'code' => $code
+                ]
+            ]);
+
+        } catch (Exception $e) {
 
             // 🔥 rollback manual
-            $this->product_order->deleteOnePlain($order_id);
+            if (!empty($order_id)) {
+                $this->db->mysqli->query(
+                    "DELETE FROM product_order_detail WHERE order_id = {$order_id}"
+                );
+                $this->db->mysqli->query(
+                    "DELETE FROM product_order WHERE product_order_id = {$order_id}"
+                );
+            }
 
             $this->show_response([
                 'status' => 'failed',
                 'msg'    => 'Failed when submit order',
                 'data'   => null
             ]);
-            return;
         }
-
-        // ===============================
-        // ✅ RESPUESTA PARA ANDROID
-        // ===============================
-        $this->show_response([
-            'status' => 'success',
-            'msg'    => 'Order created successfully',
-            'data'   => [
-                'id'   => $order_id,
-                'code' => 'ORD-' . str_pad((string)$order_id, 6, '0', STR_PAD_LEFT)
-            ]
-        ]);
     }
-
     
 
     /* ============================================================
