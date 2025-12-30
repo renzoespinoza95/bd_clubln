@@ -327,7 +327,7 @@ class CLIENT extends REST {
         if ($resp_pod !== true) {
 
             // rollback
-            $this->product_order->deleteOnePlain($order_id);
+            $this->product_order->updateStatusPlain($order_id, 'FAILED');            
 
             $this->show_response([
                 'status' => 'failed',

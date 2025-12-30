@@ -269,5 +269,19 @@ class ProductOrder extends REST {
 
         return $exists > 0 ? $this->getRandomCode() : $final_key;
     }
+
+    public function updateStatusPlain(int $order_id, string $status): void {
+
+        $status = $this->db->real_escape($status);
+
+        $sql = "
+            UPDATE product_order
+            SET status = '{$status}'
+            WHERE product_order_id = {$order_id}
+        ";
+
+        $this->mysqli->query($sql);
+    }
+
 }
 ?>
