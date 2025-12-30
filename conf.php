@@ -51,8 +51,7 @@ class CONF {
         $this->JWT_SECRET  = $GLOBALS['secreto_jwt'];
         $this->APP_NAME    = $GLOBALS['nombre_app'];
 
-        $this->APP_HOST    = $GLOBALS['apphost'];
-        $this->URL_FLASK   = $GLOBALS['url_flask'];
+        $this->APP_HOST    = $GLOBALS['apphost'];        
     }
 }
 

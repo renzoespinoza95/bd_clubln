@@ -288,7 +288,7 @@ class CLIENT extends REST {
 
         $data = json_decode(file_get_contents("php://input") ?: "[]", true);
 
-        if (!isset($data['product_order']) || !isset($data['product_order_detail'])) {
+        if (!isset($data['product_order'], $data['product_order_detail'])) {
             $this->responseInvalidParam();
         }
 
@@ -304,42 +304,51 @@ class CLIENT extends REST {
             return;
         }
 
-        // Insert product order
-        $resp_po = $this->product_order->insertOnePlain($data['product_order']);
+        // ============================
+        // INSERT ORDER HEADER
+        // ============================
+        $order_id = $this->product_order->insertOnePlain($data['product_order']);
 
-        if ($resp_po['status'] === "success") {
-
-            $order_id  = (int)($resp_po['data']['product_order_id'] ?? 0);
-
-            $resp_pod = $this->product_order_detail->insertAllPlain($order_id, $data['product_order_detail']);
-
-            if ($resp_pod['status'] === "success") {
-
-                $status = 'success';
-                $msg    = 'Success submit product order';
-
-                // *** EMAIL ELIMINADO ***
-
-            } else {
-
-                $this->product_order->deleteOnePlain($order_id);
-
-                $status = 'failed';
-                $msg    = 'Failed when submit order.';
-            }
-
-        } else {
-
-            $status = 'failed';
-            $msg    = 'Failed when submit order';
+        if (!$order_id) {
+            $this->show_response([
+                'status' => 'failed',
+                'msg'    => 'Failed when submit order',
+                'data'   => null
+            ]);
+            return;
         }
 
+        // ============================
+        // INSERT ORDER DETAILS
+        // ============================
+        $resp_pod = $this->product_order_detail
+            ->insertAllPlain($order_id, $data['product_order_detail']);
+
+        if ($resp_pod !== true) {
+
+            // rollback
+            $this->product_order->deleteOnePlain($order_id);
+
+            $this->show_response([
+                'status' => 'failed',
+                'msg'    => 'Failed when submit order',
+                'data'   => null
+            ]);
+            return;
+        }
+
+        // ============================
+        // SUCCESS
+        // ============================
         $this->show_response([
-            'status' => $status,
-            'msg'    => $msg,
-            'data'   => $resp_po['data'] ?? null
+            'status' => 'success',
+            'msg'    => 'Success submit product order',
+            'data'   => [
+                'product_order_id' => $order_id
+            ]
         ]);
     }
+
 
     /* ============================================================
        Helper
