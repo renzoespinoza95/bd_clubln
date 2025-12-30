@@ -132,40 +132,60 @@ class DB {
 
     /* ======================== INSERT MULTIPLE ======================== */
 
-    public function post_array(array $obj_array, array $column_names, string $table_name): array {
-        if (empty($obj_array)) {
-            return ['status' => 'failed', 'msg' => 'Empty array', 'data' => []];
+    /* ======================== INSERT MULTIPLE ======================== */
+
+public function post_array(array $obj_array, array $column_names, string $table_name): array {
+
+    if (empty($obj_array)) {
+        return [
+            'status' => 'failed',
+            'msg'    => 'Empty array',
+            'data'   => []
+        ];
+    }
+
+    $query = "";
+
+    foreach ($obj_array as $obj) {
+
+        $cols = [];
+        $vals = [];
+
+        foreach ($column_names as $col) {
+            $val = $obj[$col] ?? '';
+            $cols[] = $col;
+            $vals[] = "'" . $this->real_escape((string)$val) . "'";
         }
 
-        $query = "";
+        $query .= "INSERT INTO {$table_name} (" . implode(",", $cols) . ")
+                   VALUES (" . implode(",", $vals) . ");";
+    }
 
-        foreach ($obj_array as $obj) {
-            $cols = [];
-            $vals = [];
+    if ($this->mysqli->multi_query($query)) {
 
-            foreach ($column_names as $col) {
-                $val = $obj[$col] ?? '';
-                $cols[] = $col;
-                $vals[] = "'" . $this->real_escape((string)$val) . "'";
+        /* 🔥 LIMPIAR RESULTADOS PARA EVITAR "COMMANDS OUT OF SYNC" */
+        while ($this->mysqli->more_results()) {
+            $this->mysqli->next_result();
+            $result = $this->mysqli->use_result();
+            if ($result instanceof mysqli_result) {
+                $result->free();
             }
-
-            $query .= "INSERT INTO $table_name (" . implode(",", $cols) . ") VALUES (" . implode(",", $vals) . ");";
-        }
-
-        if ($this->mysqli->multi_query($query)) {
-            return [
-                'status' => 'success',
-                'msg' => "$table_name created successfully",
-                'data' => $obj_array
-            ];
         }
 
         return [
-            'status' => 'failed',
-            'msg' => $this->mysqli->error,
-            'data' => $obj_array
+            'status' => 'success',
+            'msg'    => "{$table_name} created successfully",
+            'data'   => $obj_array
         ];
     }
+
+    return [
+        'status' => 'failed',
+        'msg'    => $this->mysqli->error,
+        'data'   => $obj_array
+    ];
+}
+
 
     /* ======================== UPDATE MULTIPLE ======================== */
 
@@ -268,6 +288,10 @@ class DB {
     /* ======================== DELETE ======================== */
 
     public function delete_one(int $id, string $pk, string $table_name): array {
+
+        // 🔥 LIMPIA RESULTADOS PENDIENTES
+        $this->clearResults();
+
         $query = "DELETE FROM $table_name WHERE $pk = $id";
 
         if ($this->mysqli->query($query)) {
@@ -276,6 +300,7 @@ class DB {
 
         return ['status' => 'failed', 'msg' => $this->mysqli->error];
     }
+
 
     public function delete_one_str(string $pkval, string $pk, string $table_name): array {
         $query = "DELETE FROM $table_name WHERE $pk = '$pkval'";
@@ -286,5 +311,20 @@ class DB {
 
         return ['status' => 'failed', 'msg' => $this->mysqli->error];
     }
+
+    /* ======================== CLEAR RESULTS ======================== */
+
+    public function clearResults(): void {
+        if ($this->mysqli instanceof mysqli) {
+            while ($this->mysqli->more_results()) {
+                $this->mysqli->next_result();
+                $result = $this->mysqli->use_result();
+                if ($result instanceof mysqli_result) {
+                    $result->free();
+                }
+            }
+        }
+    }
+
 }
 ?>
