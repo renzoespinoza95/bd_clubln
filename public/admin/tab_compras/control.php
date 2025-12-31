@@ -332,6 +332,29 @@ Flight::route('GET /imp_compras_fecha', function(){
     $fini = util::fecha_barra($ini);
     $ffin = util::fecha_barra($fin);
 
+
+
+    $sql = "
+    SELECT 
+        c.compra_id,
+        p.nombre AS proveedor,
+        DATE_FORMAT(c.fecha_creacion, '%d/%m/%Y %H:%i') AS fecha_creacion,
+        c.total_compra
+    FROM compra c
+    LEFT JOIN proveedor p ON p.proveedor_id = c.proveedor_id
+    WHERE c.fecha_creacion BETWEEN %s AND %s
+    ORDER BY c.fecha_creacion
+";
+
+$params = [
+    $ini . ' 00:00:00',
+    $fin . ' 23:59:59'
+];
+
+var_dump($sql, $params);
+exit;
+
+
     $rows = DB::query("
         SELECT 
             c.compra_id,
