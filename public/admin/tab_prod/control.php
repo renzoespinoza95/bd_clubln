@@ -279,7 +279,7 @@ Flight::route('GET /imp_lista_prod', function () {
             p.product_id,
             p.name AS producto,
             p.price,
-            IFNULL(i.stock_actual,0) AS stock,
+            IFNULL(MAX(i.stock_actual),0) AS stock,
             GROUP_CONCAT(c.name SEPARATOR ', ') AS categorias
         FROM product p
         LEFT JOIN product_category pc ON pc.product_id = p.product_id
