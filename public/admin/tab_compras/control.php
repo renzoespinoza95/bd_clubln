@@ -316,51 +316,58 @@ Flight::route('GET /inventario/movimientos/@producto_id', function ($producto_id
 
 Flight::route('GET /imp_compras_fecha', function(){
 
-  include DEFINITION;
-  login_admin::autentificar_administrador();
+    include DEFINITION;
+    login_admin::autentificar_administrador();
 
-  $ini = Flight::request()->query['ini'];
-  $fin = Flight::request()->query['fin'];
+    $ini = Flight::request()->query['ini'] ?? null;
+    $fin = Flight::request()->query['fin'] ?? null;
 
-  $fini = util::fecha_barra($ini);
-  $ffin = util::fecha_barra($fin);
+    if (!$ini || !$fin) {
+        Flight::halt(400, 'Debe enviar las fechas ini y fin');
+    }
 
-  $rows = DB::query("
-    SELECT 
-      c.compra_id,
-      p.nombre AS proveedor,
-      DATE_FORMAT(c.fecha_creacion, '%d/%m/%Y %H:%i') AS fecha_creacion,
-      c.total_compra
-    FROM compra c
-    LEFT JOIN proveedor p ON p.proveedor_id=c.proveedor_id
-    WHERE DATE(c.fecha_creacion) BETWEEN %s AND %s
-    ORDER BY c.fecha_creacion
-  ", $ini, $fin);
+    $fini = util::fecha_barra($ini);
+    $ffin = util::fecha_barra($fin);
 
-  $template_data['informacion'] = [[
-    'razon_social'=>'CLUB SOCIAL LIMA NORTE S.A.C',
-    'ruc'=>'20202020',
-    'titulo_reporte'=>'REPORTE DE COMPRAS DEL ' . $fini . " AL " . $ffin,
-    'fecha'=>date('d/m/Y H:i'),
-    'total_items'=>count($rows)
-  ]];
+    $rows = DB::query("
+        SELECT 
+            c.compra_id,
+            p.nombre AS proveedor,
+            DATE_FORMAT(c.fecha_creacion, '%d/%m/%Y %H:%i') AS fecha_creacion,
+            c.total_compra
+        FROM compra c
+        LEFT JOIN proveedor p ON p.proveedor_id = c.proveedor_id
+        WHERE c.fecha_creacion BETWEEN %s AND %s
+        ORDER BY c.fecha_creacion
+    ", $ini . ' 00:00:00', $fin . ' 23:59:59');
 
-  $i=1;
-  foreach($rows as &$r){ $r['indice']=$i++; }
+    $template_data['informacion'] = [[
+        'razon_social'  => 'CLUB SOCIAL LIMA NORTE S.A.C',
+        'ruc'           => '20202020',
+        'titulo_reporte'=> 'REPORTE DE COMPRAS DEL ' . $fini . ' AL ' . $ffin,
+        'fecha'         => date('d/m/Y H:i'),
+        'total_items'   => count($rows)
+    ]];
 
-  $template_data['listado']=$rows;
+    $i = 1;
+    foreach ($rows as &$r) {
+        $r['indice'] = $i++;
+    }
 
-  $html = (new Mustache)->render(
-    file_get_contents(VARPATH.'/public/reportes/reporte_html/imp_compras_fecha.html'),
-    $template_data
-  );
+    $template_data['listado'] = $rows;
 
-  $pdf = VARPATH.'/public/reportes/archivos_temporales/compras_'.time().'.pdf';
-  $wkh_pdf->addPage($html);
-  exec($wkh_pdf->getCommand($pdf));
+    $html = (new Mustache)->render(
+        file_get_contents(VARPATH.'/public/reportes/reporte_html/imp_compras_fecha.html'),
+        $template_data
+    );
 
-  Flight::redirect($varhost.'/public/reportes/archivos_temporales/'.basename($pdf));
+    $pdf = VARPATH.'/public/reportes/archivos_temporales/compras_'.time().'.pdf';
+    $wkh_pdf->addPage($html);
+    exec($wkh_pdf->getCommand($pdf));
+
+    Flight::redirect($varhost.'/public/reportes/archivos_temporales/'.basename($pdf));
 });
+
 
 Flight::route('GET /imp_compras_fecha_excel', function(){
 
