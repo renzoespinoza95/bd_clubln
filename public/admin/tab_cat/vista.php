@@ -1,5 +1,5 @@
 <div class="row-fluid" id="appCategory">
-
+<!-- este es mi frontend usando boostrap2.3.2, vuejs2 modo estandalone y jquery2.0 -->
   <div class="span12">
     <h2>Categorías</h2>
 
@@ -19,7 +19,6 @@
           <th>Nombre</th>
           <th>Color</th>
           <th>Breve</th>
-          <th>Icono</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -38,13 +37,20 @@
         </div>
 
         <div class="control-group">
-          <label>Icono</label>
-          <div class="controls"><input v-model="nuevo.icon"></div>
-        </div>
-
-        <div class="control-group">
           <label>Color</label>
-          <div class="controls"><input v-model="nuevo.color" placeholder="#ff0000"></div>
+          <div class="controls">
+            <select v-model="nuevo.color" class="input-xlarge">
+              <option v-for="c in colores"
+                      :value="c"
+                      :style="{
+                        background: c,
+                        color: getTextColor(c),
+                        fontWeight: 'bold'
+                      }">
+                {{ c }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <div class="control-group">
@@ -72,13 +78,20 @@
         </div>
 
         <div class="control-group">
-          <label>Icono</label>
-          <div class="controls"><input v-model="form.icon"></div>
-        </div>
-
-        <div class="control-group">
           <label>Color</label>
-          <div class="controls"><input v-model="form.color"></div>
+          <div class="controls">
+            <select v-model="form.color" class="input-xlarge">
+              <option v-for="c in colores"
+                      :value="c"
+                      :style="{
+                        background: c,
+                        color: getTextColor(c),
+                        fontWeight: 'bold'
+                      }">
+                {{ c }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <div class="control-group">
@@ -102,8 +115,15 @@ new Vue({
   data:{
     apphost: (typeof apphost !== 'undefined' ? apphost : ''),
     categorias:[],
-    nuevo:{ name:'', icon:'', color:'#999999', brief:'' },
+    nuevo:{ name:'', color:'#999999', brief:'' },
     form:{},
+    colores: [
+      '#FA8072','#800020','#FFF9C4','#C8E6C9','#6A1B9A',
+      '#0277BD','#FF6F00','#F4511E','#FDD835','#7CB342',
+      '#8E24AA','#039BE5','#37474F','#AFB42B','#5E35B1',
+      '#FB8C00','#C62828','#AD1457','#B71C1C','#D32F2F',
+      '#E53935','#1E88E5','#43A047','#FBC02D','#8D6E63'
+    ],
     dt:null
   },
   methods:{
@@ -151,7 +171,6 @@ new Vue({
               c.name,
               `<span style="padding:5px;background:${c.color};color:#fff">${c.color}</span>`,
               c.brief,
-              c.icon,
               actions
             ]);
           });
@@ -163,6 +182,16 @@ new Vue({
     abrirModalCrear(){
       this.nuevo = { name:'', icon:'', color:'#999999', brief:'' };
       $('#modalCrearCategory').modal('show');
+    },
+
+    getTextColor(hex){
+      const c = hex.substring(1);
+      const rgb = parseInt(c,16);
+      const r = (rgb>>16)&255;
+      const g = (rgb>>8)&255;
+      const b = rgb&255;
+      const yiq = (r*299 + g*587 + b*114) / 1000;
+      return yiq >= 150 ? '#000' : '#fff';
     },
 
     crear(){

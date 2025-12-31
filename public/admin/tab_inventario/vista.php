@@ -3,12 +3,6 @@
   <div class="span12">
     <h2>Inventario</h2>
 
-    <div class="form-actions">
-      <button class="btn btn-success" @click="abrirCrear">
-        <i class="icon-plus icon-white"></i> Nuevo Inventario
-      </button>
-    </div>
-
     <!-- TABLA -->
     <table id="tablaInv" class="table table-bordered table-striped">
       <thead>

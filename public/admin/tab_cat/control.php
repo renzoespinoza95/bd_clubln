@@ -1,7 +1,5 @@
 <?php
-/* -------------------------------
- * Vista /tab3
- * ------------------------------- */
+// este es mi backend usando php8.2, flightphp y meekrodb2
 Flight::route('GET /cat', function () {
     include DEFINITION;
     login_admin::autentificar_administrador();
@@ -29,7 +27,7 @@ Flight::route('POST /category/crear', function () {
 
     DB::insert('category', [
         'name'        => $d['name'],
-        'icon'        => $d['icon'],
+        'icon'        => "icon_cat.jpg",
         'draft'       => 0,
         'brief'       => $d['brief'],
         'color'       => $d['color'],
@@ -51,7 +49,6 @@ Flight::route('POST /category/editar', function () {
 
     DB::update('category', [
         'name'        => $d['name'],
-        'icon'        => $d['icon'],
         'brief'       => $d['brief'],
         'color'       => $d['color'],
         'last_update' => $now
