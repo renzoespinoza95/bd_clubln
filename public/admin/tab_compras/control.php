@@ -351,10 +351,9 @@ $params = [
     $fin . ' 23:59:59'
 ];
 
-var_dump($sql, $params);
-exit;
+$rows = DB::query($sql, ...$params);
 
-
+/*
     $rows = DB::query("
         SELECT 
             c.compra_id,
@@ -366,6 +365,7 @@ exit;
         WHERE c.fecha_creacion BETWEEN %s AND %s
         ORDER BY c.fecha_creacion
     ", $ini . ' 00:00:00', $fin . ' 23:59:59');
+    */
 
     $template_data['informacion'] = [[
         'razon_social'  => 'CLUB SOCIAL LIMA NORTE S.A.C',
