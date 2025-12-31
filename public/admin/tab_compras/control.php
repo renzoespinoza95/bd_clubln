@@ -336,7 +336,7 @@ Flight::route('GET /imp_compras_fecha', function(){
         SELECT 
             c.compra_id,
             p.nombre AS proveedor,
-            DATE_FORMAT(c.fecha_creacion, '%%d/%%m/%%Y %%H:%%i') AS fecha_creacion,
+            c.fecha_creacion,
             c.total_compra
         FROM compra c
         LEFT JOIN proveedor p ON p.proveedor_id = c.proveedor_id
