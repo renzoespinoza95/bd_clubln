@@ -329,10 +329,6 @@ Flight::route('GET /imp_compras_fecha', function(){
     $fini = util::fecha_barra($ini);
     $ffin = util::fecha_barra($fin);
 
-    var_dump($ini, $fin);
-    exit;
-
-
     $rows = DB::query("
         SELECT 
             c.compra_id,
