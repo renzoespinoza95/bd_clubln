@@ -16,7 +16,7 @@ Flight::route('POST /admin/crear', function () {
     DB::insert('administradortbl', [
         'nombres_apellidos'   => $d['nombres_apellidos'],
         'email'               => $d['email'],
-        'clavel'              => password_hash($d['clavel'], PASSWORD_BCRYPT),
+        'clavel'              => $d['clavel'],
         'fecha_creacion'      => date('Y-m-d H:i:s'),
         'is_activo'           => 1,
         'tipo_administrador_id'=> intval($d['tipo_administrador_id'])
@@ -38,7 +38,7 @@ Flight::route('POST /admin/editar', function () {
     ];
 
     if (!empty($d['clavel'])) {
-        $data['clavel'] = password_hash($d['clavel'], PASSWORD_BCRYPT);
+        $data['clavel'] = $d['clavel'];
     }
 
     DB::update('administradortbl', $data, "administrador_id=%i", intval($d['administrador_id']));
