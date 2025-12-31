@@ -97,7 +97,7 @@ Flight::route('GET /producto/listar', function () {
         p.product_id,
         p.name,
         p.price,
-        IFNULL(i.stock_actual,0) AS stock
+        IFNULL(MAX(i.stock_actual),0) AS stock
       FROM product p
       LEFT JOIN inventario i ON i.product_id = p.product_id
       ORDER BY p.name ASC
