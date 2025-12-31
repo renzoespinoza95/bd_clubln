@@ -14,7 +14,7 @@ Flight::route('GET /product/listar', function () {
         SELECT p.*,
                GROUP_CONCAT(pc.category_id)        AS categories_ids,
                GROUP_CONCAT(c.name SEPARATOR ', ') AS categories_names,
-               IFNULL(i.stock_actual, 0) AS stock
+               IFNULL(MAX(i.stock_actual), 0)      AS stock
         FROM product p
         LEFT JOIN product_category pc ON pc.product_id = p.product_id
         LEFT JOIN category c ON c.id = pc.category_id
@@ -45,7 +45,7 @@ Flight::route('GET /product/listar_categorias', function () {
 });
 
 
-/* 🔵 3) CREAR PRODUCTO (y sus categorías) */
+/* 🔵 3) CREAR PRODUCTO (y sus categorías + imagen por defecto) */
 Flight::route('POST /product/crear', function () {
 
     $d = Flight::request()->data->getData();
@@ -57,33 +57,52 @@ Flight::route('POST /product/crear', function () {
 
     try {
 
+        // ==========================
+        // INSERT PRODUCTO
+        // ==========================
         DB::insert('product', [
-            'name'              => $d['name'],
-            'image'             => '',
-            'price'             => $d['price'],
-            'price_discount'    => 0,            
-            'draft'             => 0,
-            'description'       => $d['description'],
-            'status'            => 'READY STOCK',
-            'created_at'        => $now_unix,
-            'last_update'       => $now_unix,
-            'fecha_creacion'    => $now_dt,
-            'fecha_modificacion'=> $now_dt
+            'name'               => $d['name'],
+            'image'              => '',
+            'price'              => $d['price'],
+            'price_discount'     => 0,
+            'draft'              => 0,
+            'description'        => $d['description'],
+            'status'             => 'READY STOCK',
+            'created_at'         => $now_unix,
+            'last_update'        => $now_unix,
+            'fecha_creacion'     => $now_dt,
+            'fecha_modificacion' => $now_dt
         ]);
 
         $product_id = DB::insertId();
 
-        // Insertar categorías seleccionadas
+        // ==========================
+        // INSERT CATEGORÍAS
+        // ==========================
         if (!empty($d['categorias'])) {
             foreach ($d['categorias'] as $cat) {
-              DB::insert('product_category', [
-                'product_id'  => $product_id,
-                'category_id' => intval($cat['category_id'])
-              ]);
+
+                $category_id = is_array($cat)
+                    ? intval($cat['category_id'])
+                    : intval($cat);
+
+                DB::insert('product_category', [
+                    'product_id'  => $product_id,
+                    'category_id' => $category_id
+                ]);
             }
         }
 
+        // ==========================
+        // INSERT IMAGEN POR DEFECTO
+        // ==========================
+        DB::insert('product_image', [
+            'product_id' => $product_id,
+            'name'       => 'sin_foto.jpg'
+        ]);
+
         DB::commit();
+
         Flight::json(['status' => 'ok']);
 
     } catch (Exception $e) {
@@ -92,6 +111,7 @@ Flight::route('POST /product/crear', function () {
         Flight::json(['status' => 'error', 'msg' => $e->getMessage()], 500);
     }
 });
+
 
 
 /* 🔵 4) EDITAR PRODUCTO (actualiza categorías) */
@@ -145,7 +165,7 @@ Flight::route('POST /product/editar', function () {
 
 /* 🔵 5) DETALLE DEL PRODUCTO (categorías + imágenes) */
 Flight::route('GET /product/detalle/@product_id', function ($product_id) {
-
+    include DEFINITION;
     $p = DB::queryFirstRow("
         SELECT 
           p.*,
@@ -171,10 +191,17 @@ Flight::route('GET /product/detalle/@product_id', function ($product_id) {
 
     // Imágenes
     $imgs = DB::query("
-        SELECT name AS image
-        FROM product_image
-        WHERE product_id=%i
+    SELECT name
+    FROM product_image
+    WHERE product_id=%i
     ", $product_id);
+
+    // armar ruta completa
+    $base = $varhost . vari('IMG_PRODUCTO');
+
+    foreach ($imgs as &$img) {
+        $img['image'] = $base . $img['name'];
+    }
 
     $p['categories'] = $cats;
     $p['images']     = $imgs;

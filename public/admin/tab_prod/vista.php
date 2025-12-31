@@ -1,5 +1,5 @@
 <div class="row-fluid" id="appProduct">
-
+<!-- este es mi frontend usando boostrap2.3.2, vuejs2 modo estandalone y jquery2.0 -->
   <div class="span12">
     <h2>Productos</h2>
 

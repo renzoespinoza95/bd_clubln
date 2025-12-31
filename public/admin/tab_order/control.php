@@ -11,13 +11,31 @@ Flight::route('GET /order', function () {
    LISTAR ÓRDENES
 ====================================== */
 Flight::route('GET /product_order/listar', function(){
+
     DB::query("SET NAMES 'utf8mb4'");
+
     $rows = DB::query("
-        SELECT product_order_id, code, buyer, status, total_fees,
-               FROM_UNIXTIME(created_at/1000,'%Y-%m-%d %H:%i:%s') AS fecha
-        FROM product_order
-        ORDER BY product_order_id DESC
+        SELECT 
+            po.product_order_id,
+            po.code,
+            po.buyer,
+            po.status,
+            po.total_fees,
+            FROM_UNIXTIME(po.created_at/1000,'%Y-%m-%d %H:%i:%s') AS fecha,
+
+            a.nombres_apellidos AS administrador,
+
+            po.caja_id,
+            IF(c.caja_id IS NULL, 'CERRADA', c.estado) AS estado_caja
+
+        FROM product_order po
+        LEFT JOIN administradortbl a 
+               ON a.administrador_id = po.administrador_id
+        LEFT JOIN caja c
+               ON c.caja_id = po.caja_id
+        ORDER BY po.product_order_id DESC
     ");
+
     Flight::json($rows);
 });
 

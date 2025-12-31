@@ -19,7 +19,9 @@
           <th>ID</th>
           <th>Código</th>
           <th>Cliente</th>
+          <th>Administrador</th>
           <th>Estado</th>
+          <th>Caja</th>
           <th>Fecha</th>
           <th>Total</th>
           <th>Acciones</th>
@@ -425,7 +427,23 @@ new Vue({
                   <li><a href="#" class="eliminar" data-id="${o.product_order_id}">Eliminar</a></li>
                 </ul>
               </div>`;
-            this.dt.row.add([ o.product_order_id, o.code, o.buyer, o.status, o.fecha, o.total_fees, actions ]);
+
+            const cajaTxt = o.caja_id
+              ? `#${o.caja_id} (${o.estado_caja})`
+              : 'CERRADA';
+
+            this.dt.row.add([
+              o.product_order_id,
+              o.code,
+              o.buyer,
+              o.administrador || '—',
+              o.status,
+              cajaTxt,
+              o.fecha,
+              o.total_fees,
+              actions
+            ]);
+
           });
           this.dt.draw(false);
         });
