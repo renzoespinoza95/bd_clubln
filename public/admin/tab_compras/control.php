@@ -319,12 +319,15 @@ Flight::route('GET /imp_compras_fecha', function(){
     include DEFINITION;
     login_admin::autentificar_administrador();
 
-    $ini = Flight::request()->query['ini'] ?? null;
-    $fin = Flight::request()->query['fin'] ?? null;
+    $request = Flight::request();
 
-    if (!$ini || !$fin) {
+    $ini = trim($request->query->ini ?? $_GET['ini'] ?? '');
+    $fin = trim($request->query->fin ?? $_GET['fin'] ?? '');
+
+    if ($ini === '' || $fin === '') {
         Flight::halt(400, 'Debe enviar las fechas ini y fin');
     }
+
 
     $fini = util::fecha_barra($ini);
     $ffin = util::fecha_barra($fin);
