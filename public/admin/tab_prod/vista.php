@@ -8,11 +8,6 @@
         <i class="icon-plus icon-white"></i> Nuevo Producto
       </button>
 
-      <!-- 🟦 NUEVO BOTÓN PARA AÑADIR CATEGORÍA -->
-      <button class="btn btn-info" style="margin-left:10px" @click="abrirModalCrearCategoria">
-        <i class="icon-plus icon-white"></i> Nueva Categoría
-      </button>
-
       <button class="btn btn-warning" style="margin-left:10px" @click="abrirReporteProductos">
         <i class="icon-print icon-white"></i> Reporte Productos
       </button>
