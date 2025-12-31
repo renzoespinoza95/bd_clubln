@@ -371,34 +371,51 @@ Flight::route('GET /imp_compras_fecha', function(){
 
 Flight::route('GET /imp_compras_fecha_excel', function(){
 
-  include DEFINITION;
-  login_admin::autentificar_administrador();
+    include DEFINITION;
+    login_admin::autentificar_administrador();
 
-  header("Content-Type: application/vnd.ms-excel");
-  header("Content-Disposition: attachment; filename=compras.xls");
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=compras.xls");
 
-  $ini = Flight::request()->query['ini'];
-  $fin = Flight::request()->query['fin'];
+    $request = Flight::request();
 
-  $rows = DB::query("
-    SELECT c.compra_id, p.nombre, c.fecha_creacion, c.total_compra
-    FROM compra c
-    LEFT JOIN proveedor p ON p.proveedor_id=c.proveedor_id
-    WHERE DATE(c.fecha_creacion) BETWEEN %s AND %s
-    ORDER BY c.fecha_creacion ASC
-  ", $ini, $fin);
+    $ini = trim($request->query->ini ?? $_GET['ini'] ?? '');
+    $fin = trim($request->query->fin ?? $_GET['fin'] ?? '');
 
-  echo "<table border='1'>";
-  echo "<tr><th>ID</th><th>Proveedor</th><th>Fecha</th><th>Total</th></tr>";
-  foreach($rows as $r){
-    echo "<tr>
-      <td>{$r['compra_id']}</td>
-      <td>{$r['nombre']}</td>
-      <td>{$r['fecha_creacion']}</td>
-      <td>{$r['total_compra']}</td>
-    </tr>";
-  }
-  echo "</table>";
+    if ($ini === '' || $fin === '') {
+        Flight::halt(400, 'Debe enviar las fechas ini y fin');
+    }
+
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $ini) ||
+        !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fin)) {
+        Flight::halt(400, 'Formato de fecha inválido');
+    }
+
+    $rows = DB::query("
+        SELECT 
+            c.compra_id,
+            p.nombre,
+            c.fecha_creacion,
+            c.total_compra
+        FROM compra c
+        LEFT JOIN proveedor p ON p.proveedor_id = c.proveedor_id
+        WHERE c.fecha_creacion BETWEEN %s AND %s
+        ORDER BY c.fecha_creacion ASC
+    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+    echo "<table border='1'>";
+    echo "<tr><th>ID</th><th>Proveedor</th><th>Fecha</th><th>Total</th></tr>";
+
+    foreach ($rows as $r) {
+        echo "<tr>
+            <td>{$r['compra_id']}</td>
+            <td>{$r['nombre']}</td>
+            <td>{$r['fecha_creacion']}</td>
+            <td>{$r['total_compra']}</td>
+        </tr>";
+    }
+
+    echo "</table>";
 });
 
 
