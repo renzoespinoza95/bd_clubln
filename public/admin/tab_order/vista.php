@@ -19,6 +19,8 @@
           <th>ID</th>
           <th>Código</th>
           <th>Cliente</th>
+          <th>Mesa</th>
+          <th>Modo</th>
           <th>Administrador</th>
           <th>Estado</th>
           <th>Caja</th>
@@ -70,7 +72,7 @@
           </tbody>
         </table>
 
-        <button class="btn btn-success" @click="abrirCrearDetail">Agregar Ítem</button>
+        <button class="btn btn-success" @click="abrirCrearDetail">Nuevo prod.</button>
 
       </div>
       <div class="modal-footer">
@@ -104,6 +106,16 @@
         </div>
       </div>
 
+      <div class="control-group">
+        <label>Mesa</label>
+        <v-select
+          :options="opcionesMesa"
+          label="label"
+          v-model="nueva.mesa"
+        ></v-select>
+      </div>
+
+
 
 
         <h4>Items</h4>
@@ -133,7 +145,7 @@
 </table>
 
 <button class="btn btn-success" @click="abrirModalAgregarItemNuevaOrden">
-  Agregar Ítem
+  Agregar mas prod.
 </button>
 
 
@@ -182,15 +194,14 @@
 
     <!-- Crear Detalle -->
     <div id="modalCrearDetail" class="modal hide fade">
-      <div class="modal-header"><h3>Agregar Ítem</h3></div>
+      <div class="modal-header"><h3>Detalle: Agregar prod.</h3></div>
       <div class="modal-body">
         <label>Producto</label>
-        <select v-model="detailForm.product_id" @change="onProductoChange">
-          <option v-for="p in productos" :value="p.product_id">
-            {{ p.name }} - S/ {{ p.price }}
-          </option>
-        </select>
-
+        <v-select
+          :options="productosSelect"
+          label="label"
+          v-model="detailForm.producto"
+        ></v-select>
 
         <label>Cantidad</label>
         <input v-model.number="detailForm.amount">
@@ -228,10 +239,10 @@
     </div>
 
 
-    <!-- MODAL AGREGAR ITEM (NUEVA ORDEN) -->
+    <!-- MODAL Nuevo: Agregar prod. (NUEVA ORDEN) -->
     <div id="modalAgregarItemNuevaOrden" class="modal hide fade">
       <div class="modal-header">
-        <h3>Agregar producto orden</h3>
+        <h3>Nuevo: Agregar prod.</h3>
       </div>
 
       <div class="modal-body">
@@ -359,7 +370,7 @@ new Vue({
     apphost: (typeof apphost !== 'undefined' ? apphost : ''),
     ordenes:[],
     productos:[],
-
+    mesas: [],  
     nuevo:{code:'',buyer:'',address:'',total_fees:0,status:'WAITING'},
     form:{},
     detalle:{},
@@ -370,7 +381,13 @@ new Vue({
     clienteEdit:{},
     dtClientes:null,
 
-    detailForm:{},
+    detailForm:{
+      order_id:null,
+      producto:null,   // 👈 objeto seleccionado
+      product_id:null,
+      amount:1,
+      price_item:0
+    },
     itemForm:{ product_id:null, amount:1, price_item:0 },
     dt:null,
     cajaActual: null,
@@ -382,7 +399,8 @@ new Vue({
       address:'',
       total_fees:0,
       items:[],
-      tipo_pago_id:null
+      tipo_pago_id:null,
+      mesa: null
     },
   },
 
@@ -432,10 +450,21 @@ new Vue({
               ? `#${o.caja_id} (${o.estado_caja})`
               : 'CERRADA';
 
+            const mesaTxt = o.modo === 'MESA'
+              ? (o.mesa_nombre || `#${o.mesa_id}`)
+              : '—';
+
+            const modoTxt = o.modo === 'MESA'
+              ? '<span class="label label-warning">MESA</span>'
+              : '<span class="label label-info">DIRECTA</span>';
+
+
             this.dt.row.add([
               o.product_order_id,
               o.code,
               o.buyer,
+              mesaTxt,
+              modoTxt,              
               o.administrador || '—',
               o.status,
               cajaTxt,
@@ -599,20 +628,24 @@ new Vue({
 
 
     crearOrder(){
-      if(!this.nueva.cliente_id){
-        alert('Seleccione cliente');
+      if(!this.nueva.tipo_pago_id){
+        apprise('Seleccione tipo de pago');
         return;
       }
 
       if(this.nueva.items.length === 0){
-        alert('Agregue al menos un ítem');
+        apprise('Agregue al menos un ítem');
         return;
       }
 
+      const mesa_id = this.nueva.mesa?.mesa_id || 0;
+
       axios.post(`${this.apphost}/product_order/crear`,{
-        cliente_id: this.nueva.cliente_id,
         buyer: this.nueva.buyer,
+        address: this.nueva.address,
         total_fees: this.totalOrden,
+        tipo_pago_id: this.nueva.tipo_pago_id,
+        mesa_id: mesa_id,
         items: this.nueva.items
       }).then(()=>{
         $('#modalCrearOrder').modal('hide');
@@ -742,6 +775,12 @@ new Vue({
       $('#modalAgregarItemNuevaOrden').modal('hide');
     },
 
+    cargarMesas(){
+      axios.get(`${this.apphost}/mesa/listar`)
+        .then(r => this.mesas = r.data);
+    },
+
+
 
     abrirModalNuevoCliente(){
       this.clienteForm = { dni:'', nombre:'' };
@@ -771,6 +810,7 @@ new Vue({
     
     this.cargarProductos();
     this.listar();
+    this.cargarMesas();
 
     axios.get(`${this.apphost}/cliente/listar`)
       .then(r=>{
@@ -808,6 +848,13 @@ new Vue({
       }
     },
 
+    'detailForm.producto'(p){
+        if(p){
+          this.detailForm.product_id = p.product_id;
+          this.detailForm.price_item = p.price;
+        }
+    },    
+
     // cuando cambia el total calculado
     totalOrden(v){
       this.nueva.total_fees = v;
@@ -815,6 +862,14 @@ new Vue({
   },
 
   computed:{
+
+    productosSelect(){
+      return this.productos.map(p => ({
+        product_id: p.product_id,
+        price: p.price,
+        label: `${p.name} - S/ ${p.price}`
+      }));
+    },
     totalDetalle(){
       return (this.detailForm.amount || 0) *
              (this.detailForm.price_item || 0);
@@ -834,6 +889,18 @@ new Vue({
     totalItemNuevaOrden(){
       return (this.itemForm.amount || 0) *
              (this.itemForm.price_item || 0);
+    },
+
+    opcionesMesa(){
+      return [
+        { mesa_id: 0, label: 'DIRECTO' },
+        ...this.mesas
+          .filter(m => m.estado === 'DISPONIBLE')
+          .map(m => ({
+            mesa_id: m.mesa_id,
+            label: m.nombre
+          }))
+      ];
     }
   }
 

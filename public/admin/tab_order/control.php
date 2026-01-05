@@ -15,25 +15,27 @@ Flight::route('GET /product_order/listar', function(){
     DB::query("SET NAMES 'utf8mb4'");
 
     $rows = DB::query("
-        SELECT 
-            po.product_order_id,
-            po.code,
-            po.buyer,
-            po.status,
-            po.total_fees,
-            FROM_UNIXTIME(po.created_at/1000,'%Y-%m-%d %H:%i:%s') AS fecha,
-
-            a.nombres_apellidos AS administrador,
-
-            po.caja_id,
-            IF(c.caja_id IS NULL, 'CERRADA', c.estado) AS estado_caja
-
-        FROM product_order po
-        LEFT JOIN administradortbl a 
-               ON a.administrador_id = po.administrador_id
-        LEFT JOIN caja c
-               ON c.caja_id = po.caja_id
-        ORDER BY po.product_order_id DESC
+            SELECT 
+              po.product_order_id,
+              po.code,
+              po.buyer,
+              po.status,
+              po.total_fees,
+              po.modo,
+              po.mesa_id,
+              m.nombre AS mesa_nombre,
+              FROM_UNIXTIME(po.created_at/1000,'%Y-%m-%d %H:%i:%s') AS fecha,
+              a.nombres_apellidos AS administrador,
+              po.caja_id,
+              IF(c.caja_id IS NULL, 'CERRADA', c.estado) AS estado_caja
+            FROM product_order po
+            LEFT JOIN administradortbl a 
+                   ON a.administrador_id = po.administrador_id
+            LEFT JOIN caja c
+                   ON c.caja_id = po.caja_id
+            LEFT JOIN mesa m
+                   ON m.mesa_id = po.mesa_id
+            ORDER BY po.product_order_id DESC
     ");
 
     Flight::json($rows);
@@ -120,20 +122,57 @@ Flight::route('POST /product_order/crear', function () {
 
     $now = time() * 1000;
 
+    $mesa_id = (int)($d['mesa_id'] ?? 0);
+
+    $modo = 'DIRECTA';
+    $mesa_id_db = null;
+
+    if($mesa_id > 0){
+
+        // 🔒 verificar que no haya orden abierta en esa mesa
+        $existe = DB::queryFirstField("
+            SELECT COUNT(*) 
+            FROM product_order
+            WHERE mesa_id = %i
+              AND status = 'ABIERTA'
+        ", $mesa_id);
+
+        if($existe){
+            Flight::json([
+                'status'=>'error',
+                'msg'=>'La mesa ya está ocupada'
+            ],409);
+            return;
+        }
+
+        $modo = 'MESA';
+        $mesa_id_db = $mesa_id;
+
+        // 🪑 marcar mesa ocupada
+        DB::update('mesa',[
+            'estado'=>'OCUPADA'
+        ],"mesa_id=%i",$mesa_id);
+    }
+
+
     DB::insert('product_order', [
-        'code'               => generarCodigoOrden(),
-        'buyer'              => $d['buyer'] ?? 'CLIENTE',
-        'address'            => $d['address'] ?? '',
-        'administrador_id'   => $administrador_id,
-        'caja_id'            => $caja['caja_id'],
-        'tipo_pago_id'       => $d['tipo_pago_id'],
-        'status'             => 'VENTA',
-        'total_fees'         => $d['total_fees'],
-        'created_at'         => $now,
-        'last_update'        => $now,
-        'fecha_creacion'     => date('Y-m-d H:i:s'),
-        'fecha_modificacion' => date('Y-m-d H:i:s')
+        'code'             => generarCodigoOrden(),
+        'buyer'            => $d['buyer'] ?? 'DIRECTO',
+        'address'          => $d['address'] ?? '',
+        'administrador_id' => $administrador_id,
+        'caja_id'          => $caja['caja_id'],
+        'tipo_pago_id'     => $d['tipo_pago_id'],
+        'mesa_id'          => $mesa_id_db,   // 👈 NULL o ID
+        'modo'             => $modo,          // DIRECTA | MESA
+        'status'           => $modo === 'MESA' ? 'ABIERTA' : 'VENTA',
+        'fecha_inicio'     => $modo === 'MESA' ? date('Y-m-d H:i:s') : null,
+        'total_fees'       => $d['total_fees'],
+        'created_at'       => $now,
+        'last_update'      => $now,
+        'fecha_creacion'   => date('Y-m-d H:i:s'),
+        'fecha_modificacion'=>date('Y-m-d H:i:s')
     ]);
+
 
     $order_id = DB::insertId();
 
@@ -477,3 +516,20 @@ Flight::route('GET /tipo_pago/listar', function(){
     ");
     Flight::json($rows);
 });
+
+Flight::route('GET /mesa/listar', function(){
+
+    DB::query("SET NAMES 'utf8mb4'");
+
+    $rows = DB::query("
+        SELECT 
+            mesa_id,
+            nombre,
+            estado
+        FROM mesa
+        ORDER BY mesa_id ASC
+    ");
+
+    Flight::json($rows);
+});
+
