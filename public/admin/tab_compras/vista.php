@@ -77,11 +77,13 @@
         <div class="control-group">
           <label>Proveedor</label>
           <div class="controls">
-            <select v-model="nuevo.proveedor_id" class="input-xxlarge">
-              <option v-for="p in proveedores" :value="p.proveedor_id">
-                {{ p.nombre }}
-              </option>
-            </select>
+            <v-select
+              :options="proveedores"
+              label="nombre"
+              :reduce="p => p.proveedor_id"
+              v-model="nuevo.proveedor_id"
+              placeholder="Seleccione proveedor">
+            </v-select>
           </div>
         </div>
 
@@ -104,22 +106,23 @@
               <th></th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="(it,i) in nuevo.items" :key="i">
-              <td>
-                <select v-model="it.product_id" class="input-large">
-                  <option v-for="pr in productos" :value="pr.product_id">{{ pr.name }}</option>
-                </select>
-              </td>
-              <td><input v-model="it.costo_unitario" class="input-mini"></td>
-              <td><input v-model="it.cantidad" class="input-mini"></td>
-              <td>{{ it.cantidad * it.costo_unitario }}</td>
-              <td><a href="#" @click.prevent="quitarItem(it)">x</a></td>
-            </tr>
-          </tbody>
+            <tbody>
+              <tr v-for="(it,i) in nuevo.items" :key="i">
+                <td>{{ it.producto }}</td>
+                <td>{{ it.costo_unitario }}</td>
+                <td>{{ it.cantidad }}</td>
+                <td>{{ it.cantidad * it.costo_unitario }}</td>
+                <td>
+                  <a href="#" @click.prevent="quitarItem(it)">x</a>
+                </td>
+              </tr>
+            </tbody>
         </table>
 
-        <button class="btn btn-small" @click="agregarItem">+ Item</button>
+        <button class="btn btn-small btn-success"
+                @click="abrirModalAgregarItemCompra">
+          + Agregar prod.
+        </button>        
 
         <hr>
         <h3>Total: S/ {{ totalNuevo }}</h3>
@@ -234,11 +237,52 @@
       </div>
     </div>
 
+    <!-- MODAL Agregar Producto (COMPRAS) -->
+    <div id="modalAgregarItemCompra" class="modal hide fade">
+      <div class="modal-header">
+        <h3>Agregar Producto</h3>
+      </div>
+
+      <div class="modal-body">
+
+        <label>Producto</label>
+        <v-select
+          :options="productosSelectCompra"
+          label="label"
+          v-model="itemTemp.producto"
+        ></v-select>
+
+        <label>Costo Unitario</label>
+        <input type="number" v-model.number="itemTemp.costo_unitario">
+
+        <label>Cantidad</label>
+        <input type="number" v-model.number="itemTemp.cantidad" min="1">
+
+        <label>Subtotal</label>
+        <input
+          type="number"
+          :value="(itemTemp.cantidad * itemTemp.costo_unitario).toFixed(2)"
+          readonly
+        >
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-danger" @click="confirmarAgregarItemCompra">
+          Aceptar
+        </button>
+        <button class="btn" data-dismiss="modal">
+          Cancelar
+        </button>
+      </div>
+    </div>
 
 
   </div>
 </div>
-
+<script>
+Vue.component('v-select', VueSelect.VueSelect);
+</script>
 <script>
 new Vue({
   el: '#appCompra',
@@ -253,13 +297,27 @@ new Vue({
     form: {},
     filtro:{ fecha_ini:'', fecha_fin:'' },
     detalle: { cabecera:{}, detalle:[] },
+    itemTemp:{
+      producto: null,
+      product_id: null,
+      costo_unitario: 0,
+      cantidad: 1
+    },
+
     dt: null
   },
 
   computed:{
     totalNuevo(){
       return this.nuevo.items.reduce((s,it)=> s + (it.cantidad * it.costo_unitario), 0);
+    },
+    productosSelectCompra(){
+      return this.productos.map(p => ({
+        product_id: p.product_id,
+        label: `${p.name}`
+      }));
     }
+
   },
 
   methods:{
@@ -364,6 +422,76 @@ new Vue({
     quitarItem(it){
       this.nuevo.items = this.nuevo.items.filter(x=>x!==it);
     },
+    abrirModalItemCompra(){
+      this.itemTemp = {
+        product_id: null,
+        costo_unitario: 0,
+        cantidad: 1
+      };
+      $('#modalItemCompra').modal('show');
+    },
+
+    confirmarItemCompra(){
+
+      if(!this.itemTemp.product_id){
+        alert('Seleccione un producto');
+        return;
+      }
+
+      if(this.itemTemp.cantidad <= 0 || this.itemTemp.costo_unitario <= 0){
+        alert('Cantidad y costo deben ser mayores a 0');
+        return;
+      }
+
+      const prod = this.productos.find(
+        p => p.product_id === this.itemTemp.product_id
+      );
+
+      this.nuevo.items.push({
+        product_id: this.itemTemp.product_id,
+        producto: prod.name,
+        cantidad: this.itemTemp.cantidad,
+        costo_unitario: this.itemTemp.costo_unitario
+      });
+
+      $('#modalItemCompra').modal('hide');
+    },
+
+    abrirModalAgregarItemCompra(){
+      this.itemTemp = {
+        producto: null,
+        product_id: null,
+        costo_unitario: 0,
+        cantidad: 1
+      };
+
+      this.$nextTick(() => {
+        this.liberarFocusVueSelect();
+        $('#modalAgregarItemCompra').modal('show');
+      });
+    },
+
+    confirmarAgregarItemCompra(){
+
+      if(!this.itemTemp.producto){
+        apprise('Seleccione un producto');
+        return;
+      }
+
+      if(this.itemTemp.cantidad <= 0){
+        apprise('Cantidad inválida');
+        return;
+      }
+
+      this.nuevo.items.push({
+        product_id: this.itemTemp.producto.product_id,
+        producto: this.itemTemp.producto.label,
+        cantidad: this.itemTemp.cantidad,
+        costo_unitario: this.itemTemp.costo_unitario
+      });
+
+      $('#modalAgregarItemCompra').modal('hide');
+    },
 
     abrirAgregarProductos(c){
       this.compraAdd = {
@@ -397,6 +525,17 @@ new Vue({
     },
 
     crearCompra(){
+
+      if(!this.nuevo.proveedor_id){
+        alert('Debe seleccionar proveedor');
+        return;
+      }
+
+      if(this.nuevo.items.length === 0){
+        alert('Debe agregar al menos un producto');
+        return;
+      }
+
       axios.post(`${this.apphost}/compra/crear`, {
         proveedor_id: this.nuevo.proveedor_id,
         fecha_compra: this.nuevo.fecha_compra,
@@ -413,6 +552,10 @@ new Vue({
         this.detalle = r.data;
         $('#modalDetalleCompra').modal('show');
       });
+    },
+
+    liberarFocusVueSelect(){
+      $(document).off('focusin.modal');
     },
 
     abrirEditar(c){
@@ -448,6 +591,15 @@ new Vue({
     this.cargarProveedores();
     this.cargarProductos();
     this.listar();
+  },
+
+  watch:{
+    'itemTemp.producto'(p){
+      if(p){
+        this.itemTemp.product_id = p.product_id;
+      }
+    }
   }
+
 });
 </script>

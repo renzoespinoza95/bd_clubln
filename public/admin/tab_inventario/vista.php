@@ -178,8 +178,6 @@ new Vue({
               </button>
               <ul class="dropdown-menu">
                 <li><a href="#" class="detalle" data-id="${i.inventario_id}">Detalle</a></li>
-                <li><a href="#" class="editar" data-id="${i.inventario_id}">Editar</a></li>
-                <li><a href="#" class="eliminar" data-id="${i.inventario_id}">Eliminar</a></li>
               </ul>
             </div>`;
 

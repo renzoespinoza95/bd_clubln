@@ -10,6 +10,20 @@
       <button class="btn btn-info" @click="abrirModalClientes">
         <i class="icon-user icon-white"></i> Clientes
       </button>
+      <div class="btn-group">
+        <button class="btn btn-warning dropdown-toggle" data-toggle="dropdown">
+          <i class="icon-list icon-white"></i> Reportes <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+          <li>
+            <a href="#" @click="abrirReporteVentas">Ventas por Fecha</a>
+          </li>
+          <li>
+            <a href="#" @click="abrirReporteVentasAdmin">Ventas por Fecha + Admin</a>
+          </li>
+        </ul>
+      </div>
+
 
     </div>
 
@@ -248,12 +262,11 @@
       <div class="modal-body">
 
         <label>Producto</label>
-        <select v-model="itemForm.product_id" class="input-xxlarge">
-          <option disabled value="">-- Seleccione --</option>
-          <option v-for="p in productos" :value="p.product_id">
-            {{ p.name }} - S/ {{ p.price }}
-          </option>
-        </select>
+        <v-select
+          :options="productosSelect"
+          label="label"
+          v-model="itemForm.producto"
+        ></v-select>
 
         <label>Cantidad</label>
         <input type="number" v-model.number="itemForm.amount" min="1">
@@ -355,6 +368,69 @@
     </div>
 
 
+    <div id="modalReporteVentas" class="modal hide fade">
+      <div class="modal-header">
+        <h3>Reporte de Ventas por Fecha</h3>
+      </div>
+
+      <div class="modal-body">
+        <label>Fecha Inicio</label>
+        <input type="date" v-model="reporte.fecha_inicio">
+
+        <label>Fecha Fin</label>
+        <input type="date" v-model="reporte.fecha_fin">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-danger" @click="reporteVentasPDF">
+          📄 PDF
+        </button>
+        <button class="btn btn-success" @click="reporteVentasExcel">
+          📊 Excel
+        </button>
+        <button class="btn" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+
+
+    <div id="modalReporteVentasAdmin" class="modal hide fade">
+      <div class="modal-header">
+        <h3>Reporte de Ventas por Fecha y Administrador</h3>
+      </div>
+
+      <div class="modal-body">
+        
+        <label>Administrador</label>
+        <select v-model="reporte.admin_id">
+          <option value="">-- Todos --</option>
+          <option 
+            v-for="a in administradores" 
+            :value="a.administrador_id">
+            {{ a.nombres_apellidos }}
+          </option>
+        </select>
+
+        <label>Fecha Inicio</label>
+        <input type="date" v-model="reporte.fecha_inicio">
+
+        <label>Fecha Fin</label>
+        <input type="date" v-model="reporte.fecha_fin">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-danger" @click="reporteVentasAdminPDF">
+          📄 PDF
+        </button>
+        <button class="btn btn-success" @click="reporteVentasAdminExcel">
+          📊 Excel
+        </button>
+        <button class="btn" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+
+
+
+
 
 
   </div>
@@ -375,6 +451,14 @@ new Vue({
     form:{},
     detalle:{},
     detallesOrder:[],
+    administradores: [],
+    reporte:{
+      fecha_inicio:'',
+      fecha_fin:'',
+      admin_id:''
+    },
+    reporteResultados:[],
+    administradores:[],
 
     clientes:[],
     clienteForm:{ dni:'', nombre:'' },
@@ -388,7 +472,12 @@ new Vue({
       amount:1,
       price_item:0
     },
-    itemForm:{ product_id:null, amount:1, price_item:0 },
+    itemForm:{
+      producto: null,   // 👈 objeto seleccionado
+      product_id: null,
+      amount: 1,
+      price_item: 0
+    },
     dt:null,
     cajaActual: null,
     caja_id: null,
@@ -510,6 +599,25 @@ new Vue({
       });
     },
 
+    abrirReporteVentas(){
+      this.reporteResultados = [];
+      $('#modalReporteVentas').modal('show');
+    },
+
+    abrirReporteVentasAdmin(){
+      this.reporteResultados = [];
+      $('#modalReporteVentasAdmin').modal('show');
+    },
+
+    buscarReporteVentas(){
+      axios.post(`${this.apphost}/reporte/ventas`, this.reporte)
+        .then(r => this.reporteResultados = r.data);
+    },
+
+    buscarReporteVentasAdmin(){
+      axios.post(`${this.apphost}/reporte/ventas-admin`, this.reporte)
+        .then(r => this.reporteResultados = r.data);
+    },
 
     abrirModalClientes(){
       $('#modalClientes').modal('show');
@@ -627,18 +735,65 @@ new Vue({
     },
 
 
-    crearOrder(){
-      if(!this.nueva.tipo_pago_id){
-        apprise('Seleccione tipo de pago');
+    reporteVentasPDF(){
+      const { fecha_inicio, fecha_fin } = this.reporte;
+      window.open(
+        `${this.apphost}/imp_ventas_fecha?ini=${fecha_inicio}&fin=${fecha_fin}`,
+        '_blank'
+      );
+    },
+
+    reporteVentasExcel(){
+      const { fecha_inicio, fecha_fin } = this.reporte;
+      window.open(
+        `${this.apphost}/imp_ventas_fecha_excel?ini=${fecha_inicio}&fin=${fecha_fin}`,
+        '_blank'
+      );
+    },
+
+    reporteVentasAdminPDF(){
+      const { fecha_inicio, fecha_fin, admin_id } = this.reporte;
+      window.open(
+        `${this.apphost}/imp_ventas_fecha_admin?ini=${fecha_inicio}&fin=${fecha_fin}&admin_id=${admin_id}`,
+        '_blank'
+      );
+    },
+
+    reporteVentasAdminExcel(){
+      const { fecha_inicio, fecha_fin, admin_id } = this.reporte;
+      window.open(
+        `${this.apphost}/imp_ventas_fecha_admin_excel?ini=${fecha_inicio}&fin=${fecha_fin}&admin_id=${admin_id}`,
+        '_blank'
+      );
+    },
+
+    crearOrder() {
+
+      // 1️⃣ Cliente obligatorio
+      if(!this.nueva.cliente){
+        apprise('Debe seleccionar un cliente');
         return;
       }
 
+      // 2️⃣ Mesa obligatoria
+      if(!this.nueva.mesa){
+        apprise('Debe seleccionar una mesa o DIRECTO');
+        return;
+      }
+
+      // 3️⃣ Items
       if(this.nueva.items.length === 0){
         apprise('Agregue al menos un ítem');
         return;
       }
 
-      const mesa_id = this.nueva.mesa?.mesa_id || 0;
+      // 4️⃣ Tipo de pago
+      if(!this.nueva.tipo_pago_id){
+        apprise('Seleccione tipo de pago');
+        return;
+      }
+
+      const mesa_id = this.nueva.mesa.mesa_id;
 
       axios.post(`${this.apphost}/product_order/crear`,{
         buyer: this.nueva.buyer,
@@ -650,6 +805,8 @@ new Vue({
       }).then(()=>{
         $('#modalCrearOrder').modal('hide');
         this.listar();
+      }).catch(e=>{
+        apprise(e.response?.data?.msg || 'Error al crear la orden');
       });
     },
 
@@ -822,9 +979,21 @@ new Vue({
 
     axios.get(`${this.apphost}/tipo_pago/listar`)
     .then(r => this.tiposPago = r.data);  
+
+    axios.get(`${this.apphost}/administrador/listar`)
+    .then(r => {
+      this.administradores = r.data;
+    });
+
   },
 
   watch:{
+    'itemForm.producto'(p){
+      if(p){
+        this.itemForm.product_id = p.product_id;
+        this.itemForm.price_item = p.price;
+      }
+    },
     // cuando cambias producto en detalle
     'detailForm.product'(p){
       if(p){

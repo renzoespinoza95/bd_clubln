@@ -48,12 +48,14 @@ function generarCodigoOrden(){
   return strtoupper(bin2hex(random_bytes(4))); // ej: A9F2C1D3
 }
 
+
 Flight::route('POST /product_order/crear', function () {
 
     include DEFINITION;
+    login_admin::autentificar_administrador();
 
     // ===============================
-    // 1) Verificar sesión
+    // 1) Validar sesión
     // ===============================
     if (!$sesion_admin_administrador_id) {
         Flight::json([
@@ -107,116 +109,167 @@ Flight::route('POST /product_order/crear', function () {
     // ===============================
     $d = Flight::request()->data->getData();
 
+    // -------------------------------
+    // Validaciones obligatorias
+    // -------------------------------
+    if (empty($d['buyer'])) {
+        Flight::json([
+            'status' => 'error',
+            'msg'    => 'Debe seleccionar un cliente'
+        ], 400);
+        return;
+    }
+
+    if (empty($d['tipo_pago_id'])) {
+        Flight::json([
+            'status' => 'error',
+            'msg'    => 'Debe seleccionar tipo de pago'
+        ], 400);
+        return;
+    }
+
     if (empty($d['items']) || !is_array($d['items'])) {
         Flight::json([
             'status' => 'error',
-            'msg'    => 'No hay ítems en la orden'
+            'msg'    => 'Debe agregar al menos un producto'
         ], 400);
         return;
     }
 
     // ===============================
-    // 5) Crear orden
+    // 5) Lógica de mesa
     // ===============================
-    DB::startTransaction();
+    $mesa_id = isset($d['mesa_id']) ? (int)$d['mesa_id'] : -1;
 
-    $now = time() * 1000;
+    if ($mesa_id < 0) {
+        Flight::json([
+            'status' => 'error',
+            'msg'    => 'Debe seleccionar una mesa o DIRECTO'
+        ], 400);
+        return;
+    }
 
-    $mesa_id = (int)($d['mesa_id'] ?? 0);
+    // Valores por defecto: VENTA DIRECTA
+    $modo          = 'DIRECTA';
+    $mesa_id_db    = null;
+    $status_orden  = 'PAGADO';
 
-    $modo = 'DIRECTA';
-    $mesa_id_db = null;
+    // -------------------------------
+    // Si es consumo por mesa
+    // -------------------------------
+    if ($mesa_id > 0) {
 
-    if($mesa_id > 0){
-
-        // 🔒 verificar que no haya orden abierta en esa mesa
-        $existe = DB::queryFirstField("
-            SELECT COUNT(*) 
+        // 🔒 verificar que no exista orden ABIERTA en esa mesa
+        $ocupada = DB::queryFirstField("
+            SELECT COUNT(*)
             FROM product_order
             WHERE mesa_id = %i
               AND status = 'ABIERTA'
         ", $mesa_id);
 
-        if($existe){
+        if ($ocupada) {
             Flight::json([
-                'status'=>'error',
-                'msg'=>'La mesa ya está ocupada'
-            ],409);
+                'status' => 'error',
+                'msg'    => 'La mesa ya está ocupada'
+            ], 409);
             return;
         }
 
-        $modo = 'MESA';
-        $mesa_id_db = $mesa_id;
+        $modo         = 'MESA';
+        $mesa_id_db   = $mesa_id;
+        $status_orden = 'ABIERTA';
 
-        // 🪑 marcar mesa ocupada
-        DB::update('mesa',[
-            'estado'=>'OCUPADA'
-        ],"mesa_id=%i",$mesa_id);
+        // 🪑 marcar mesa como OCUPADA
+        DB::update('mesa', [
+            'estado' => 'OCUPADA'
+        ], "mesa_id = %i", $mesa_id);
     }
 
-
-    DB::insert('product_order', [
-        'code'             => generarCodigoOrden(),
-        'buyer'            => $d['buyer'] ?? 'DIRECTO',
-        'address'          => $d['address'] ?? '',
-        'administrador_id' => $administrador_id,
-        'caja_id'          => $caja['caja_id'],
-        'tipo_pago_id'     => $d['tipo_pago_id'],
-        'mesa_id'          => $mesa_id_db,   // 👈 NULL o ID
-        'modo'             => $modo,          // DIRECTA | MESA
-        'status'           => $modo === 'MESA' ? 'ABIERTA' : 'VENTA',
-        'fecha_inicio'     => $modo === 'MESA' ? date('Y-m-d H:i:s') : null,
-        'total_fees'       => $d['total_fees'],
-        'created_at'       => $now,
-        'last_update'      => $now,
-        'fecha_creacion'   => date('Y-m-d H:i:s'),
-        'fecha_modificacion'=>date('Y-m-d H:i:s')
-    ]);
-
-
-    $order_id = DB::insertId();
-
     // ===============================
-    // 6) Insertar detalles
+    // 6) Crear orden (TRANSACCIÓN)
     // ===============================
-    foreach ($d['items'] as $i) {
+    DB::startTransaction();
 
-        DB::insert('product_order_detail', [
-            'order_id'    => $order_id,
-            'product_id'  => $i['product_id'],
-            'product_name'=> DB::queryFirstField(
-                "SELECT name FROM product WHERE product_id = %i",
-                $i['product_id']
-            ),
-            'amount'      => $i['amount'],
-            'price_item'  => $i['price_item'],
-            'created_at'  => $now,
-            'last_update' => $now
+    try {
+
+        $now = time() * 1000;
+
+        DB::insert('product_order', [
+            'code'               => strtoupper(bin2hex(random_bytes(4))),
+            'buyer'              => $d['buyer'],
+            'address'            => $d['address'] ?? '',
+            'administrador_id'   => $administrador_id,
+            'caja_id'            => $caja['caja_id'],
+            'tipo_pago_id'       => $d['tipo_pago_id'],
+            'mesa_id'            => $mesa_id_db,     // NULL o ID
+            'modo'               => $modo,            // DIRECTA | MESA
+            'status'             => $status_orden,    // PAGADO | ABIERTA
+            'fecha_inicio'       => $modo === 'MESA' ? date('Y-m-d H:i:s') : null,
+            'total_fees'         => $d['total_fees'],
+            'created_at'         => $now,
+            'last_update'        => $now,
+            'fecha_creacion'     => date('Y-m-d H:i:s'),
+            'fecha_modificacion' => date('Y-m-d H:i:s')
         ]);
 
-        // movimiento de inventario
-        registrar_movimiento_inventario(
-            $i['product_id'],
-            'SALIDA',
-            'VENTA',
-            $i['amount'],
-            $i['price_item'],
-            $order_id,
-            'product_order'
-        );
+        $order_id = DB::insertId();
+
+        // ===============================
+        // 7) Insertar detalles + inventario
+        // ===============================
+        foreach ($d['items'] as $i) {
+
+            DB::insert('product_order_detail', [
+                'order_id'            => $order_id,
+                'product_id'          => $i['product_id'],
+                'product_name'        => DB::queryFirstField(
+                    "SELECT name FROM product WHERE product_id = %i",
+                    $i['product_id']
+                ),
+                'amount'              => $i['amount'],
+                'price_item'          => $i['price_item'],
+                'created_at'          => $now,
+                'last_update'         => $now,
+                'fecha_creacion'      => date('Y-m-d H:i:s'),
+                'fecha_modificacion'  => date('Y-m-d H:i:s')
+            ]);
+
+            // 📦 movimiento de inventario
+            registrar_movimiento_inventario(
+                $i['product_id'],
+                'SALIDA',
+                'VENTA',
+                $i['amount'],
+                $i['price_item'],
+                $order_id,
+                'product_order'
+            );
+        }
+
+        DB::commit();
+
+        // ===============================
+        // 8) Respuesta final
+        // ===============================
+        Flight::json([
+            'status'           => 'ok',
+            'product_order_id' => $order_id,
+            'modo'             => $modo,
+            'status_orden'     => $status_orden,
+            'mesa_id'          => $mesa_id_db
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        Flight::json([
+            'status' => 'error',
+            'msg'    => $e->getMessage()
+        ], 500);
     }
-
-    DB::commit();
-
-    // ===============================
-    // 7) Respuesta final
-    // ===============================
-    Flight::json([
-        'status' => 'ok',
-        'product_order_id' => $order_id,
-        'caja_id' => $caja['caja_id']
-    ]);
 });
+
 
 
 
@@ -532,4 +585,411 @@ Flight::route('GET /mesa/listar', function(){
 
     Flight::json($rows);
 });
+
+
+Flight::route('GET /administrador/listar', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    DB::query("SET NAMES 'utf8mb4'");
+
+    $rows = DB::query("
+        SELECT 
+            administrador_id,
+            nombres_apellidos
+        FROM administradortbl
+        WHERE is_activo = 1
+        ORDER BY nombres_apellidos ASC
+    ");
+
+    Flight::json($rows);
+});
+
+
+Flight::route('GET /imp_ventas_fecha', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    $req = Flight::request();
+
+    $ini = trim($req->query->ini ?? $_GET['ini'] ?? '');
+    $fin = trim($req->query->fin ?? $_GET['fin'] ?? '');
+
+    if ($ini === '' || $fin === '') {
+        Flight::halt(400, 'Debe enviar las fechas ini y fin');
+    }
+
+    DB::query("SET NAMES 'utf8mb4'");
+
+    // ===============================
+    // VENTAS (CABECERA)
+    // ===============================
+    $ventas = DB::query("
+        SELECT 
+            po.product_order_id,
+            po.code,
+            po.fecha_creacion,
+            po.total_fees,
+            po.buyer AS cliente,
+            a.nombres_apellidos AS administrador
+        FROM product_order po
+        LEFT JOIN administradortbl a 
+               ON a.administrador_id = po.administrador_id
+        WHERE po.fecha_creacion BETWEEN %s AND %s
+        ORDER BY po.product_order_id
+    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+    $listado = [];
+    $total_general = 0;
+    $i = 1;
+
+    foreach ($ventas as &$v) {
+
+        // ===============================
+        // DETALLES POR VENTA
+        // ===============================
+        $detalles = DB::query("
+            SELECT 
+                d.product_name AS producto,
+                d.amount AS cantidad,
+                d.price_item AS precio,
+                (d.amount * d.price_item) AS subtotal
+            FROM product_order_detail d
+            WHERE d.order_id = %i
+        ", $v['product_order_id']);
+
+        $v['indice']   = $i++;
+        $v['detalles'] = $detalles;
+        $total_general += $v['total_fees'];
+
+        $listado[] = $v;
+    }
+
+    // ===============================
+    // DATA PARA MUSTACHE
+    // ===============================
+    $template_data = [
+        'informacion' => [[
+            'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
+            'ruc'            => '20202020',
+            'titulo_reporte' => "REPORTE DE VENTAS DEL $ini AL $fin",
+            'fecha'          => date('d/m/Y H:i'),
+            'total_items'    => count($ventas),
+            'total_general'  => number_format($total_general, 2)
+        ]],
+        'listado' => $listado
+    ];
+
+    // ===============================
+    // RENDER HTML
+    // ===============================
+    $html = (new Mustache)->render(
+        file_get_contents(
+            VARPATH . '/public/reportes/reporte_html/imp_ventas_fecha.html'
+        ),
+        $template_data
+    );
+
+    // ===============================
+    // GENERAR PDF
+    // ===============================
+    global $wkh_pdf;
+
+    $pdf = VARPATH . '/public/reportes/archivos_temporales/ventas_'
+         . time() . '.pdf';
+
+    $wkh_pdf->addPage($html);
+    exec($wkh_pdf->getCommand($pdf));
+
+    // ===============================
+    // REDIRECT DESCARGA
+    // ===============================
+    Flight::redirect(
+        $varhost . '/public/reportes/archivos_temporales/' . basename($pdf)
+    );
+});
+
+
+Flight::route('GET /imp_ventas_fecha_excel', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=ventas.xls");
+
+    $ini = trim($_GET['ini'] ?? '');
+    $fin = trim($_GET['fin'] ?? '');
+
+    if ($ini === '' || $fin === '') {
+        Flight::halt(400, 'Debe enviar las fechas ini y fin');
+    }
+
+    DB::query("SET NAMES 'utf8mb4'");
+
+    // ===============================
+    // CABECERA VENTAS
+    // ===============================
+    $ventas = DB::query("
+        SELECT 
+            po.product_order_id,
+            po.buyer AS cliente,
+            a.nombres_apellidos AS administrador,
+            po.fecha_creacion,
+            po.total_fees
+        FROM product_order po
+        LEFT JOIN administradortbl a 
+               ON a.administrador_id = po.administrador_id
+        WHERE po.fecha_creacion BETWEEN %s AND %s
+        ORDER BY po.product_order_id
+    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+    $total_general = 0;
+
+    echo "<table border='1'>";
+    echo "<tr>
+            <th colspan='6'>
+              REPORTE DE VENTAS DEL $ini AL $fin
+            </th>
+          </tr>";
+
+    echo "<tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Administrador</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Subtotal</th>
+          </tr>";
+
+    foreach ($ventas as $v) {
+
+        $detalles = DB::query("
+            SELECT 
+                product_name,
+                amount,
+                price_item,
+                (amount * price_item) AS subtotal
+            FROM product_order_detail
+            WHERE order_id = %i
+        ", $v['product_order_id']);
+
+        foreach ($detalles as $d) {
+            echo "<tr>
+                <td>{$v['product_order_id']}</td>
+                <td>{$v['cliente']}</td>
+                <td>{$v['administrador']}</td>
+                <td>{$d['product_name']}</td>
+                <td>{$d['amount']}</td>
+                <td>{$d['subtotal']}</td>
+            </tr>";
+        }
+
+        $total_general += $v['total_fees'];
+    }
+
+    echo "<tr>
+            <td colspan='5'><strong>TOTAL GENERAL</strong></td>
+            <td><strong>".number_format($total_general,2)."</strong></td>
+          </tr>";
+
+    echo "</table>";
+});
+
+
+Flight::route('GET /reporte_ventas_fecha_admin', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    $ini = $_GET['ini'] ?? '';
+    $fin = $_GET['fin'] ?? '';
+    $admin = (int)($_GET['admin_id'] ?? 0);
+
+    $cond = $admin ? "AND po.administrador_id = $admin" : "";
+
+    $ventas = DB::query("
+        SELECT 
+            po.product_order_id,
+            po.buyer,
+            po.total_fees,
+            a.nombres_apellidos
+        FROM product_order po
+        LEFT JOIN administradortbl a 
+               ON a.administrador_id = po.administrador_id
+        WHERE po.fecha_creacion BETWEEN %s AND %s
+        $cond
+        ORDER BY po.product_order_id
+    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+    $total = array_sum(array_column($ventas,'total_fees'));
+
+    Flight::json([
+        'ventas'=>$ventas,
+        'total'=>$total
+    ]);
+});
+
+Flight::route('GET /reporte_ventas_fecha_admin_excel', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Disposition: attachment; filename=ventas_admin.xls");
+
+    $ini = $_GET['ini'];
+    $fin = $_GET['fin'];
+    $admin = (int)($_GET['admin_id'] ?? 0);
+
+    $cond = $admin ? "AND po.administrador_id = $admin" : "";
+
+    $rows = DB::query("
+        SELECT 
+            po.product_order_id,
+            po.buyer,
+            a.nombres_apellidos,
+            po.total_fees
+        FROM product_order po
+        LEFT JOIN administradortbl a 
+               ON a.administrador_id = po.administrador_id
+        WHERE po.fecha_creacion BETWEEN %s AND %s
+        $cond
+    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+    echo "<table border='1'>
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>Administrador</th>
+          <th>Total</th>
+        </tr>";
+
+    foreach($rows as $r){
+        echo "<tr>
+          <td>{$r['product_order_id']}</td>
+          <td>{$r['buyer']}</td>
+          <td>{$r['nombres_apellidos']}</td>
+          <td>{$r['total_fees']}</td>
+        </tr>";
+    }
+
+    echo "</table>";
+});
+
+
+
+Flight::route('GET /imp_ventas_fecha_admin', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    $req = Flight::request();
+
+    $ini = trim($req->query->ini ?? $_GET['ini'] ?? '');
+    $fin = trim($req->query->fin ?? $_GET['fin'] ?? '');
+    $admin_id = (int)($req->query->admin_id ?? $_GET['admin_id'] ?? 0);
+
+    if ($ini === '' || $fin === '') {
+        Flight::halt(400, 'Debe enviar las fechas ini y fin');
+    }
+
+    DB::query("SET NAMES 'utf8mb4'");
+
+    // ===============================
+    // VENTAS (CABECERA)
+    // ===============================
+    $ventas = DB::query("
+        SELECT 
+            po.product_order_id,
+            po.code,
+            po.fecha_creacion,
+            po.total_fees,
+            po.buyer AS cliente,
+            a.nombres_apellidos AS administrador
+        FROM product_order po
+        LEFT JOIN administradortbl a 
+               ON a.administrador_id = po.administrador_id
+        WHERE po.fecha_creacion BETWEEN %s AND %s
+          AND ( %i = 0 OR po.administrador_id = %i )
+        ORDER BY po.product_order_id
+    ",
+        $ini.' 00:00:00',
+        $fin.' 23:59:59',
+        $admin_id,
+        $admin_id
+    );
+
+    // ===============================
+    // ARMAR LISTADO + DETALLES
+    // ===============================
+    $listado = [];
+    $total_general = 0;
+    $i = 1;
+
+    foreach ($ventas as $v) {
+
+        $detalles = DB::query("
+            SELECT 
+                d.product_name AS producto,
+                d.amount AS cantidad,
+                d.price_item AS precio,
+                (d.amount * d.price_item) AS subtotal
+            FROM product_order_detail d
+            WHERE d.order_id = %i
+        ", $v['product_order_id']);
+
+        $v['indice']   = $i++;
+        $v['detalles'] = $detalles;
+
+        $total_general += $v['total_fees'];
+        $listado[] = $v;
+    }
+
+    // ===============================
+    // DATA PARA MUSTACHE
+    // ===============================
+    $template_data = [
+        'informacion' => [[
+            'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
+            'ruc'            => '20202020',
+            'titulo_reporte' => "REPORTE DE VENTAS DEL $ini AL $fin",
+            'fecha'          => date('d/m/Y H:i'),
+            'total_items'    => count($ventas),
+            'total_general'  => number_format($total_general, 2)
+        ]],
+        'listado' => $listado
+    ];
+
+    // ===============================
+    // RENDER HTML
+    // ===============================
+    $html = (new Mustache)->render(
+        file_get_contents(
+            VARPATH . '/public/reportes/reporte_html/imp_ventas_fecha_admin.html'
+        ),
+        $template_data
+    );
+
+    // ===============================
+    // GENERAR PDF
+    // ===============================
+    global $wkh_pdf;
+
+    $pdf = VARPATH . '/public/reportes/archivos_temporales/ventas_admin_'
+         . time() . '.pdf';
+
+    $wkh_pdf->addPage($html);
+    exec($wkh_pdf->getCommand($pdf));
+
+    // ===============================
+    // DESCARGA
+    // ===============================
+    Flight::redirect(
+        $varhost . '/public/reportes/archivos_temporales/' . basename($pdf)
+    );
+});
+
 
