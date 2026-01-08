@@ -60,117 +60,287 @@ Flight::route('POST /app/login', function () {
     ]);
 });
 
-//ANTES: getListProduct)
-Flight::route('GET /products', function () {
-    /*
-     * ENDPOINT ANTERIOR:
-     * getListProduct
-     */
-    $page  = (int)(Flight::request()->query['page'] ?? 1);
-    $limit = (int)(Flight::request()->query['limit'] ?? 20);
-    $offset = ($page - 1) * $limit;
 
-    $rows = DB::query("
-        SELECT p.*, IFNULL(i.stock_actual,0) stock
-        FROM product p
-        LEFT JOIN inventario i ON i.product_id = p.product_id
-        ORDER BY p.product_id DESC
-        LIMIT %i OFFSET %i
-    ", $limit, $offset);
+Flight::route('GET /api/info', function () {
+
+    $version = Flight::request()->query['version'] ?? 0;
 
     Flight::json([
         'status' => 'success',
-        'data'   => $rows
+        'info' => [
+            'active'   => true,
+            'tax'      => 18,
+            'currency' => 'PEN',
+            'shipping' => ['EFECTIVO', 'YAPE', 'PLIN'],
+            'version'  => (int)$version
+        ]
     ]);
 });
 
+Flight::route('GET /api/category/list', function () {
 
-Flight::route('GET /products/@id', function ($id) {
-    /*
-     * ENDPOINT ANTERIOR:
-     * getProductDetails
-     */
-    $row = DB::queryFirstRow("
-        SELECT p.*, IFNULL(i.stock_actual,0) stock
-        FROM product p
-        LEFT JOIN inventario i ON i.product_id = p.product_id
-        WHERE p.product_id = %i
-    ", $id);
+    $rows = DB::query("
+        SELECT 
+            id,
+            name,
+            icon,
+            draft,
+            brief,
+            color,
+            priority,
+            created_at,
+            last_update
+        FROM category
+        WHERE draft = 0
+        ORDER BY priority ASC, name
+    ");
 
     Flight::json([
-        'status' => $row ? 'success' : 'failed',
-        'data'   => $row
+        'status'     => 'success',
+        'categories' => $rows
     ]);
 });
 
 
-//(ANTES: getProductDetails)
-Flight::route('GET /products/@id', function ($id) {
-    /*
-     * ENDPOINT ANTERIOR:
-     * getProductDetails
-     */
-    $row = DB::queryFirstRow("
-        SELECT p.*, IFNULL(i.stock_actual,0) stock
+Flight::route('GET /api/product/list', function () {
+
+    // ============================
+    // 📄 Paginación
+    // ============================
+    $page  = max(1, (int)(Flight::request()->query['page'] ?? 1));
+    $count = (int)(Flight::request()->query['count'] ?? 10);
+    $offset = ($page - 1) * $count;
+
+    // ============================
+    // 🔎 Filtros
+    // ============================
+    $q           = Flight::request()->query['q'] ?? '';
+    $category_id = Flight::request()->query['category_id'] ?? null;
+
+    // ============================
+    // 🧠 WHERE dinámico (IGUAL AL ANTIGUO)
+    // ============================
+    $where  = "p.draft = 0";
+    $params = [];
+
+    if ($q !== '') {
+        $where .= " AND p.name LIKE %s";
+        $params[] = '%' . $q . '%';
+    }
+
+    if ($category_id !== null && $category_id !== '') {
+        $where .= " AND pc.category_id = %i";
+        $params[] = (int)$category_id;
+    }
+
+    // ============================
+    // 🔢 TOTAL
+    // ============================
+    $count_total = DB::queryFirstField("
+        SELECT COUNT(DISTINCT p.product_id)
         FROM product p
-        LEFT JOIN inventario i ON i.product_id = p.product_id
+        LEFT JOIN product_category pc ON pc.product_id = p.product_id
+        WHERE $where
+    ", ...$params);
+
+    // ============================
+    // 📦 LISTADO
+    // ============================
+    $params[] = $count;
+    $params[] = $offset;
+
+    $products = DB::query("
+        SELECT DISTINCT
+            p.product_id,
+            p.name,
+            p.image,
+            p.price,
+            p.price_discount,
+            p.draft,
+            p.status,
+            p.created_at,
+            p.last_update,
+            p.fecha_creacion,
+            p.fecha_modificacion
+        FROM product p
+        LEFT JOIN product_category pc ON pc.product_id = p.product_id
+        WHERE $where
+        ORDER BY p.product_id DESC
+        LIMIT %i OFFSET %i
+    ", ...$params);
+
+    // ============================
+    // 📤 RESPONSE (CLON DEL ANTIGUO)
+    // ============================
+    Flight::json([
+        'status'       => 'success',
+        'count'        => $count,
+        'count_total'  => (int)$count_total,
+        'pages'        => (int)ceil($count_total / $count),
+        'products'     => $products
+    ]);
+});
+
+
+Flight::route('GET /api/product/detail/@id', function ($id) {
+
+    // ============================
+    // 📦 PRODUCTO + STOCK
+    // ============================
+    $product = DB::queryFirstRow("
+        SELECT 
+            p.*,
+            IFNULL(i.stock_actual, 0) AS stock
+        FROM product p
+        LEFT JOIN inventario i 
+            ON i.product_id = p.product_id
         WHERE p.product_id = %i
+        LIMIT 1
     ", $id);
 
+    if (!$product) {
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'Product not found'
+        ]);
+        return;
+    }
+
+    // ============================
+    // 🖼️ IMÁGENES (MISMO NOMBRE)
+    // ============================
+    $product_images = DB::query("
+        SELECT product_id, name
+        FROM product_image
+        WHERE product_id = %i
+    ", $id);
+
+    // ============================
+    // 🏷️ CATEGORÍAS (COMPLETAS)
+    // ============================
+    $categories = DB::query("
+        SELECT 
+            c.id,
+            c.name,
+            c.icon,
+            c.draft,
+            c.brief,
+            c.color,
+            c.priority,
+            c.created_at,
+            c.last_update
+        FROM category c
+        INNER JOIN product_category pc 
+            ON pc.category_id = c.id
+        WHERE pc.product_id = %i
+        ORDER BY c.priority ASC
+    ", $id);
+
+    // ============================
+    // 📤 RESPONSE (CLON DEL ANTIGUO)
+    // ============================
     Flight::json([
-        'status' => $row ? 'success' : 'failed',
-        'data'   => $row
+        'status' => 'success',
+        'product' => [
+            'product_id'        => (int)$product['product_id'],
+            'name'              => $product['name'],
+            'image'             => $product['image'],
+            'price'             => (float)$product['price'],
+            'price_discount'    => (float)$product['price_discount'],
+            'draft'             => (int)$product['draft'],
+            'description'       => $product['description'],
+            'status'            => $product['status'],
+            'created_at'        => (int)$product['created_at'],
+            'last_update'       => (int)$product['last_update'],
+            'fecha_creacion'    => $product['fecha_creacion'],
+            'fecha_modificacion'=> $product['fecha_modificacion'],
+            'stock'             => (int)$product['stock'],
+            'categories'        => $categories,
+            'product_images'    => $product_images
+        ]
     ]);
 });
 
 
-//(ANTES: submitProductOrder)
-// routes/order.php
-Flight::route('POST /orders', function () {
-    /*
-     * ENDPOINT ANTERIOR:
-     * submitProductOrder
-     */
-    $payload = json_decode(Flight::request()->getBody(), true);
+
+Flight::route('POST /api/order/submit', function () {
+
+    $payload = json_decode(file_get_contents('php://input'), true);
+
+    if (
+        !$payload ||
+        empty($payload['product_order']) ||
+        empty($payload['product_order_detail'])
+    ) {
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'Invalid payload'
+        ]);
+        return;
+    }
+
+    // ⏱️ Timestamp en milisegundos (como Android)
+    $now = (int) (microtime(true) * 1000);
 
     DB::startTransaction();
 
     try {
+
+        /* ===============================
+           1️⃣ INSERT ORDER
+        =============================== */
         $o = $payload['product_order'];
 
         DB::insert('product_order', [
+            'code'             => null,
             'buyer'            => $o['buyer'],
-            'email'            => $o['email'],
-            'phone'            => $o['phone'],
             'address'          => $o['address'],
+            'email'            => $o['email'],
             'shipping'         => $o['shipping'],
+            'date_ship'        => $o['date_ship'],
+            'phone'            => $o['phone'],
+            'administrador_id' => $o['administrador_id'],
             'comment'          => $o['comment'],
             'status'           => $o['status'],
-            'tax'              => $o['tax'],
             'total_fees'       => $o['total_fees'],
+            'tax'              => $o['tax'],
             'serial'           => $o['serial'],
-            'administrador_id' => $o['administrador_id'],
+            'created_at'       => $o['created_at']  ?? $now,
+            'last_update'      => $o['last_update'] ?? $now,
             'caja_id'          => $o['caja_id'],
-            'created_at'       => $o['created_at'],
-            'last_update'      => $o['last_update'],
-            'fecha_creacion'   => date('Y-m-d H:i:s')
+            'modo'             => 'DIRECTA'
         ]);
 
-        $orderId = DB::insertId();
+        $order_id = DB::insertId();
 
+        /* ===============================
+           2️⃣ GENERAR CODE
+        =============================== */
+        $code = str_pad((string)$order_id, 6, '0', STR_PAD_LEFT);
+
+        DB::update(
+            'product_order',
+            ['code' => $code],
+            'product_order_id=%i',
+            $order_id
+        );
+
+        /* ===============================
+           3️⃣ INSERT DETAILS + STOCK
+        =============================== */
         foreach ($payload['product_order_detail'] as $d) {
+
             DB::insert('product_order_detail', [
-                'order_id'    => $orderId,
+                'order_id'    => $order_id,
                 'product_id'  => $d['product_id'],
                 'product_name'=> $d['product_name'],
                 'amount'      => $d['amount'],
                 'price_item'  => $d['price_item'],
-                'created_at'  => $d['created_at'],
-                'last_update' => $d['last_update'],
-                'fecha_creacion' => date('Y-m-d H:i:s')
+                'created_at'  => $d['created_at']  ?? $now,
+                'last_update' => $d['last_update'] ?? $now
             ]);
 
-            // ↓ descontar stock
+            // 🔻 Descontar stock
             DB::query("
                 UPDATE inventario
                 SET stock_actual = stock_actual - %i
@@ -180,44 +350,160 @@ Flight::route('POST /orders', function () {
 
         DB::commit();
 
+        /* ===============================
+           4️⃣ RESPONSE OK
+        =============================== */
         Flight::json([
             'status' => 'success',
             'data' => [
-                'id'   => $orderId,
-                'code' => 'ORD-' . str_pad($orderId, 6, '0', STR_PAD_LEFT)
+                'id'   => $order_id,
+                'code' => $code
             ]
         ]);
 
     } catch (Exception $e) {
+
         DB::rollback();
+
         Flight::json([
             'status' => 'failed',
-            'msg'    => $e->getMessage()
-        ], 500);
+            'msg' => 'Failed when submit order'
+        ]);
     }
 });
 
 
-//(ANTES: getListCategory)
-Flight::route('GET /categories', function () {
-    /*
-     * ENDPOINT ANTERIOR:
-     * getListCategory
-     */
-    $rows = DB::query("SELECT * FROM category ORDER BY category_id DESC");
-    Flight::json(['status'=>'success','data'=>$rows]);
+
+
+Flight::route('GET /api/tipo-pago/list', function () {
+
+    $rows = DB::query("
+        SELECT 
+            tipo_pago_id,
+            descripcion,
+            orden
+        FROM tipo_pago
+        ORDER BY orden ASC, descripcion ASC
+    ");
+
+    Flight::json([
+        'status' => 'success',
+        'data'   => $rows
+    ]);
 });
 
 
-//(ANTES: getFeaturedNews)
-Flight::route('GET /news/featured', function () {
-    /*
-     * ENDPOINT ANTERIOR:
-     * getFeaturedNews
-     */
-    $rows = DB::query("SELECT * FROM news WHERE featured=1 LIMIT 10");
-    Flight::json(['status'=>'success','data'=>$rows]);
+
+/**
+VERSION CON  LOS CAMPOS ELIMINADOS
+
+{
+  "product_order": {
+    "cliente_id": 42,
+    "administrador_id": 3,
+    "caja_id": 8,
+    "status": "POS",
+    "total_fees": 84.9,
+    "tax": 0
+  },
+  "product_order_detail": [
+    {
+      "product_id": 25,
+      "product_name": "Snacks Papas Lays",
+      "amount": 2,
+      "price_item": 3.5
+    }
+  ]
+}
+
+
+Flight::route('POST /api/order/submit', function () {
+
+    $payload = json_decode(file_get_contents('php://input'), true);
+
+    if (
+        !$payload ||
+        empty($payload['product_order']) ||
+        empty($payload['product_order_detail'])
+    ) {
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'Invalid payload'
+        ]);
+        return;
+    }
+
+    $o = $payload['product_order'];
+
+    // ⏱️ timestamp ms (compat Android)
+    $now = (int)(microtime(true) * 1000);
+
+    DB::startTransaction();
+
+    try {
+
+        // =============================
+        // INSERT ORDER (NUEVO MODELO)
+        // =============================
+        DB::insert('product_order', [
+            'cliente_id'       => $o['cliente_id'],
+            'administrador_id' => $o['administrador_id'] ?? null,
+            'caja_id'          => $o['caja_id'] ?? null,
+            'status'           => $o['status'],
+            'total_fees'       => $o['total_fees'],
+            'tax'              => $o['tax'],
+            'created_at'       => $o['created_at']  ?? $now,
+            'last_update'      => $o['last_update'] ?? $now,
+            'modo'             => $o['modo'] ?? 'DIRECTA'
+        ]);
+
+        $order_id = DB::insertId();
+
+        // ===============================
+        //   INSERT DETAILS + STOCK
+        // ===============================
+        foreach ($payload['product_order_detail'] as $d) {
+
+            DB::insert('product_order_detail', [
+                'order_id'    => $order_id,
+                'product_id'  => $d['product_id'],
+                'product_name'=> $d['product_name'],
+                'amount'      => $d['amount'],
+                'price_item'  => $d['price_item'],
+                'created_at'  => $d['created_at']  ?? $now,
+                'last_update' => $d['last_update'] ?? $now
+            ]);
+
+            // 🔻 Descontar stock
+            DB::query("
+                UPDATE inventario
+                SET stock_actual = stock_actual - %i
+                WHERE product_id = %i
+            ", $d['amount'], $d['product_id']);
+        }
+
+        DB::commit();
+
+        // =============================
+        //   RESPONSE OK
+        // =============================
+        Flight::json([
+            'status' => 'success',
+            'data' => [
+                'order_id' => $order_id
+            ]
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'Failed when submit order'
+        ]);
+    }
 });
 
 
-
+**/

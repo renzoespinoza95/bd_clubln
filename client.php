@@ -298,17 +298,6 @@ class CLIENT extends REST {
             return;
         }
 
-        // 🔐 Security
-        $security = $this->_header['Security'] ?? null;
-        if ($security !== $this->conf->SECURITY_CODE) {
-            $this->show_response([
-                'status' => 'failed',
-                'msg' => 'Invalid security code',
-                'data' => null
-            ]);
-            return;
-        }
-
         try {
 
             /* ===============================
@@ -354,15 +343,18 @@ class CLIENT extends REST {
             =============================== */
             foreach ($payload['product_order_detail'] as $d) {
 
+                $now = (int) (microtime(true) * 1000);
+
                 $detail = [
                     'order_id'     => $order_id,
                     'product_id'   => $d['product_id'],
                     'product_name' => $d['product_name'],
                     'amount'       => $d['amount'],
                     'price_item'   => $d['price_item'],
-                    'created_at'   => $d['created_at'],
-                    'last_update'  => $d['last_update']
+                    'created_at'   => $d['created_at']  ?? $now,
+                    'last_update'  => $d['last_update'] ?? $now
                 ];
+
 
                 $cols = [
                     'order_id','product_id','product_name',
