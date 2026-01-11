@@ -5911,3 +5911,9 @@ i[class^="icon-"] {
 .affix {
     position: fixed;
 }
+
+@media (max-width: 900px) {
+  h2 {
+    margin-top: 60px;
+  }
+}

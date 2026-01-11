@@ -1,11 +1,11 @@
 <div class="row-fluid" id="appOrder">
 <!-- este es mi frontend usando boostrap2.3.2, vuejs2 modo estandalone y jquery2.0 -->
   <div class="span12">
-    <h2>Órdenes</h2>
+    <h2>Ventas</h2>
 
     <div class="form-actions">
       <button class="btn btn-success" @click="abrirModalCrear">
-        <i class="icon-plus icon-white"></i> Nueva Orden
+        <i class="icon-plus icon-white"></i> Nueva venta
       </button>
       <button class="btn btn-info" @click="abrirModalClientes">
         <i class="icon-user icon-white"></i> Clientes
@@ -23,6 +23,11 @@
           </li>
         </ul>
       </div>
+
+      <button class="btn btn-info" style="margin-left:5px" @click="abrirModalMesas">
+        <i class="icon-th-large icon-white"></i> Mesas
+      </button>
+
 
 
     </div>
@@ -54,10 +59,24 @@
       </div>
       <div class="modal-body">
 
-        <p><b>Código:</b> {{ detalle.code }}</p>
-        <p><b>Cliente:</b> {{ detalle.buyer }}</p>
-        <p><b>Tipo de pago:</b> {{ detalle.tipo_pago }}</p>
-        <p><b>Estado:</b> {{ detalle.status }}</p>
+        <div class="row-fluid order-resumen">
+
+          <div class="span6">
+            <p><b>Código:</b> {{ detalle.code }}</p>
+            <p><b>Cliente:</b> {{ detalle.buyer }}</p>
+            <p><b>Tipo de pago:</b> {{ detalle.tipo_pago }}</p>
+          </div>
+
+          <div class="span6">
+            <p><b>Estado:</b> {{ detalle.status }}</p>
+            <p><b>Total orden:</b> 
+              <span class="label label-success">
+                S/ {{ totalDetalleOrden }}
+              </span>
+            </p>
+          </div>
+
+        </div>
 
         <h4>Productos:</h4>
 
@@ -79,14 +98,23 @@
               <td>{{ d.price_item }}</td>
               <td>{{ (d.amount * d.price_item).toFixed(2) }}</td>
               <td>
-                <button class="btn btn-mini btn-primary" @click="abrirEditarDetail(d)">Editar</button>
-                <button class="btn btn-mini btn-danger" @click="eliminarDetail(d)">X</button>
+                <button
+                  class="btn btn-mini btn-danger"
+                  v-if="!ordenCerrada"
+                  @click="eliminarDetail(d)">
+                  X
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
 
-        <button class="btn btn-success" @click="abrirCrearDetail">Nuevo prod.</button>
+        <button
+          class="btn btn-success"
+          v-if="!ordenCerrada"
+          @click="abrirCrearDetail">
+          Nuevo prod.
+        </button>
 
       </div>
       <div class="modal-footer">
@@ -393,6 +421,43 @@
     </div>
 
 
+    <div id="modalMesas" class="modal hide fade">
+      <div class="modal-header">
+        <h3>Estado de Mesas</h3>
+      </div>
+
+      <div class="modal-body">
+
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Mesa</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="m in mesas" :key="m.mesa_id">
+              <td>{{ m.nombre }}</td>
+              <td>
+                <span
+                  class="label"
+                  :class="m.estado === 'DISPONIBLE' ? 'label-success' : 'label-important'">
+                  {{ m.estado }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+
+
+
     <div id="modalReporteVentasAdmin" class="modal hide fade">
       <div class="modal-header">
         <h3>Reporte de Ventas por Fecha y Administrador</h3>
@@ -521,19 +586,50 @@ new Vue({
               const o = self.ordenes.find(x => x.product_order_id == id);
               self.eliminar(o);
             });
+
+            $('#tablaOrder tbody').on('click','a.liberar',function(){
+              const id = $(this).data('id');
+
+              apprise('¿Liberar esta mesa?', {confirm:true}, ok=>{
+                if(!ok) return;
+
+                axios.post(`${self.apphost}/product_order/liberar_mesa`,{
+                  product_order_id: id
+                }).then(()=>{
+                  self.listar();
+                  self.cargarMesas();
+                });
+              });
+            });
+
           }
 
           this.dt.clear();
           this.ordenes.forEach(o=>{
+
+            let extra = '';
+
+            if(o.modo === 'MESA' && !o.fecha_fin){
+              extra = `
+                <li>
+                  <a href="#" class="liberar" data-id="${o.product_order_id}">
+                    Liberar mesa
+                  </a>
+                </li>`;
+            }
+
             const actions = `
-              <div class="btn-group">
-                <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">Opciones <span class="caret"></span></button>
-                <ul class="dropdown-menu">
-                  <li><a href="#" class="detalle" data-id="${o.product_order_id}">Detalle</a></li>
-                  <li><a href="#" class="editar"  data-id="${o.product_order_id}">Editar</a></li>
-                  <li><a href="#" class="eliminar" data-id="${o.product_order_id}">Eliminar</a></li>
-                </ul>
-              </div>`;
+            <div class="btn-group">
+              <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">
+                Opciones <span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                <li><a href="#" class="detalle" data-id="${o.product_order_id}">Detalle</a></li>
+                ${extra}
+                <li class="divider"></li>
+                <li><a href="#" class="eliminar" data-id="${o.product_order_id}">Eliminar</a></li>
+              </ul>
+            </div>`;
 
             const cajaTxt = o.caja_id
               ? `#${o.caja_id} (${o.estado_caja})`
@@ -568,6 +664,14 @@ new Vue({
       });
     },
 
+    abrirModalMesas(){
+      axios.get(`${this.apphost}/mesa/listar`)
+        .then(r => {
+          this.mesas = r.data;
+          $('#modalMesas').modal('show');
+        });
+    },
+
     abrirModalCrear() {
       axios.get(`${this.apphost}/auth/administrador-actual`).then(r=>{
 
@@ -589,7 +693,8 @@ new Vue({
           address:'',
           total_fees:0,
           items:[],
-          caja_id: caja.caja_id
+          caja_id: caja.caja_id,
+          mesa: null
         };
 
         $('#modalCrearOrder').modal('show');
@@ -805,6 +910,7 @@ new Vue({
       }).then(()=>{
         $('#modalCrearOrder').modal('hide');
         this.listar();
+        this.cargarMesas();  
       }).catch(e=>{
         apprise(e.response?.data?.msg || 'Error al crear la orden');
       });
@@ -985,6 +1091,12 @@ new Vue({
       this.administradores = r.data;
     });
 
+    // ✅ AQUÍ VA ESTO
+    const self = this;
+    $('#modalDetalleOrder').on('hidden', function () {
+      self.listar();
+    });
+
   },
 
   watch:{
@@ -1031,6 +1143,17 @@ new Vue({
   },
 
   computed:{
+
+    ordenCerrada(){
+      return !!this.detalle.fecha_fin;
+    },
+
+    totalDetalleOrden(){
+      return this.detallesOrder.reduce(
+        (s,d) => s + (d.amount * d.price_item),
+        0
+      ).toFixed(2);
+    },
 
     productosSelect(){
       return this.productos.map(p => ({

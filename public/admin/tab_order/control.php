@@ -366,6 +366,8 @@ Flight::route('POST /product_order_detail/crear', function(){
 
         actualizar_estado_orden($d['order_id'], 'AGREGADO');
 
+        recalcular_total_orden($d['order_id']);
+
         DB::commit();
         Flight::json(['status'=>'ok']);
 
@@ -405,6 +407,8 @@ Flight::route('POST /product_order_detail/eliminar', function(){
             "product_order_detail_id=%i",
             $d['product_order_detail_id']
         );
+
+        recalcular_total_orden($item['order_id']);
 
         DB::commit();
         Flight::json(['status'=>'ok']);
@@ -458,6 +462,8 @@ Flight::route('POST /product_order_detail/editar', function () {
       'last_update'=>time()*1000,
       'fecha_modificacion'=>date('Y-m-d H:i:s')
     ],"product_order_detail_id=%i",$d['product_order_detail_id']);
+
+    recalcular_total_orden($old['order_id']);
 
     DB::commit();
     Flight::json(['status'=>'ok']);
@@ -992,4 +998,104 @@ Flight::route('GET /imp_ventas_fecha_admin', function(){
     );
 });
 
+function recalcular_total_orden($order_id){
+    $total = DB::queryFirstField("
+        SELECT IFNULL(SUM(amount * price_item), 0)
+        FROM product_order_detail
+        WHERE order_id = %i
+    ", $order_id);
 
+    DB::update('product_order',[
+        'total_fees' => $total,
+        'fecha_modificacion' => date('Y-m-d H:i:s'),
+        'last_update' => time()*1000
+    ], "product_order_id = %i", $order_id);
+}
+
+
+
+Flight::route('POST /product_order/liberar_mesa', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    $d = Flight::request()->data->getData();
+    $order_id = (int)$d['product_order_id'];
+
+    $order = DB::queryFirstRow(
+      "SELECT mesa_id FROM product_order WHERE product_order_id=%i",
+      $order_id
+    );
+
+    if(!$order || !$order['mesa_id']){
+      Flight::json(['status'=>'error'],400);
+      return;
+    }
+
+    DB::startTransaction();
+    try {
+
+        // cerrar orden
+        DB::update('product_order',[
+          'fecha_fin' => date('Y-m-d H:i:s'),
+          'status' => 'CERRADA',
+          'fecha_modificacion' => date('Y-m-d H:i:s'),
+          'last_update' => time()*1000
+        ],"product_order_id=%i",$order_id);
+
+        // liberar mesa
+        DB::update('mesa',[
+          'estado' => 'DISPONIBLE'
+        ],"mesa_id=%i",$order['mesa_id']);
+
+        DB::commit();
+        Flight::json(['status'=>'ok']);
+
+    } catch(Exception $e){
+        DB::rollback();
+        Flight::json(['status'=>'error','msg'=>$e->getMessage()],500);
+    }
+});
+
+Flight::route('POST /product_order/liberar_mesa', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    $d = Flight::request()->data->getData();
+    $order_id = (int)$d['product_order_id'];
+
+    $order = DB::queryFirstRow(
+      "SELECT mesa_id FROM product_order WHERE product_order_id=%i",
+      $order_id
+    );
+
+    if(!$order || !$order['mesa_id']){
+      Flight::json(['status'=>'error'],400);
+      return;
+    }
+
+    DB::startTransaction();
+    try {
+
+        // cerrar orden
+        DB::update('product_order',[
+          'fecha_fin' => date('Y-m-d H:i:s'),
+          'status' => 'CERRADA',
+          'fecha_modificacion' => date('Y-m-d H:i:s'),
+          'last_update' => time()*1000
+        ],"product_order_id=%i",$order_id);
+
+        // liberar mesa
+        DB::update('mesa',[
+          'estado' => 'DISPONIBLE'
+        ],"mesa_id=%i",$order['mesa_id']);
+
+        DB::commit();
+        Flight::json(['status'=>'ok']);
+
+    } catch(Exception $e){
+        DB::rollback();
+        Flight::json(['status'=>'error','msg'=>$e->getMessage()],500);
+    }
+});

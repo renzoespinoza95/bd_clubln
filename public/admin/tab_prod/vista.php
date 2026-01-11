@@ -119,9 +119,9 @@
             :options="categorias"
             label="descripcion"
             v-model="form.categorias"
-            track-by="category_id"
             class="input-xxlarge">
           </v-select>
+
 
         </div>
 
@@ -253,6 +253,12 @@ new Vue({
       });
     },
 
+    mapearCategoriasEditar(p){
+      this.form.categorias = this.categorias.filter(c =>
+        p.categories_ids.includes(c.category_id)
+      );
+    },
+
     abrirModalCrear(){
       this.nuevo = {name:'',price:0,description:'',categorias:[]};
       $('#modalCrearProduct').modal('show');
@@ -264,22 +270,27 @@ new Vue({
     },
 
     abrirEditar(p){
+
+      console.group('✏️ abrirEditar');
+      console.log('Producto:', p);
+      console.log('categories_ids RAW:', p.categories_ids);
+      console.groupEnd();
+
       this.form = {
         product_id: p.product_id,
         name: p.name,
         price: p.price,
         description: p.description || '',
-        categorias: []   // 👈 vacío primero
+        categorias: this.categorias.filter(c =>
+          p.categories_ids.includes(c.category_id)
+        )
       };
 
-      $('#modalEditarProduct').modal('show');
+      console.log('form.categorias (NUMBERS):', this.form.categorias);
 
-      this.$nextTick(() => {
-        this.form.categorias = this.categorias.filter(c =>
-          p.categories_ids.includes(c.category_id)
-        );
-      });
+      $('#modalEditarProduct').modal('show');
     },
+
 
     guardarEdicion(){
       axios.post(`${this.apphost}/product/editar`, this.form)
@@ -303,8 +314,16 @@ new Vue({
 
     cargarCategorias(){
       axios.get(`${this.apphost}/product/listar_categorias`)
-      .then(r=>this.categorias=r.data);
+        .then(r => {
+          this.categorias = r.data.map(c => ({
+            category_id: Number(c.category_id), // 🔥 CLAVE ABSOLUTA
+            descripcion: c.descripcion.trim()
+          }));
+
+          console.log('✅ Categorías normalizadas:', this.categorias);
+        });
     },
+
 
     abrirModalCrearCategoria(){
       this.catNueva = { name:'', icon:'', color:'#999999', brief:'' };
@@ -325,6 +344,11 @@ new Vue({
           // recargar categorías para el v-select
           this.cargarCategorias();
       });
+    },
+
+    getCategoriaLabel(id) {
+      const cat = this.categorias.find(c => c.category_id === id);
+      return cat ? cat.descripcion : id;
     },
 
     abrirReporteProductos(){
