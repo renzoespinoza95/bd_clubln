@@ -71,12 +71,13 @@ Flight::route('GET /api/info', function () {
             'active'   => true,
             'tax'      => 18,
             'currency' => 'PEN',
-            'shipping' => ['EFECTIVO', 'YAPE', 'PLIN'],
+            'shipping' => ['JIMM', 'NENE', 'PLUSS'],
             'version'  => (int)$version
         ]
     ]);
 });
 
+// anterior: getListCategory
 Flight::route('GET /api/category/list', function () {
 
     $rows = DB::query("
@@ -101,7 +102,7 @@ Flight::route('GET /api/category/list', function () {
     ]);
 });
 
-
+// antes: getListProduct
 Flight::route('GET /api/product/list', function () {
 
     // ============================
@@ -181,7 +182,7 @@ Flight::route('GET /api/product/list', function () {
     ]);
 });
 
-
+// antes: getProductDetails
 Flight::route('GET /api/product/detail/@id', function ($id) {
 
     // ============================
@@ -262,7 +263,7 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
 });
 
 
-
+// antes: submitProductOrder
 Flight::route('POST /api/order/submit', function () {
 
     $payload = json_decode(file_get_contents('php://input'), true);

@@ -1,35 +1,61 @@
 <?php
-/**
- * Recibe $_FILES['img'] y un nombre de destino.
- * - No escala hacia arriba si la imagen es más pequeña.
- * - Castea a int para evitar warnings de float->int.
- */
-function procesarImagenSlider(array $file, string $destName): array {
-    $si = new SimpleImage();
-    $si->load($file['tmp_name']);
-    $originalWidth = $si->getWidth();
+// este es mi backend usando php8.2 con flightphp y meekrodb2
 
-    // FULL
-    $maxFull = (int) vari('IMG_FULL');
-    if ($originalWidth > $maxFull) {
-        $si->resizeToWidth($maxFull);
-    }
-    // guarda full (tal cual si no se redimensionó)
-    $rutaFull = VARPATH . vari('PICS_SLIDER_FULL') . '/' . $destName;
-    $si->save($rutaFull);
+function resizeTo800Jpg(string $pathTmp): string {
+    // Crear imagen desde archivo
+    $src = imagecreatefromstring(file_get_contents($pathTmp));
 
-    // MINI: recargamos la original para no aplicar doble resize
-    $si->load($file['tmp_name']);
-    $originalWidth = $si->getWidth();
-    $maxMini = (int) vari('IMG_MINI');
-    if ($originalWidth > $maxMini) {
-        $si->resizeToWidth($maxMini);
-    }
-    $rutaMini = VARPATH . vari('PICS_SLIDER_MINI') . '/' . $destName;
-    $si->save($rutaMini);
+    // Tamaños finales
+    $newW = 610;
+    $newH = 215;
 
-    return ['full' => $rutaFull, 'thumb' => $rutaMini];
+    // Crear destino con canal alfa
+    $dst = imagecreatetruecolor($newW, $newH);
+
+    // Habilitar transparencia en PNG
+    imagealphablending($dst, false);
+    imagesavealpha($dst, true);
+
+    // Obtener tamaño original
+    $w = imagesx($src);
+    $h = imagesy($src);
+
+    // Redimensionar
+    imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
+
+    // Crear archivo temporal PNG
+    $tempOut = tempnam(sys_get_temp_dir(), 'slider_') . '.png';
+    imagepng($dst, $tempOut);
+
+    // Liberar memoria
+    imagedestroy($src);
+    imagedestroy($dst);
+
+    return $tempOut;
 }
+
+function bunnyUpload(string $localPath, string $destName): bool {
+    $url = BUNNY_STORAGE_URL . '/' . SLIDER_DIR . '/' . $destName;
+
+    $headers = [
+        "AccessKey: " . BUNNY_STORAGE_ACCESSKEY,
+        "Content-Type: image/jpeg"
+    ];
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_PUT, true);
+    curl_setopt($ch, CURLOPT_INFILE, fopen($localPath, 'r'));
+    curl_setopt($ch, CURLOPT_INFILESIZE, filesize($localPath));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    $result = curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    return ($status == 201 || $status == 200);
+}
+
 /* -------------------------- */
 /* Vistas SLIDER             */
 /* -------------------------- */
@@ -65,71 +91,80 @@ Flight::route('GET /slider/listar', function () {
 /* ----------------- */
 
 /* CREAR */
+/* ==================================
+   🟢 CREAR SLIDER
+   ================================== */
 Flight::route('POST /slider/crear', function () {
-    // *** 1. RECIBIR DATOS COMO JSON (enviado por Flask) ***
-    // Se utiliza Flight::request()->getBody() para obtener el cuerpo crudo de la petición
-    $data = json_decode(Flight::request()->getBody(), true);
 
-    $orden          = $data['orden']          ?? 0;
-    $is_visible     = $data['is_visible']     ?? 1;
-    $fecha_creacion = $data['fecha_creacion'] ?? null;
-    $fecha_fin      = $data['fecha_fin']      ?? null;
-    $neg_id         = $data['neg_id']         ?? null;
-    $name           = $data['filename']       ?? null; // <-- Nombre del archivo ya subido al CDN
-    $grupo = $data['grupo'] ?? '';
+    $orden          = $_POST['orden'] ?? 0;
+    $is_visible     = $_POST['is_visible'] ?? 1;
+    $fecha_creacion = $_POST['fecha_creacion'] ?? null;
+    $fecha_fin      = $_POST['fecha_fin'] ?? null;
+    $neg_id         = $_POST['neg_id'] ?? 0;
+    $grupo          = $_POST['grupo'] ?? '';
 
-
-    // 2. Validación: El nombre de archivo es crucial para grabar el registro
-    if (empty($name)) {
-        Flight::halt(400, json_encode([
-            'success' => false,
-            'error'   => 'Falta el filename (nombre del archivo subido a CDN por Flask)'
-        ]));
+    if (empty($_FILES['img']['tmp_name'])) {
+        Flight::json(['success' => false, 'error' => 'Imagen requerida']);
+        return;
     }
-    
-    // 3. Inserta en BD
+
+    // 1) Redimensionar y convertir a JPG
+    $jpgPath = resizeTo800Jpg($_FILES['img']['tmp_name']);
+
+    if (!file_exists($jpgPath)) {
+        Flight::json(['success' => false, 'error' => 'Error al generar JPG']);
+        return;
+    }
+
+    // 2) Nombre único
+    $filename = 'slider_' . date('Ymd_His') . '_' . rand(1000,9999) . '.jpg';
+
+    // 3) Subir a Bunny
+    if (!bunnyUpload($jpgPath, $filename)) {
+        Flight::json(['success' => false, 'error' => 'Error al subir imagen a Bunny']);
+        return;
+    }
+
+    // 4) Registrar en BD
     DB::insert('slider', [
-        'img'            => $name, // <-- Usa el nombre de archivo de BunnyCDN
+        'img'            => $filename,
         'orden'          => $orden,
         'is_visible'     => $is_visible,
         'fecha_creacion' => $fecha_creacion,
         'fecha_fin'      => $fecha_fin,
-        'grupo' => $grupo,
+        'grupo'          => $grupo,
         'neg_id'         => $neg_id
     ]);
 
-    // 4. Respuesta (simplificada y adaptada para Vue.js/Flask)
     Flight::json([
         'success'   => true,
         'slider_id' => DB::insertId(),
-        'filename'  => $name // Devuelve el nombre del archivo para referencia
+        'filename'  => $filename
     ]);
 });
 
+
 /* EDITAR */
+/* ==================================
+   🟡 EDITAR SLIDER
+   ================================== */
 Flight::route('POST /slider/editar', function () {
-    // *** 1. RECIBIR DATOS COMO JSON (de Flask) ***
-    $data = json_decode(Flight::request()->getBody(), true);
 
-    $slider_id      = $data['slider_id']      ?? null;
-    $orden          = $data['orden']          ?? 0;
-    $is_visible     = $data['is_visible']     ?? 1;
-    $fecha_creacion = $data['fecha_creacion'] ?? null;
-    $fecha_fin      = $data['fecha_fin']      ?? null;
-    $neg_id         = $data['neg_id']         ?? null;
-    $new_filename   = $data['filename']       ?? null; // <--- Campo opcional: nombre del archivo ya subido al CDN
-    $grupo = $data['grupo'] ?? null;
-
+    $slider_id      = $_POST['slider_id'] ?? null;
+    $orden          = $_POST['orden'] ?? 0;
+    $is_visible     = $_POST['is_visible'] ?? 1;
+    $fecha_creacion = $_POST['fecha_creacion'] ?? null;
+    $fecha_fin      = $_POST['fecha_fin'] ?? null;
+    $neg_id         = $_POST['neg_id'] ?? 0;
+    $grupo          = $_POST['grupo'] ?? '';
 
     if (!$slider_id) {
-        // ... Flight::halt ...
-        Flight::halt(400, json_encode([
-            'success' => false,
-            'error'   => 'slider_id es requerido'
-        ]));
+        Flight::json(['success' => false, 'error' => 'slider_id requerido']);
+        return;
     }
 
-    $updateData = [
+    // Datos comunes
+    $update = [
         'orden'          => $orden,
         'is_visible'     => $is_visible,
         'fecha_creacion' => $fecha_creacion,
@@ -138,21 +173,35 @@ Flight::route('POST /slider/editar', function () {
         'neg_id'         => $neg_id
     ];
 
-    // Si Flask envió un nuevo nombre de archivo, agregar al UPDATE
-    if ($new_filename) {
-        $updateData['img'] = $new_filename;
+    // Si viene una nueva imagen
+    if (!empty($_FILES['img']['tmp_name'])) {
+
+        $jpgPath = resizeTo800Jpg($_FILES['img']['tmp_name']);
+
+        if (!file_exists($jpgPath)) {
+            Flight::json(['success' => false, 'error' => 'Error al generar JPG']);
+            return;
+        }
+
+        $filename = 'slider_' . date('Ymd_His') . '_' . rand(1000,9999) . '.jpg';
+
+        if (!bunnyUpload($jpgPath, $filename)) {
+            Flight::json(['success' => false, 'error' => 'Error al subir nueva imagen']);
+            return;
+        }
+
+        $update['img'] = $filename;
     }
 
-    // 2. Realizar el UPDATE en la BD
-    DB::update('slider', $updateData, 'slider_id = %i', $slider_id);
-    
-    // 3. Respuesta
+    DB::update('slider', $update, 'slider_id = %i', $slider_id);
+
     Flight::json([
         'success' => true,
-        'slider_id' => $slider_id,
-        'updated_img' => (bool)$new_filename
+        'updated' => true
     ]);
 });
+
+
 
 /* ELIMINAR */
 Flight::route('POST /slider/eliminar', function () {

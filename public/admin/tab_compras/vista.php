@@ -90,7 +90,7 @@
         <div class="control-group">
           <label>Fecha</label>
           <div class="controls">
-            <input type="datetime-local" v-model="nuevo.fecha_compra">
+            <input type="date" v-model="nuevo.fecha_compra">
           </div>
         </div>
 
@@ -367,7 +367,6 @@ new Vue({
               </button>
               <ul class="dropdown-menu">
                 <li><a href="#" class="detalle" data-id="${c.compra_id}">Detalle</a></li>
-                <li><a href="#" class="editar"  data-id="${c.compra_id}">Editar</a></li>
                 <li><a href="#" class="eliminar" data-id="${c.compra_id}">Eliminar</a></li>
                 <li>
                   <a href="#" class="add-items" data-id="${c.compra_id}">
@@ -421,40 +420,6 @@ new Vue({
 
     quitarItem(it){
       this.nuevo.items = this.nuevo.items.filter(x=>x!==it);
-    },
-    abrirModalItemCompra(){
-      this.itemTemp = {
-        product_id: null,
-        costo_unitario: 0,
-        cantidad: 1
-      };
-      $('#modalItemCompra').modal('show');
-    },
-
-    confirmarItemCompra(){
-
-      if(!this.itemTemp.product_id){
-        alert('Seleccione un producto');
-        return;
-      }
-
-      if(this.itemTemp.cantidad <= 0 || this.itemTemp.costo_unitario <= 0){
-        alert('Cantidad y costo deben ser mayores a 0');
-        return;
-      }
-
-      const prod = this.productos.find(
-        p => p.product_id === this.itemTemp.product_id
-      );
-
-      this.nuevo.items.push({
-        product_id: this.itemTemp.product_id,
-        producto: prod.name,
-        cantidad: this.itemTemp.cantidad,
-        costo_unitario: this.itemTemp.costo_unitario
-      });
-
-      $('#modalItemCompra').modal('hide');
     },
 
     abrirModalAgregarItemCompra(){
@@ -536,16 +501,23 @@ new Vue({
         return;
       }
 
+      // 📅 fecha + hora fija 12:00
+      let fecha = this.nuevo.fecha_compra;
+      if(fecha){
+        fecha = `${fecha} 12:00:00`;
+      }
+
       axios.post(`${this.apphost}/compra/crear`, {
         proveedor_id: this.nuevo.proveedor_id,
-        fecha_compra: this.nuevo.fecha_compra,
-        total: this.totalNuevo,
+        fecha_compra: fecha,
+        observaciones: '',
         items: this.nuevo.items
       }).then(()=>{
         $('#modalCrearCompra').modal('hide');
         this.listar();
       });
     },
+
 
     abrirDetalle(id){
       axios.get(`${this.apphost}/compra/detalle/${id}`).then(r=>{

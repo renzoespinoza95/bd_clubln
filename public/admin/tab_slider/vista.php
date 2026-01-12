@@ -1,3 +1,4 @@
+<!-- Este es mi frontend usando bootstrap2.3.2, vuejs2 modo estandalone y jquery2.0 -->
 <div id="appSlider" class="row-fluid">
   <div class="span10">
     <h2>Gestión de Sliders</h2>
@@ -49,7 +50,7 @@
     </table>
 
     <!-- Modal Crear -->
-    <div id="modalCrearSlider" class="modal hide fade" tabindex="-1">
+    <div id="modalCrearSlider" class="modal hide fade fullscreen" tabindex="-1">
       <div class="modal-header"><h3>Nuevo Slider</h3></div>
       <div class="modal-body">
         <form class="form-horizontal">
@@ -114,7 +115,7 @@
     </div>
 
     <!-- Modal Editar -->
-    <div id="modalEditarSlider" class="modal hide fade" tabindex="-1">
+    <div id="modalEditarSlider" class="modal hide fade fullscreen" tabindex="-1">
       <div class="modal-header"><h3>Editar Slider</h3></div>
       <div class="modal-body">
         <form class="form-horizontal">
@@ -312,13 +313,13 @@ new Vue({
 
 
       // 3) Envío a Flask
-      fetch(url_flask + '/bb_crear_slider', {
+      fetch(apphost + '/slider/crear', {
         method: 'POST',
         body: formData
       })
         .then(r => r.json())
         .then(data => {
-            if (data.ok) {
+            if (data.success) {
                 $('#modalCrearSlider').modal('hide');
                 this.obtenerSliders(); // 👈 Actualiza la lista para mostrar la nueva imagen
                 apprise('Slider creado');
@@ -368,13 +369,13 @@ new Vue({
       formData.append('grupo', this.formulario.grupo);
 
 
-      fetch(url_flask + '/bb_slider_editar', {
+      fetch(apphost + '/slider/editar', {
         method: 'POST',
         body: formData
       })
         .then(r => r.json())
         .then(data => {
-            if (data.ok) {
+            if (data.success) {
                 $('#modalEditarSlider').modal('hide');
                 this.obtenerSliders(); // 👈 Actualiza la lista para mostrar la nueva imagen
                 apprise('Slider actualizado');

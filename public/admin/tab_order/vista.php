@@ -62,8 +62,8 @@
         <div class="row-fluid order-resumen">
 
           <div class="span6">
-            <p><b>Código:</b> {{ detalle.code }}</p>
-            <p><b>Cliente:</b> {{ detalle.buyer }}</p>
+            <p><b>Código:</b> {{ detalle.serial }}</p>
+            <p><b>Cliente:</b> {{ detalle.cliente }}</p>
             <p><b>Tipo de pago:</b> {{ detalle.tipo_pago }}</p>
           </div>
 
@@ -187,7 +187,7 @@
 </table>
 
 <button class="btn btn-success" @click="abrirModalAgregarItemNuevaOrden">
-  Agregar mas prod.
+  Agregar productos
 </button>
 
 
@@ -208,10 +208,6 @@
           <div class="controls"><input v-model="form.buyer"></div>
         </div>
 
-        <div class="control-group">
-          <label>Dirección</label>
-          <div class="controls"><input v-model="form.address" class="input-xxlarge"></div>
-        </div>
 
         <div class="control-group">
           <label>Estado</label>
@@ -512,7 +508,6 @@ new Vue({
     ordenes:[],
     productos:[],
     mesas: [],  
-    nuevo:{code:'',buyer:'',address:'',total_fees:0,status:'WAITING'},
     form:{},
     detalle:{},
     detallesOrder:[],
@@ -548,12 +543,11 @@ new Vue({
     caja_id: null,
     tiposPago: [],
     nueva:{
-      cliente_id:null,
-      buyer:'',
-      address:'',
-      total_fees:0,
-      items:[],
-      tipo_pago_id:null,
+      cliente_id: null,
+      telefono: '',
+      total_fees: 0,
+      items: [],
+      tipo_pago_id: null,
       mesa: null
     },
   },
@@ -646,8 +640,8 @@ new Vue({
 
             this.dt.row.add([
               o.product_order_id,
-              o.code,
-              o.buyer,
+              o.serial,
+              o.cliente,
               mesaTxt,
               modoTxt,              
               o.administrador || '—',
@@ -737,35 +731,6 @@ new Vue({
       };
       $('#modalAgregarItemNuevaOrden').modal('show');
     },
-
-
-    crearOrden(){
-      if(!this.nueva.cliente_id){
-        apprise('Seleccione un cliente');
-        return;
-      }
-
-      if(this.nueva.items.length === 0){
-        apprise('Agregue al menos un ítem');
-        return;
-      }
-
-      axios.post(`${this.apphost}/product_order/crear`,{
-        buyer: this.nueva.buyer,
-        address: this.nueva.address,
-        total_fees: this.nueva.total_fees,
-        caja_id: this.nueva.caja_id,
-        items: this.nueva.items
-      }).then(()=>{
-
-        $('#modalCrearOrder').modal('hide');
-        this.listar();
-
-      }).catch(()=>{
-        apprise('Error al crear la orden');
-      });
-    },
-
 
     listarClientes(){
       axios.get(`${this.apphost}/cliente/listar`).then(r=>{
@@ -875,7 +840,7 @@ new Vue({
     crearOrder() {
 
       // 1️⃣ Cliente obligatorio
-      if(!this.nueva.cliente){
+      if(!this.nueva.cliente_id){
         apprise('Debe seleccionar un cliente');
         return;
       }
@@ -901,8 +866,9 @@ new Vue({
       const mesa_id = this.nueva.mesa.mesa_id;
 
       axios.post(`${this.apphost}/product_order/crear`,{
-        buyer: this.nueva.buyer,
-        address: this.nueva.address,
+        cliente_id: this.nueva.cliente_id,
+        phone: this.nueva.telefono || '',
+        comment: '',
         total_fees: this.totalOrden,
         tipo_pago_id: this.nueva.tipo_pago_id,
         mesa_id: mesa_id,
@@ -1117,8 +1083,7 @@ new Vue({
     'nueva.cliente'(c){
       if(c){
         this.nueva.cliente_id = c.cliente_id;
-        this.nueva.buyer = c.nombre;
-        this.nueva.address = c.direccion || '';
+        this.nueva.telefono = c.telefono || '';
       }
     },
 

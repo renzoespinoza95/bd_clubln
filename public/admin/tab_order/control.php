@@ -15,28 +15,32 @@ Flight::route('GET /product_order/listar', function(){
     DB::query("SET NAMES 'utf8mb4'");
 
     $rows = DB::query("
-            SELECT 
-              po.product_order_id,
-              po.code,
-              po.buyer,
-              po.status,
-              po.total_fees,
-              po.modo,
-              po.mesa_id,
-              m.nombre AS mesa_nombre,
-              FROM_UNIXTIME(po.created_at/1000,'%Y-%m-%d %H:%i:%s') AS fecha,
-              a.nombres_apellidos AS administrador,
-              po.caja_id,
-              IF(c.caja_id IS NULL, 'CERRADA', c.estado) AS estado_caja
-            FROM product_order po
-            LEFT JOIN administradortbl a 
-                   ON a.administrador_id = po.administrador_id
-            LEFT JOIN caja c
-                   ON c.caja_id = po.caja_id
-            LEFT JOIN mesa m
-                   ON m.mesa_id = po.mesa_id
-            ORDER BY po.product_order_id DESC
+        SELECT 
+          po.product_order_id,
+          po.serial,
+          po.status,
+          po.cliente_id,
+          cl.nombre AS cliente,
+          po.total_fees,
+          po.modo,
+          po.mesa_id,
+          m.nombre AS mesa_nombre,
+          FROM_UNIXTIME(po.created_at/1000,'%Y-%m-%d %H:%i:%s') AS fecha,
+          a.nombres_apellidos AS administrador,
+          po.caja_id,
+          IF(c.caja_id IS NULL, 'CERRADA', c.estado) AS estado_caja
+        FROM product_order po
+        LEFT JOIN cliente cl
+               ON cl.cliente_id = po.cliente_id
+        LEFT JOIN administradortbl a 
+               ON a.administrador_id = po.administrador_id
+        LEFT JOIN caja c
+               ON c.caja_id = po.caja_id
+        LEFT JOIN mesa m
+               ON m.mesa_id = po.mesa_id
+        ORDER BY po.product_order_id DESC
     ");
+
 
     Flight::json($rows);
 });
@@ -112,7 +116,7 @@ Flight::route('POST /product_order/crear', function () {
     // -------------------------------
     // Validaciones obligatorias
     // -------------------------------
-    if (empty($d['buyer'])) {
+    if (empty($d['cliente_id'])) {
         Flight::json([
             'status' => 'error',
             'msg'    => 'Debe seleccionar un cliente'
@@ -195,9 +199,8 @@ Flight::route('POST /product_order/crear', function () {
         $now = time() * 1000;
 
         DB::insert('product_order', [
-            'code'               => strtoupper(bin2hex(random_bytes(4))),
-            'buyer'              => $d['buyer'],
-            'address'            => $d['address'] ?? '',
+            'serial'               => generarCodigoOrden(),
+            'cliente_id'              => $d['cliente_id'],
             'administrador_id'   => $administrador_id,
             'caja_id'            => $caja['caja_id'],
             'tipo_pago_id'       => $d['tipo_pago_id'],
@@ -635,10 +638,9 @@ Flight::route('GET /imp_ventas_fecha', function(){
     $ventas = DB::query("
         SELECT 
             po.product_order_id,
-            po.code,
             po.fecha_creacion,
             po.total_fees,
-            po.buyer AS cliente,
+            po.cliente_id AS cliente,
             a.nombres_apellidos AS administrador
         FROM product_order po
         LEFT JOIN administradortbl a 
@@ -910,10 +912,9 @@ Flight::route('GET /imp_ventas_fecha_admin', function(){
     $ventas = DB::query("
         SELECT 
             po.product_order_id,
-            po.code,
             po.fecha_creacion,
             po.total_fees,
-            po.buyer AS cliente,
+            po.cliente_id AS cliente,
             a.nombres_apellidos AS administrador
         FROM product_order po
         LEFT JOIN administradortbl a 
