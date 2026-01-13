@@ -206,6 +206,7 @@ new Vue({
   el: '#appSlider',
   data: {
     apphost: apphost,
+    cdn_base_url: cdn_base_url,
     sliders: [],
     letrasAZ: Array.from({length: 26}, (_, i) => String.fromCharCode(65 + i)),
     nuevo: {
@@ -322,8 +323,9 @@ new Vue({
             if (data.success) {
                 $('#modalCrearSlider').modal('hide');
                 this.obtenerSliders(); // 👈 Actualiza la lista para mostrar la nueva imagen
-                apprise('Slider creado');
-                // 🛑 Eliminado: window.location, ya que obtenerSliders() recarga la tabla
+                apprise('Slider creado', { okBtn: 'Ok' }, () => {
+                    window.location.reload();
+                });
             } else {
                 apprise('Error al crear slider: ' + (data.error || 'Desconocido'), { okBtn: 'Entendido' });
             }

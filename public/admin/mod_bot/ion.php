@@ -508,3 +508,40 @@ Flight::route('POST /api/order/submit', function () {
 
 
 **/
+
+Flight::route('GET /ion/slider', function () {
+    include DEFINITION;
+    // Traer sliders visibles
+    $rows = DB::query("
+        SELECT
+            slider_id,
+            img,
+            descripcion,
+            fecha_creacion,
+            fecha_fin
+        FROM slider
+        WHERE is_visible = 1
+        ORDER BY orden ASC
+    ");
+
+    $news_infos = [];
+
+    foreach ($rows as $r) {
+        $news_infos[] = [
+            'id'            => (int)$r['slider_id'],
+            'title'         => $r['descripcion'],
+            'brief_content' => $r['descripcion'],
+            'image'         => BUNNY_CDN_BASE . "/" . SLIDER_DIR . "/" . $r['img'],
+            'draft'         => 0,
+            'status'        => 'FEATURED',
+            // Android espera timestamps en milisegundos
+            'created_at'    => strtotime($r['fecha_creacion']) * 1000,
+            'last_update'   => strtotime($r['fecha_fin']) * 1000,
+        ];
+    }
+
+    Flight::json([
+        'status'     => 'success',
+        'news_infos' => $news_infos
+    ]);
+});

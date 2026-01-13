@@ -170,12 +170,15 @@ EOF;
 */
 
 public static function todohost($apphost, $varhost, $apihost = null, $adicional = null) {
+    include DEFINITION;
       com("TODOHOST");
+      $bunny_storage_url = BUNNY_CDN_BASE;
 $aplicar = <<<EOF
 <script type="text/javascript">
    let apphost = '$apphost';  
    let varhost = '$varhost';
    let apihost = '$apihost';
+   let cdn_base_url = '$bunny_storage_url';
    let adminhost = varhost + '/public/admin/';
    $adicional
    let dt_language = {
