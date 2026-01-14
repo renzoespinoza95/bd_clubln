@@ -373,9 +373,6 @@ Flight::route('POST /api/order/submit', function () {
     }
 });
 
-
-
-
 Flight::route('GET /api/tipo-pago/list', function () {
 
     $rows = DB::query("
@@ -385,6 +382,21 @@ Flight::route('GET /api/tipo-pago/list', function () {
             orden
         FROM tipo_pago
         ORDER BY orden ASC, descripcion ASC
+    ");
+
+    Flight::json([
+        'status' => 'success',
+        'data'   => $rows
+    ]);
+});
+
+Flight::route('GET /api/cliente/list', function () {
+
+    $rows = DB::query("
+        SELECT 
+            *
+        FROM cliente
+        ORDER BY cliente_id ASC
     ");
 
     Flight::json([

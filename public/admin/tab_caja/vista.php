@@ -11,6 +11,12 @@
       </button>
     </div>
 
+    <div class="form-actions">
+        <button class="btn btn-success" @click="abrirModalAbrir">
+              Abrir Caja Nueva
+        </button>      
+    </div>          
+
     <!-- LISTADO CAJAS ABIERTAS -->
     <table class="table table-bordered table-striped" v-if="cajasAbiertas.length">
       <thead>
@@ -64,11 +70,6 @@
         </tr>
       </tbody>
     </table>
-
-    <button class="btn btn-success" @click="abrirModalAbrir">
-      Abrir Caja Nueva
-    </button>
-
   </div>
 
   <!-- MODAL ABRIR CAJA -->
