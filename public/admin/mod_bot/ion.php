@@ -263,7 +263,6 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
 });
 
 
-// antes: submitProductOrder
 Flight::route('POST /api/order/submit', function () {
 
     $payload = json_decode(file_get_contents('php://input'), true);
@@ -280,7 +279,7 @@ Flight::route('POST /api/order/submit', function () {
         return;
     }
 
-    // ⏱️ Timestamp en milisegundos (como Android)
+    // ⏱️ Timestamp en milisegundos (Android compatible)
     $now = (int) (microtime(true) * 1000);
 
     DB::startTransaction();
@@ -288,46 +287,31 @@ Flight::route('POST /api/order/submit', function () {
     try {
 
         /* ===============================
-           1️⃣ INSERT ORDER
+           1️⃣ INSERT PRODUCT_ORDER
         =============================== */
         $o = $payload['product_order'];
 
         DB::insert('product_order', [
-            'code'             => null,
-            'buyer'            => $o['buyer'],
-            'address'          => $o['address'],
-            'email'            => $o['email'],
-            'shipping'         => $o['shipping'],
-            'date_ship'        => $o['date_ship'],
-            'phone'            => $o['phone'],
-            'administrador_id' => $o['administrador_id'],
-            'comment'          => $o['comment'],
+            'administrador_id' => $o['administrador_id'] ?? null,
+            'cliente_id'       => $o['cliente_id']       ?? null,
+            'tipo_pago_id'     => $o['tipo_pago_id']     ?? null,
+            'mesa_id'          => $o['mesa_id']          ?? null,
+            'modo'             => $o['modo']             ?? 'DIRECTA',
+
             'status'           => $o['status'],
             'total_fees'       => $o['total_fees'],
             'tax'              => $o['tax'],
-            'serial'           => $o['serial'],
+            'serial'           => $o['serial']           ?? null,
+
             'created_at'       => $o['created_at']  ?? $now,
             'last_update'      => $o['last_update'] ?? $now,
-            'caja_id'          => $o['caja_id'],
-            'modo'             => 'DIRECTA'
+            'caja_id'          => $o['caja_id']      ?? null
         ]);
 
         $order_id = DB::insertId();
 
         /* ===============================
-           2️⃣ GENERAR CODE
-        =============================== */
-        $code = str_pad((string)$order_id, 6, '0', STR_PAD_LEFT);
-
-        DB::update(
-            'product_order',
-            ['code' => $code],
-            'product_order_id=%i',
-            $order_id
-        );
-
-        /* ===============================
-           3️⃣ INSERT DETAILS + STOCK
+           2️⃣ INSERT DETAILS + DESCONTAR STOCK
         =============================== */
         foreach ($payload['product_order_detail'] as $d) {
 
@@ -352,13 +336,12 @@ Flight::route('POST /api/order/submit', function () {
         DB::commit();
 
         /* ===============================
-           4️⃣ RESPONSE OK
+           3️⃣ RESPONSE OK
         =============================== */
         Flight::json([
             'status' => 'success',
             'data' => [
-                'id'   => $order_id,
-                'code' => $code
+                'id' => $order_id
             ]
         ]);
 
@@ -372,6 +355,7 @@ Flight::route('POST /api/order/submit', function () {
         ]);
     }
 });
+
 
 Flight::route('GET /api/tipo-pago/list', function () {
 
