@@ -291,22 +291,30 @@ Flight::route('POST /api/order/submit', function () {
         =============================== */
         $o = $payload['product_order'];
 
+        $mesa_id = (int) ($o['mesa_id'] ?? 0);
+        $modo    = ($mesa_id > 0) ? 'MESA' : 'DIRECTA';
+        $status  = ($modo === 'MESA') ? 'ABIERTA' : 'PAGADO';
+
+        $year   = date('Y'); // 2026
+        $serial = 'ORD-' . $year . '-' . strtoupper(bin2hex(random_bytes(3)));
+
         DB::insert('product_order', [
             'administrador_id' => $o['administrador_id'] ?? null,
-            'cliente_id'       => $o['cliente_id']       ?? null,
-            'tipo_pago_id'     => $o['tipo_pago_id']     ?? null,
-            'mesa_id'          => $o['mesa_id']          ?? null,
-            'modo'             => $o['modo']             ?? 'DIRECTA',
+            'cliente_id'       => $o['cliente_id'] ?? null,
+            'tipo_pago_id'     => $o['tipo_pago_id'] ?? null,
+            'mesa_id'          => $mesa_id > 0 ? $mesa_id : null,
+            'modo'             => $modo,
 
-            'status'           => $o['status'],
+            'status'           => $o['status'] ?? $status,
             'total_fees'       => $o['total_fees'],
-            'tax'              => $o['tax'],
-            'serial'           => $o['serial']           ?? null,
+            'tax'              => $o['tax'] ?? 0,
+            'serial'           => $serial,
 
-            'created_at'       => $o['created_at']  ?? $now,
+            'created_at'       => $o['created_at'] ?? $now,
             'last_update'      => $o['last_update'] ?? $now,
-            'caja_id'          => $o['caja_id']      ?? null
+            'caja_id'          => $o['caja_id'] ?? null
         ]);
+
 
         $order_id = DB::insertId();
 
@@ -341,7 +349,8 @@ Flight::route('POST /api/order/submit', function () {
         Flight::json([
             'status' => 'success',
             'data' => [
-                'id' => $order_id
+                'id' => $order_id,
+                'code' => $serial
             ]
         ]);
 
@@ -540,4 +549,139 @@ Flight::route('GET /ion/slider', function () {
         'status'     => 'success',
         'news_infos' => $news_infos
     ]);
+});
+
+
+Flight::route(
+    'GET /ion/reportepos/@administrador_id/@fecha',
+    function ($administrador_id, $fecha) {
+
+        // 🗓️ Si viene "hoy", usamos fecha actual
+        if ($fecha === 'hoy') {
+            $fecha = date('Y-m-d');
+        }
+
+        // 🧪 Validación básica
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            Flight::json([
+                'status' => 'failed',
+                'msg' => 'Formato de fecha inválido (YYYY-MM-DD)'
+            ]);
+            return;
+        }
+
+        // 📦 Ventas del día
+        $ventas = DB::query("
+            SELECT
+                product_order_id,
+                administrador_id,
+                cliente_id,
+                tipo_pago_id,
+                mesa_id,
+                modo,
+                status,
+                total_fees,
+                tax,
+                fecha_creacion
+            FROM product_order
+            WHERE administrador_id = %i
+              AND DATE(fecha_creacion) = %s
+            ORDER BY fecha_creacion ASC
+        ", $administrador_id, $fecha);
+
+        // 🔢 Totales
+        $resumen = DB::queryFirstRow("
+            SELECT
+                COUNT(*) AS total_ventas,
+                IFNULL(SUM(total_fees), 0) AS total_dia
+            FROM product_order
+            WHERE administrador_id = %i
+              AND DATE(fecha_creacion) = %s
+        ", $administrador_id, $fecha);
+
+        Flight::json([
+            'status' => 'success',
+            'fecha' => $fecha,
+            'administrador_id' => (int)$administrador_id,
+            'resumen' => [
+                'total_ventas' => (int)$resumen['total_ventas'],
+                'total_dia' => (float)$resumen['total_dia']
+            ],
+            'data' => $ventas
+        ]);
+    }
+);
+
+Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
+
+    $todayStart = strtotime('today') * 1000;
+    $todayEnd   = strtotime('tomorrow') * 1000;
+
+    $order = DB::queryFirstRow("
+        SELECT *
+        FROM product_order
+        WHERE mesa_id = %i
+          AND modo = 'MESA'
+          AND status = 'ABIERTA'
+          AND created_at BETWEEN %i AND %i
+        ORDER BY product_order_id DESC
+        LIMIT 1
+    ", $mesa_id, $todayStart, $todayEnd);
+
+    if (!$order) {
+        Flight::json([
+            'status' => 'empty'
+        ]);
+        return;
+    }
+
+    $details = DB::query("
+        SELECT *
+        FROM product_order_detail
+        WHERE order_id = %i
+    ", $order['product_order_id']);
+
+    Flight::json([
+        'status' => 'success',
+        'order'  => $order,
+        'items'  => $details
+    ]);
+});
+
+
+Flight::route('POST /api/mesa/agregar-productos', function () {
+
+    $payload = json_decode(file_get_contents('php://input'), true);
+
+    DB::startTransaction();
+
+    try {
+
+        foreach ($payload['items'] as $d) {
+
+            DB::insert('product_order_detail', [
+                'order_id'    => $payload['order_id'],
+                'product_id'  => $d['product_id'],
+                'product_name'=> $d['product_name'],
+                'amount'      => $d['amount'],
+                'price_item'  => $d['price_item'],
+                'created_at'  => $d['created_at'],
+                'last_update' => $d['last_update']
+            ]);
+
+            DB::query("
+                UPDATE inventario
+                SET stock_actual = stock_actual - %i
+                WHERE product_id = %i
+            ", $d['amount'], $d['product_id']);
+        }
+
+        DB::commit();
+
+        Flight::json(['status' => 'success']);
+
+    } catch (Exception $e) {
+        DB::rollback();
+        Flight::json(['status' => 'failed']);
+    }
 });

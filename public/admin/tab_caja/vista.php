@@ -254,13 +254,34 @@ new Vue({
 
     abrirCaja(){
 
+      if(!this.formAbrir.administrador_recibe){
+        apprise('Debe seleccionar el administrador que RECIBE');
+        return;
+      }
+
+      if(!this.formAbrir.administrador_entrega){
+        apprise('Debe seleccionar el administrador que ENTREGA');
+        return;
+      }
+
+      // monto puede ser 0 → NO se valida
+
       axios.post(`${this.apphost}/caja/abrir`, {
         administrador_id: this.formAbrir.administrador_recibe,
         administrador_origen_id: this.formAbrir.administrador_entrega,
         efectivo_inicial: this.formAbrir.monto
-      }).then(()=>{
+      })
+      .then(()=>{
         $('#modalAbrirCaja').modal('hide');
+        apprise('Caja abierta correctamente');
         this.cargar();
+      })
+      .catch(e=>{
+        if(e.response && e.response.data && e.response.data.error){
+          apprise(e.response.data.error);
+        }else{
+          apprise('Error al abrir la caja');
+        }
       });
 
     },

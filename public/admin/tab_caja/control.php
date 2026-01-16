@@ -52,12 +52,29 @@ Flight::route('POST /caja/abrir', function() {
 
     $d = json_decode(Flight::request()->getBody(), true);
 
+    // Validación de administradores (monto puede ser 0)
     if (
-        !isset($d['administrador_id']) ||
-        !isset($d['administrador_origen_id']) ||
-        !isset($d['efectivo_inicial'])
+        empty($d['administrador_id']) ||
+        empty($d['administrador_origen_id'])
     ) {
-        Flight::json(['error'=>'Datos incompletos'], 400);
+        Flight::json([
+            'error'=>'Debe seleccionar el administrador que recibe y el que entrega'
+        ], 400);
+        return;
+    }
+
+    // 🔒 Verificar si el administrador YA tiene caja abierta
+    $existe = DB::queryFirstField("
+        SELECT COUNT(*) 
+        FROM caja
+        WHERE estado = 'ABIERTA'
+          AND administrador_id = %i
+    ", $d['administrador_id']);
+
+    if ($existe > 0) {
+        Flight::json([
+            'error'=>'Este administrador ya tiene una caja abierta. Debe cerrarla primero.'
+        ], 409);
         return;
     }
 
@@ -66,22 +83,25 @@ Flight::route('POST /caja/abrir', function() {
     DB::insert('caja', [
         'administrador_id' => $d['administrador_id'],
         'fecha_apertura'   => date('Y-m-d H:i:s'),
-        'efectivo_inicial' => $d['efectivo_inicial'],
+        'efectivo_inicial' => floatval($d['efectivo_inicial']), // puede ser 0
         'estado'           => 'ABIERTA'
     ]);
 
     $caja_id = DB::insertId();
 
-    DB::insert('caja_movimiento', [
-        'caja_id'          => $caja_id,
-        'tipo'             => 'INGRESO',
-        'origen'           => 'AJUSTE',
-        'monto'            => $d['efectivo_inicial'],
-        'medio_pago'       => 'EFECTIVO',
-        'referencia_id'    => $d['administrador_origen_id'],
-        'referencia_tabla' => 'administradortbl',
-        'fecha'            => date('Y-m-d H:i:s')
-    ]);
+    // Registrar movimiento inicial SOLO si hay monto > 0
+    if (floatval($d['efectivo_inicial']) > 0) {
+        DB::insert('caja_movimiento', [
+            'caja_id'          => $caja_id,
+            'tipo'             => 'INGRESO',
+            'origen'           => 'AJUSTE',
+            'monto'            => $d['efectivo_inicial'],
+            'medio_pago'       => 'EFECTIVO',
+            'referencia_id'    => $d['administrador_origen_id'],
+            'referencia_tabla' => 'administradortbl',
+            'fecha'            => date('Y-m-d H:i:s')
+        ]);
+    }
 
     DB::commit();
     Flight::json(['status'=>'ok']);
