@@ -1,5 +1,5 @@
 <div class="row-fluid" id="appCaja">
-
+<!-- este es mi frontend usando boostrap2.3.2, vuejs2 modo estandalone y jquery2.0 -->
   <div class="span12">
     <h2>Gestión de Caja</h2>
 
@@ -339,13 +339,30 @@ new Vue({
       }
       return true;
     },
-
-
     cerrarCaja(){
-      axios.post(`${this.apphost}/caja/cerrar`,this.formCerrar)
-      .then(()=>{ $('#modalCerrarCaja').modal('hide'); this.cargar(); });
-    }
 
+      // ✅ VALIDACIÓN OBLIGATORIA
+      if(!this.formCerrar.administrador_recibe){
+        apprise('Debe seleccionar el administrador que RECIBE el cierre de caja');
+        return;
+      }
+
+      // (opcional) el monto puede ser 0, así que NO se valida aquí
+
+      axios.post(`${this.apphost}/caja/cerrar`, this.formCerrar)
+        .then(() => {
+          $('#modalCerrarCaja').modal('hide');
+          apprise('Caja cerrada correctamente');
+          this.cargar();
+        })
+        .catch(e => {
+          if(e.response && e.response.data && e.response.data.error){
+            apprise(e.response.data.error);
+          }else{
+            apprise('Error al cerrar la caja');
+          }
+        });
+    }
   },
 
   mounted(){
