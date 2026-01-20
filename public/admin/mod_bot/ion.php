@@ -262,7 +262,7 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
     ]);
 });
 
-
+/*
 Flight::route('POST /api/order/submit', function () {
 
     $payload = json_decode(file_get_contents('php://input'), true);
@@ -286,9 +286,7 @@ Flight::route('POST /api/order/submit', function () {
 
     try {
 
-        /* ===============================
-           1️⃣ INSERT PRODUCT_ORDER
-        =============================== */
+        // INSERTAR ORDEN
         $o = $payload['product_order'];
 
         $mesa_id = (int) ($o['mesa_id'] ?? 0);
@@ -318,9 +316,7 @@ Flight::route('POST /api/order/submit', function () {
 
         $order_id = DB::insertId();
 
-        /* ===============================
-           2️⃣ INSERT DETAILS + DESCONTAR STOCK
-        =============================== */
+        // INSERTAR STOCK
         foreach ($payload['product_order_detail'] as $d) {
 
             DB::insert('product_order_detail', [
@@ -343,9 +339,7 @@ Flight::route('POST /api/order/submit', function () {
 
         DB::commit();
 
-        /* ===============================
-           3️⃣ RESPONSE OK
-        =============================== */
+        // RESPONSE
         Flight::json([
             'status' => 'success',
             'data' => [
@@ -364,7 +358,7 @@ Flight::route('POST /api/order/submit', function () {
         ]);
     }
 });
-
+*/
 
 Flight::route('GET /api/tipo-pago/list', function () {
 
@@ -684,4 +678,235 @@ Flight::route('POST /api/mesa/agregar-productos', function () {
         DB::rollback();
         Flight::json(['status' => 'failed']);
     }
+});
+
+Flight::route('POST /api/mesa/crear-pedido', function () {
+
+    $payload = json_decode(file_get_contents('php://input'), true);
+
+    if (!$payload || empty($payload['mesa_id'])) {
+        Flight::json([
+            'status' => 'failed',
+            'msg'    => 'mesa_id requerido'
+        ]);
+        return;
+    }
+
+    $mesa_id = (int)$payload['mesa_id'];
+    $modo    = $payload['modo'] ?? 'MESA';
+
+    // ⏱️ Fecha y hora actual
+    $fecha_inicio = date('Y-m-d H:i:s');
+
+    // ⏱️ Timestamp en ms (para Android)
+    $now_ms = (int)(microtime(true) * 1000);
+
+    DB::startTransaction();
+
+    try {
+
+        DB::insert('product_order', [
+            'mesa_id'        => $mesa_id,
+            'modo'           => $modo,
+            'status'         => 'ABIERTA',
+            'fecha_inicio'   => $fecha_inicio,   // 👈 AQUÍ
+            'created_at'     => $now_ms,
+            'last_update'    => $now_ms,
+            'total_fees'     => 0,
+            'tax'            => 0
+        ]);
+
+        $order_id = DB::insertId();
+
+        DB::commit();
+
+        Flight::json([
+            'status' => 'success',
+            'order'  => [
+                'product_order_id' => $order_id,
+                'mesa_id'          => $mesa_id,
+                'fecha_inicio'     => $fecha_inicio
+            ]
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        Flight::json([
+            'status' => 'failed',
+            'msg'    => 'No se pudo crear el pedido'
+        ]);
+    }
+});
+
+
+Flight::route('POST /api/order/submit', function () {
+
+    $payload = json_decode(file_get_contents('php://input'), true);
+
+    if (
+        !$payload ||
+        empty($payload['product_order']) ||
+        empty($payload['product_order_detail'])
+    ) {
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'Invalid payload'
+        ]);
+        return;
+    }
+
+    $o = $payload['product_order'];
+
+    $mesa_id = (int)($o['mesa_id'] ?? 0);
+    $nowMs   = (int)(microtime(true) * 1000);
+    $nowSql  = date('Y-m-d H:i:s');
+
+    DB::startTransaction();
+
+    try {
+
+        // =====================================================
+        // 🪑 CASO MESA: BUSCAR PEDIDO ABIERTO
+        // =====================================================
+        $order_id = null;
+
+        if ($mesa_id > 0) {
+
+            $order = DB::queryFirstRow("
+                SELECT product_order_id
+                FROM product_order
+                WHERE mesa_id = %i
+                  AND status = 'ABIERTA'
+                  AND fecha_fin IS NULL
+                ORDER BY product_order_id DESC
+                LIMIT 1
+            ", $mesa_id);
+
+            if ($order) {
+                // ✅ YA EXISTE PEDIDO ABIERTO
+                $order_id = (int)$order['product_order_id'];
+            }
+        }
+
+        // =====================================================
+        // ➕ SI NO EXISTE, CREAR PRODUCT_ORDER
+        // =====================================================
+        if (!$order_id) {
+
+            $modo   = ($mesa_id > 0) ? 'MESA' : 'DIRECTA';
+            $status = ($mesa_id > 0) ? 'ABIERTA' : 'PAGADO';
+
+            $serial = 'ORD-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
+
+            DB::insert('product_order', [
+                'cliente_id'       => $o['cliente_id'] ?? null,
+                'administrador_id' => $o['administrador_id'] ?? null,
+                'caja_id'          => $o['caja_id'] ?? null,
+                'mesa_id'          => $mesa_id ?: null,
+                'modo'             => $modo,
+                'status'           => $status,
+                'total_fees'       => $o['total_fees'],
+                'tax'              => $o['tax'] ?? 0,
+                'serial'           => $serial,
+                'fecha_inicio'     => $nowSql,
+                'created_at'       => $nowMs,
+                'last_update'      => $nowMs
+            ]);
+
+            $order_id = DB::insertId();
+        }
+
+        // =====================================================
+        // 📦 INSERTAR DETALLES + DESCONTAR STOCK
+        // =====================================================
+        foreach ($payload['product_order_detail'] as $d) {
+
+            DB::insert('product_order_detail', [
+                'order_id'     => $order_id,
+                'product_id'   => $d['product_id'],
+                'product_name' => $d['product_name'],
+                'amount'       => $d['amount'],
+                'price_item'   => $d['price_item'],
+                'created_at'   => $d['created_at']  ?? $nowMs,
+                'last_update'  => $d['last_update'] ?? $nowMs
+            ]);
+
+            DB::query("
+                UPDATE inventario
+                SET stock_actual = stock_actual - %i
+                WHERE product_id = %i
+            ", $d['amount'], $d['product_id']);
+        }
+
+        DB::commit();
+
+        Flight::json([
+            'status' => 'success',
+            'data' => [
+                'order_id' => $order_id
+            ]
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'Failed when submit order'
+        ]);
+    }
+});
+
+
+Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
+
+    $order = DB::queryFirstRow("
+        SELECT *
+        FROM product_order
+        WHERE mesa_id = %i
+          AND status = 'ABIERTA'
+          AND fecha_fin IS NULL
+        ORDER BY product_order_id DESC
+        LIMIT 1
+    ", $mesa_id);
+
+    if (!$order) {
+        Flight::json([
+            'status' => 'empty'
+        ]);
+        return;
+    }
+
+    $items = DB::query("
+        SELECT 
+            product_id,
+            product_name,
+            amount,
+            price_item,
+            (amount * price_item) AS total
+        FROM product_order_detail
+        WHERE order_id = %i
+    ", $order['product_order_id']);
+
+    $subtotal = 0;
+    foreach ($items as $i) {
+        $subtotal += $i['total'];
+    }
+
+    $tax   = $order['tax'] ?? 0;
+    $total = $subtotal + $tax;
+
+    Flight::json([
+        'status' => 'success',
+        'data' => [
+            'order_id' => $order['product_order_id'],
+            'subtotal' => $subtotal,
+            'tax'      => $tax,
+            'total'    => $total,
+            'items'    => $items
+        ]
+    ]);
 });
