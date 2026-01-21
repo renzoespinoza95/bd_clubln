@@ -910,3 +910,47 @@ Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
         ]
     ]);
 });
+
+
+Flight::route('GET /api/order/detail/@id', function ($id) {
+
+    $orderId = (int)$id;
+
+    if ($orderId <= 0) {
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'ID de orden inválido'
+        ]);
+        return;
+    }
+
+    // 📦 Detalle de productos
+    $items = DB::query("
+        SELECT
+            d.product_id,
+            d.product_name,
+            d.amount,
+            d.price_item,
+            o.total_fees
+        FROM product_order_detail d
+        INNER JOIN product_order o 
+            ON o.product_order_id = d.order_id
+        WHERE d.order_id = %i
+        ORDER BY d.product_order_detail_id ASC
+    ", $orderId);
+
+    if (!$items) {
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'Orden sin detalle'
+        ]);
+        return;
+    }
+
+    Flight::json([
+        'status'   => 'success',
+        'order_id' => $orderId,
+        'total'    => (float)$items[0]['total_fees'],
+        'data'     => $items
+    ]);
+});
