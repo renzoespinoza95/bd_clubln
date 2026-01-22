@@ -845,7 +845,8 @@ Flight::route('POST /api/order/submit', function () {
         Flight::json([
             'status' => 'success',
             'data' => [
-                'order_id' => $order_id
+                'order_id' => $order_id,
+                'code'     => $serial
             ]
         ]);
 
