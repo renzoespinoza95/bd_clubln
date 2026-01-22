@@ -394,120 +394,6 @@ Flight::route('GET /api/cliente/list', function () {
 
 
 
-/**
-VERSION CON  LOS CAMPOS ELIMINADOS
-
-{
-  "product_order": {
-    "cliente_id": 42,
-    "administrador_id": 3,
-    "caja_id": 8,
-    "status": "POS",
-    "total_fees": 84.9,
-    "tax": 0
-  },
-  "product_order_detail": [
-    {
-      "product_id": 25,
-      "product_name": "Snacks Papas Lays",
-      "amount": 2,
-      "price_item": 3.5
-    }
-  ]
-}
-
-
-Flight::route('POST /api/order/submit', function () {
-
-    $payload = json_decode(file_get_contents('php://input'), true);
-
-    if (
-        !$payload ||
-        empty($payload['product_order']) ||
-        empty($payload['product_order_detail'])
-    ) {
-        Flight::json([
-            'status' => 'failed',
-            'msg' => 'Invalid payload'
-        ]);
-        return;
-    }
-
-    $o = $payload['product_order'];
-
-    // ⏱️ timestamp ms (compat Android)
-    $now = (int)(microtime(true) * 1000);
-
-    DB::startTransaction();
-
-    try {
-
-        // =============================
-        // INSERT ORDER (NUEVO MODELO)
-        // =============================
-        DB::insert('product_order', [
-            'cliente_id'       => $o['cliente_id'],
-            'administrador_id' => $o['administrador_id'] ?? null,
-            'caja_id'          => $o['caja_id'] ?? null,
-            'status'           => $o['status'],
-            'total_fees'       => $o['total_fees'],
-            'tax'              => $o['tax'],
-            'created_at'       => $o['created_at']  ?? $now,
-            'last_update'      => $o['last_update'] ?? $now,
-            'modo'             => $o['modo'] ?? 'DIRECTA'
-        ]);
-
-        $order_id = DB::insertId();
-
-        // ===============================
-        //   INSERT DETAILS + STOCK
-        // ===============================
-        foreach ($payload['product_order_detail'] as $d) {
-
-            DB::insert('product_order_detail', [
-                'order_id'    => $order_id,
-                'product_id'  => $d['product_id'],
-                'product_name'=> $d['product_name'],
-                'amount'      => $d['amount'],
-                'price_item'  => $d['price_item'],
-                'created_at'  => $d['created_at']  ?? $now,
-                'last_update' => $d['last_update'] ?? $now
-            ]);
-
-            // 🔻 Descontar stock
-            DB::query("
-                UPDATE inventario
-                SET stock_actual = stock_actual - %i
-                WHERE product_id = %i
-            ", $d['amount'], $d['product_id']);
-        }
-
-        DB::commit();
-
-        // =============================
-        //   RESPONSE OK
-        // =============================
-        Flight::json([
-            'status' => 'success',
-            'data' => [
-                'order_id' => $order_id
-            ]
-        ]);
-
-    } catch (Exception $e) {
-
-        DB::rollback();
-
-        Flight::json([
-            'status' => 'failed',
-            'msg' => 'Failed when submit order'
-        ]);
-    }
-});
-
-
-**/
-
 Flight::route('GET /ion/slider', function () {
     include DEFINITION;
     // Traer sliders visibles
@@ -564,7 +450,9 @@ Flight::route(
             return;
         }
 
-        // 📦 Ventas del día
+        // =====================================================
+        // 📦 VENTAS DEL DÍA
+        // =====================================================
         $ventas = DB::query("
             SELECT
                 product_order_id,
@@ -583,8 +471,10 @@ Flight::route(
             ORDER BY fecha_creacion ASC
         ", $administrador_id, $fecha);
 
-        // 🔢 Totales
-        $resumen = DB::queryFirstRow("
+        // =====================================================
+        // 🔢 RESUMEN DE VENTAS
+        // =====================================================
+        $resumenVentas = DB::queryFirstRow("
             SELECT
                 COUNT(*) AS total_ventas,
                 IFNULL(SUM(total_fees), 0) AS total_dia
@@ -593,18 +483,84 @@ Flight::route(
               AND DATE(fecha_creacion) = %s
         ", $administrador_id, $fecha);
 
+        // =====================================================
+        // 🧾 BUSCAR CAJA DEL ADMINISTRADOR
+        // =====================================================
+        $caja = DB::queryFirstRow("
+            SELECT caja_id
+            FROM caja
+            WHERE administrador_id = %i
+              AND DATE(fecha_apertura) = %s
+            ORDER BY caja_id DESC
+            LIMIT 1
+        ", $administrador_id, $fecha);
+
+        $movimientos = [];
+        $totalIngresos = 0;
+        $totalEgresos  = 0;
+
+        if ($caja) {
+
+            // =====================================================
+            // 💸 MOVIMIENTOS DE CAJA
+            // =====================================================
+            $movimientos = DB::query("
+                SELECT
+                    fecha,
+                    tipo,
+                    origen,
+                    monto,
+                    medio_pago,
+                    referencia_id,
+                    referencia_tabla
+                FROM caja_movimiento
+                WHERE caja_id = %i
+                ORDER BY fecha ASC
+            ", $caja['caja_id']);
+
+            // =====================================================
+            // 📊 RESUMEN CAJA
+            // =====================================================
+            $res = DB::queryFirstRow("
+                SELECT
+                    IFNULL(SUM(CASE WHEN tipo = 'INGRESO' THEN monto ELSE 0 END), 0) AS ingresos,
+                    IFNULL(SUM(CASE WHEN tipo = 'EGRESO' THEN monto ELSE 0 END), 0) AS egresos
+                FROM caja_movimiento
+                WHERE caja_id = %i
+            ", $caja['caja_id']);
+
+            $totalIngresos = (float)$res['ingresos'];
+            $totalEgresos  = (float)$res['egresos'];
+        }
+
+        // =====================================================
+        // 📤 RESPONSE FINAL
+        // =====================================================
         Flight::json([
             'status' => 'success',
             'fecha' => $fecha,
             'administrador_id' => (int)$administrador_id,
-            'resumen' => [
-                'total_ventas' => (int)$resumen['total_ventas'],
-                'total_dia' => (float)$resumen['total_dia']
+
+            'ventas' => [
+                'resumen' => [
+                    'total_ventas' => (int)$resumenVentas['total_ventas'],
+                    'total_dia'    => (float)$resumenVentas['total_dia']
+                ],
+                'data' => $ventas
             ],
-            'data' => $ventas
+
+            'caja' => [
+                'movimientos' => $movimientos,
+                'resumen' => [
+                    'total_ingresos' => $totalIngresos,
+                    'total_egresos'  => $totalEgresos,
+                    'diferencia'     => round($totalIngresos - $totalEgresos, 2)
+                ]
+            ]
         ]);
     }
 );
+
 
 Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
 
@@ -705,18 +661,50 @@ Flight::route('POST /api/mesa/crear-pedido', function () {
 
     try {
 
+        // 🔎 VALIDAR QUE LA MESA EXISTA Y ESTÉ DISPONIBLE
+        $mesa = DB::queryFirstRow("
+            SELECT estado
+            FROM mesa
+            WHERE mesa_id = %i
+            LIMIT 1
+        ", $mesa_id);
+
+        if (!$mesa) {
+            DB::rollback();
+            Flight::json([
+                'status' => 'failed',
+                'msg'    => 'La mesa no existe'
+            ]);
+            return;
+        }
+
+        if ($mesa['estado'] !== 'DISPONIBLE') {
+            DB::rollback();
+            Flight::json([
+                'status' => 'failed',
+                'msg'    => 'La mesa ya está ocupada'
+            ]);
+            return;
+        }
+
+        // 🧾 CREAR PEDIDO
         DB::insert('product_order', [
-            'mesa_id'        => $mesa_id,
-            'modo'           => $modo,
-            'status'         => 'ABIERTA',
-            'fecha_inicio'   => $fecha_inicio,   // 👈 AQUÍ
-            'created_at'     => $now_ms,
-            'last_update'    => $now_ms,
-            'total_fees'     => 0,
-            'tax'            => 0
+            'mesa_id'      => $mesa_id,
+            'modo'         => $modo,
+            'status'       => 'ABIERTA',
+            'fecha_inicio' => $fecha_inicio,
+            'created_at'   => $now_ms,
+            'last_update'  => $now_ms,
+            'total_fees'   => 0,
+            'tax'          => 0
         ]);
 
         $order_id = DB::insertId();
+
+        // 🔒 MARCAR MESA COMO OCUPADA
+        DB::update('mesa', [
+            'estado' => 'OCUPADA'
+        ], 'mesa_id = %i', $mesa_id);
 
         DB::commit();
 
@@ -954,4 +942,114 @@ Flight::route('GET /api/order/detail/@id', function ($id) {
         'total'    => (float)$items[0]['total_fees'],
         'data'     => $items
     ]);
+});
+
+
+Flight::route('POST /api/order/submitMesa', function () {
+
+    $payload = json_decode(file_get_contents('php://input'), true);
+
+    if (!$payload || empty($payload['product_order']['mesa_id'])) {
+        Flight::json([
+            'status' => 'failed',
+            'msg'    => 'mesa_id requerido'
+        ]);
+        return;
+    }
+
+    $o = $payload['product_order'];
+
+    $mesa_id    = (int) $o['mesa_id'];
+    $adminId    = $o['administrador_id'] ?? null;
+    $cajaId     = $o['caja_id'] ?? null;
+    $clienteId  = $o['cliente_id'] ?? null;
+    $tipoPagoId = $o['tipo_pago_id'] ?? null;
+
+    $nowMs  = (int)(microtime(true) * 1000);
+    $nowSql = date('Y-m-d H:i:s');
+
+    DB::startTransaction();
+
+    try {
+
+        // =====================================================
+        // 🔎 BUSCAR PEDIDO ABIERTO DE LA MESA
+        // =====================================================
+        $order = DB::queryFirstRow("
+            SELECT product_order_id
+            FROM product_order
+            WHERE mesa_id = %i
+              AND status = 'ABIERTA'
+              AND fecha_fin IS NULL
+            ORDER BY product_order_id DESC
+            LIMIT 1
+        ", $mesa_id);
+
+        if (!$order) {
+            throw new Exception('No hay pedido abierto para esta mesa');
+        }
+
+        $order_id = (int)$order['product_order_id'];
+
+        // =====================================================
+        // 💰 CALCULAR TOTAL DESDE DETALLE
+        // =====================================================
+        $total = DB::queryFirstField("
+            SELECT IFNULL(SUM(amount * price_item), 0)
+            FROM product_order_detail
+            WHERE order_id = %i
+        ", $order_id);
+
+        $total = round((float)$total, 2);
+
+        // =====================================================
+        // 🧾 SERIAL SEGURO
+        // =====================================================
+        $serial = 'MESA-' . date('Y') . '-' . strtoupper(substr(md5(uniqid()), 0, 6));
+
+        // =====================================================
+        // 🔒 CERRAR PEDIDO
+        // =====================================================
+        DB::update('product_order', [
+            'status'           => 'PAGADO',
+            'serial'           => $serial,
+            'total_fees'       => $total,
+            'fecha_fin'        => $nowSql,
+            'last_update'      => $nowMs,
+            'administrador_id' => $adminId,
+            'caja_id'          => $cajaId,
+            'cliente_id'       => $clienteId,
+            'tipo_pago_id'     => $tipoPagoId,
+            'modo'             => 'MESA'
+        ], 'product_order_id = %i', $order_id);
+
+        // =====================================================
+        // 🔓 LIBERAR MESA (AQUÍ ESTÁ LA CLAVE)
+        // =====================================================
+        DB::update('mesa', [
+            'estado' => 'DISPONIBLE'
+        ], 'mesa_id = %i', $mesa_id);
+
+        DB::commit();
+
+        Flight::json([
+            'status' => 'success',
+            'data' => [
+                'order_id' => $order_id,
+                'code'     => $serial,
+                'total'    => number_format($total, 2, '.', '')
+            ]
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        error_log('[submitMesa ERROR] ' . $e->getMessage());
+
+        Flight::json([
+            'status' => 'failed',
+            'msg'    => $e->getMessage()
+        ]);
+    }
 });

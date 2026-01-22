@@ -42,7 +42,7 @@
           <th>Modo</th>
           <th>Administrador</th>
           <th>Estado</th>
-          <th>Caja</th>
+          <th>Tipo de pago</th>
           <th>Fecha</th>
           <th>Total</th>
           <th>Acciones</th>
@@ -625,9 +625,7 @@ new Vue({
               </ul>
             </div>`;
 
-            const cajaTxt = o.caja_id
-              ? `#${o.caja_id} (${o.estado_caja})`
-              : 'CERRADA';
+            const tipoPagoTxt = o.tipo_pago || '—';
 
             const mesaTxt = o.modo === 'MESA'
               ? (o.mesa_nombre || `#${o.mesa_id}`)
@@ -646,7 +644,7 @@ new Vue({
               modoTxt,              
               o.administrador || '—',
               o.status,
-              cajaTxt,
+              tipoPagoTxt,
               o.fecha,
               o.total_fees,
               actions

@@ -25,25 +25,27 @@ Flight::route('GET /product_order/listar', function(){
           po.modo,
           po.mesa_id,
           m.nombre AS mesa_nombre,
-          FROM_UNIXTIME(po.created_at/1000,'%Y-%m-%d %H:%i:%s') AS fecha,
+          DATE_FORMAT(
+            FROM_UNIXTIME(po.created_at/1000),
+            '%d/%m/%Y %H:%i'
+          ) AS fecha,
           a.nombres_apellidos AS administrador,
-          po.caja_id,
-          IF(c.caja_id IS NULL, 'CERRADA', c.estado) AS estado_caja
+          tp.descripcion AS tipo_pago
         FROM product_order po
         LEFT JOIN cliente cl
                ON cl.cliente_id = po.cliente_id
         LEFT JOIN administradortbl a 
                ON a.administrador_id = po.administrador_id
-        LEFT JOIN caja c
-               ON c.caja_id = po.caja_id
         LEFT JOIN mesa m
                ON m.mesa_id = po.mesa_id
+        LEFT JOIN tipo_pago tp
+               ON tp.tipo_pago_id = po.tipo_pago_id
         ORDER BY po.product_order_id DESC
     ");
 
-
     Flight::json($rows);
 });
+
 
 /* ======================================
    CREAR ORDEN
