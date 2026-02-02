@@ -146,10 +146,7 @@ Flight::route('POST /compra/crear', function () {
 
     $data = Flight::request()->data->getData();
 
-    $proveedor_id = isset($data['proveedor_id']) && intval($data['proveedor_id']) > 0
-    ? intval($data['proveedor_id'])
-    : 104;
-
+    $proveedor_id  = intval($data['proveedor_id']);
     
     if (!empty($data['fecha_compra'])) {
     $fecha = date('Y-m-d H:i:s', strtotime($data['fecha_compra']));
