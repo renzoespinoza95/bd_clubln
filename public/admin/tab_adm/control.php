@@ -1,6 +1,6 @@
 <?php
 /* -------------------------------
- * Vista /tab3
+ // este es mi backend usando php8.2, flightphp y meekrodb2
  * ------------------------------- */
 Flight::route('GET /administradores', function () {
     include DEFINITION;
@@ -79,6 +79,7 @@ Flight::route('GET /admin/listar', function () {
             a.administrador_id,
             a.nombres_apellidos,
             a.email,
+            a.clavel,
             a.is_activo,
             a.tipo_administrador_id,
             t.descripcion AS tipo

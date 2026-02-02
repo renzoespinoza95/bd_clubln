@@ -1,4 +1,5 @@
 <div id="appAdmin" class="row-fluid">
+  <!-- este es mi frontend usando boostrap2.3.2, vuejs2 modo estandalone y jquery2.0 -->
   <div class="span12">
 
     <h2>Administradores</h2>
@@ -12,7 +13,8 @@
         <tr>
           <th>ID</th>
           <th>Nombre</th>
-          <th>Email</th>
+          <th>Cuenta</th>
+          <th>Clave</th>
           <th>Tipo</th>
           <th>Activo</th>
           <th>Acciones</th>
@@ -23,6 +25,7 @@
           <td>{{ a.administrador_id }}</td>
           <td>{{ a.nombres_apellidos }}</td>
           <td>{{ a.email }}</td>
+          <td>{{ a.clavel }}</td>
           <td>{{ a.tipo }}</td>
           <td>
             <span class="label" :class="a.is_activo==1?'label-success':'label-important'">

@@ -1,6 +1,6 @@
 <?php
 /* -------------------------------
- * Vista /tab3
+// este es mi backend usando php8.2, flightphp y meekrodb2
  * ------------------------------- */
 Flight::route('GET /caja', function () {
     include DEFINITION;
