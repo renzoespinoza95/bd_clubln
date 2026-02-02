@@ -508,7 +508,7 @@ new Vue({
       }
 
       axios.post(`${this.apphost}/compra/crear`, {
-        proveedor_id: this.nuevo.proveedor_id,
+        proveedor_id: Number(this.nuevo.proveedor_id),
         fecha_compra: fecha,
         observaciones: '',
         items: this.nuevo.items
