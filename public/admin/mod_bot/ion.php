@@ -262,103 +262,6 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
     ]);
 });
 
-/*
-Flight::route('POST /api/order/submit', function () {
-
-    $payload = json_decode(file_get_contents('php://input'), true);
-
-    if (
-        !$payload ||
-        empty($payload['product_order']) ||
-        empty($payload['product_order_detail'])
-    ) {
-        Flight::json([
-            'status' => 'failed',
-            'msg' => 'Invalid payload'
-        ]);
-        return;
-    }
-
-    // ⏱️ Timestamp en milisegundos (Android compatible)
-    $now = (int) (microtime(true) * 1000);
-
-    DB::startTransaction();
-
-    try {
-
-        // INSERTAR ORDEN
-        $o = $payload['product_order'];
-
-        $mesa_id = (int) ($o['mesa_id'] ?? 0);
-        $modo    = ($mesa_id > 0) ? 'MESA' : 'DIRECTA';
-        $status  = ($modo === 'MESA') ? 'ABIERTA' : 'PAGADO';
-
-        $year   = date('Y'); // 2026
-        $serial = 'ORD-' . $year . '-' . strtoupper(bin2hex(random_bytes(3)));
-
-        DB::insert('product_order', [
-            'administrador_id' => $o['administrador_id'] ?? null,
-            'cliente_id'       => $o['cliente_id'] ?? null,
-            'tipo_pago_id'     => $o['tipo_pago_id'] ?? null,
-            'mesa_id'          => $mesa_id > 0 ? $mesa_id : null,
-            'modo'             => $modo,
-
-            'status'           => $o['status'] ?? $status,
-            'total_fees'       => $o['total_fees'],
-            'tax'              => $o['tax'] ?? 0,
-            'serial'           => $serial,
-
-            'created_at'       => $o['created_at'] ?? $now,
-            'last_update'      => $o['last_update'] ?? $now,
-            'caja_id'          => $o['caja_id'] ?? null
-        ]);
-
-
-        $order_id = DB::insertId();
-
-        // INSERTAR STOCK
-        foreach ($payload['product_order_detail'] as $d) {
-
-            DB::insert('product_order_detail', [
-                'order_id'    => $order_id,
-                'product_id'  => $d['product_id'],
-                'product_name'=> $d['product_name'],
-                'amount'      => $d['amount'],
-                'price_item'  => $d['price_item'],
-                'created_at'  => $d['created_at']  ?? $now,
-                'last_update' => $d['last_update'] ?? $now
-            ]);
-
-            // 🔻 Descontar stock
-            DB::query("
-                UPDATE inventario
-                SET stock_actual = stock_actual - %i
-                WHERE product_id = %i
-            ", $d['amount'], $d['product_id']);
-        }
-
-        DB::commit();
-
-        // RESPONSE
-        Flight::json([
-            'status' => 'success',
-            'data' => [
-                'id' => $order_id,
-                'code' => $serial
-            ]
-        ]);
-
-    } catch (Exception $e) {
-
-        DB::rollback();
-
-        Flight::json([
-            'status' => 'failed',
-            'msg' => 'Failed when submit order'
-        ]);
-    }
-});
-*/
 
 Flight::route('GET /api/tipo-pago/list', function () {
 
@@ -731,35 +634,44 @@ Flight::route('POST /api/mesa/crear-pedido', function () {
 
 Flight::route('POST /api/order/submit', function () {
 
-    $payload = json_decode(file_get_contents('php://input'), true);
-
-    if (
-        !$payload ||
-        empty($payload['product_order']) ||
-        empty($payload['product_order_detail'])
-    ) {
-        Flight::json([
-            'status' => 'failed',
-            'msg' => 'Invalid payload'
-        ]);
-        return;
-    }
-
-    $o = $payload['product_order'];
-
-    $mesa_id = (int)($o['mesa_id'] ?? 0);
-    $nowMs   = (int)(microtime(true) * 1000);
-    $nowSql  = date('Y-m-d H:i:s');
-
-    DB::startTransaction();
-
     try {
 
         // =====================================================
-        // 🪑 CASO MESA: BUSCAR PEDIDO ABIERTO
+        // 📥 LEER PAYLOAD
         // =====================================================
-        $order_id = null;
+        $raw = file_get_contents('php://input');
+        $payload = json_decode($raw, true);
 
+        if (!$payload) {
+            throw new Exception("JSON inválido", 100);
+        }
+
+        if (empty($payload['product_order'])) {
+            throw new Exception("Falta product_order", 101);
+        }
+
+        if (empty($payload['product_order_detail'])) {
+            throw new Exception("Falta product_order_detail", 102);
+        }
+
+        $o = $payload['product_order'];
+        $details = $payload['product_order_detail'];
+
+        // =====================================================
+        // ⏱️ FECHAS
+        // =====================================================
+        $nowMs  = (int)(microtime(true) * 1000);
+        $nowSql = date('Y-m-d H:i:s');
+
+        $mesa_id = (int)($o['mesa_id'] ?? 0);
+        $order_id = null;
+        $serial = null;
+
+        DB::startTransaction();
+
+        // =====================================================
+        // 🪑 BUSCAR PEDIDO ABIERTO SI ES MESA
+        // =====================================================
         if ($mesa_id > 0) {
 
             $order = DB::queryFirstRow("
@@ -773,13 +685,12 @@ Flight::route('POST /api/order/submit', function () {
             ", $mesa_id);
 
             if ($order) {
-                // ✅ YA EXISTE PEDIDO ABIERTO
                 $order_id = (int)$order['product_order_id'];
             }
         }
 
         // =====================================================
-        // ➕ SI NO EXISTE, CREAR PRODUCT_ORDER
+        // ➕ CREAR PRODUCT_ORDER SI NO EXISTE
         // =====================================================
         if (!$order_id) {
 
@@ -795,7 +706,7 @@ Flight::route('POST /api/order/submit', function () {
                 'mesa_id'          => $mesa_id ?: null,
                 'modo'             => $modo,
                 'status'           => $status,
-                'total_fees'       => $o['total_fees'],
+                'total_fees'       => $o['total_fees'] ?? 0,
                 'tax'              => $o['tax'] ?? 0,
                 'serial'           => $serial,
                 'fecha_inicio'     => $nowSql,
@@ -804,32 +715,67 @@ Flight::route('POST /api/order/submit', function () {
             ]);
 
             $order_id = DB::insertId();
+
+            if (!$order_id) {
+                throw new Exception("No se pudo crear product_order", 200);
+            }
         }
 
         // =====================================================
-        // 📦 INSERTAR DETALLES + DESCONTAR STOCK
+        // 📦 INSERTAR DETALLES
         // =====================================================
-        foreach ($payload['product_order_detail'] as $d) {
+        foreach ($details as $i => $d) {
+
+            if (empty($d['product_id'])) {
+                throw new Exception("Detalle[$i]: product_id vacío", 300);
+            }
+
+            if (empty($d['amount'])) {
+                throw new Exception("Detalle[$i]: amount vacío", 301);
+            }
+
+            if (!isset($d['price_item'])) {
+                throw new Exception("Detalle[$i]: price_item vacío", 302);
+            }
+
+            // 🔍 OBTENER NOMBRE DEL PRODUCTO
+            $product_name = DB::queryFirstField(
+                "SELECT name FROM product WHERE product_id = %i",
+                $d['product_id']
+            );
+
+            if (!$product_name) {
+                throw new Exception(
+                    "Producto no existe (product_id={$d['product_id']})",
+                    303
+                );
+            }
 
             DB::insert('product_order_detail', [
                 'order_id'     => $order_id,
                 'product_id'   => $d['product_id'],
-                'product_name' => DB::queryFirstField(
-                    "SELECT name FROM product WHERE product_id = %i",
-                    $d['product_id']
-                ),
+                'product_name' => $product_name,
                 'amount'       => $d['amount'],
                 'price_item'   => $d['price_item'],
                 'created_at'   => $nowMs,
                 'last_update'  => $nowMs
             ]);
 
-
-            DB::query("
+            // =================================================
+            // 📉 DESCONTAR STOCK
+            // =================================================
+            $rows = DB::query("
                 UPDATE inventario
                 SET stock_actual = stock_actual - %i
                 WHERE product_id = %i
             ", $d['amount'], $d['product_id']);
+
+            if (DB::affectedRows() === 0) {
+                throw new Exception(
+                    "Inventario no encontrado para product_id={$d['product_id']}",
+                    400
+                );
+            }
         }
 
         DB::commit();
@@ -838,20 +784,28 @@ Flight::route('POST /api/order/submit', function () {
             'status' => 'success',
             'data' => [
                 'order_id' => $order_id,
-                'code'     => $serial
+                'serial'   => $serial
             ]
         ]);
 
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
 
         DB::rollback();
 
         Flight::json([
             'status' => 'failed',
-            'msg' => 'Failed when submit order'
-        ]);
+            'error' => [
+                'code'    => $e->getCode(),
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ],
+            'payload' => $payload ?? null
+        ], 500);
     }
 });
+
 
 
 Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
