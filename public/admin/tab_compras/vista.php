@@ -80,8 +80,7 @@
             <v-select
               :options="proveedores"
               label="nombre"
-              :reduce="p => p.proveedor_id"
-              v-model="nuevo.proveedor_id"
+              v-model="nuevo.proveedor"
               placeholder="Seleccione proveedor">
             </v-select>
           </div>
@@ -293,7 +292,11 @@ new Vue({
     proveedores: [],
     itemsExistentes:[],
     productos: [],
-    nuevo: { proveedor_id:null, fecha_compra:'', items:[] },
+    nuevo: {
+      proveedor: null,
+      fecha_compra: '',
+      items: []
+    },
     form: {},
     filtro:{ fecha_ini:'', fecha_fin:'' },
     detalle: { cabecera:{}, detalle:[] },
@@ -391,7 +394,10 @@ new Vue({
     },
 
     abrirModalCrear(){
-      this.nuevo = { proveedor_id:null, fecha_compra:'', items:[] };
+      this.nuevo = { 
+        proveedor_id:null, 
+        fecha_compra:this.fechaHoy(),
+        items:[] };
       $('#modalCrearCompra').modal('show');
     },
 
@@ -489,26 +495,34 @@ new Vue({
       });
     },
 
+    fechaHoy(){
+      const d = new Date();
+      const year  = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day   = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
+
+
     crearCompra(){
 
-      if(!this.nuevo.proveedor_id){
+      if (!this.nuevo.proveedor || !this.nuevo.proveedor.proveedor_id) {
         alert('Debe seleccionar proveedor');
         return;
       }
 
-      if(this.nuevo.items.length === 0){
+      if (this.nuevo.items.length === 0) {
         alert('Debe agregar al menos un producto');
         return;
       }
 
-      // 📅 fecha + hora fija 12:00
       let fecha = this.nuevo.fecha_compra;
-      if(fecha){
+      if (fecha) {
         fecha = `${fecha} 12:00:00`;
       }
 
       axios.post(`${this.apphost}/compra/crear`, {
-        proveedor_id: Number(this.nuevo.proveedor_id),
+        proveedor_id: Number(this.nuevo.proveedor.proveedor_id),
         fecha_compra: fecha,
         observaciones: '',
         items: this.nuevo.items
@@ -517,7 +531,6 @@ new Vue({
         this.listar();
       });
     },
-
 
     abrirDetalle(id){
       axios.get(`${this.apphost}/compra/detalle/${id}`).then(r=>{
