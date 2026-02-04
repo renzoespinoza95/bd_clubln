@@ -814,12 +814,16 @@ Flight::route('POST /api/order/submit', function () {
             DB::insert('product_order_detail', [
                 'order_id'     => $order_id,
                 'product_id'   => $d['product_id'],
-                'product_name' => $d['product_name'],
+                'product_name' => DB::queryFirstField(
+                    "SELECT name FROM product WHERE product_id = %i",
+                    $d['product_id']
+                ),
                 'amount'       => $d['amount'],
                 'price_item'   => $d['price_item'],
-                'created_at'   => $d['created_at']  ?? $nowMs,
-                'last_update'  => $d['last_update'] ?? $nowMs
+                'created_at'   => $nowMs,
+                'last_update'  => $nowMs
             ]);
+
 
             DB::query("
                 UPDATE inventario
