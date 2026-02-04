@@ -994,7 +994,7 @@ Flight::route('POST /api/order/submitMesa', function () {
             'status' => 'success',
             'data' => [
                 'order_id' => $order_id,
-                'code'     => $serial,
+                'serial'     => $serial,
                 'total'    => number_format($total, 2, '.', '')
             ]
         ]);
