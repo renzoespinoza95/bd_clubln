@@ -1175,3 +1175,48 @@ Flight::route('POST /ion/guardarYape', function () {
         ]);
     }
 });
+
+
+Flight::route('GET /ion/listaYape', function () {
+
+    include DEFINITION;
+    global $varhost;
+
+    try {
+
+        $rows = DB::query("
+            SELECT 
+                yape_id,
+                product_order_id,
+                fecha_creacion,
+                img
+            FROM yape
+            ORDER BY yape_id DESC
+            LIMIT 100
+        ");
+
+        $data = [];
+
+        foreach ($rows as $r) {
+            $data[] = [
+                'yape_id'          => (int)$r['yape_id'],
+                'product_order_id' => (int)$r['product_order_id'],
+                'fecha_creacion'   => $r['fecha_creacion'],
+                'img'              => $varhost . $r['img']
+            ];
+        }
+
+        Flight::json([
+            'status' => 'success',
+            'data'   => $data
+        ]);
+
+    } catch (Throwable $e) {
+
+        Flight::json([
+            'status'  => 'error',
+            'message' => 'Error al listar yapes',
+            'error'   => $e->getMessage()
+        ], 500);
+    }
+});
