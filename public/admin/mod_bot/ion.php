@@ -1089,3 +1089,89 @@ Flight::route('GET /ion/slider/yape', function () {
     ]);
 });
 
+Flight::route('POST /ion/guardarYape', function () {
+
+    include DEFINITION;
+    global $varhost;
+
+    define('VARPATH', dirname(__FILE__));
+    $UPLOAD_DIR = VARPATH . '/pics/yape/';
+
+    /* ================================
+     * VALIDACIÓN
+     * ================================ */
+    if (!isset($_FILES['imagen'])) {
+        Flight::json([
+            'status' => 'error',
+            'message' => 'No se recibió la imagen'
+        ]);
+        return;
+    }
+
+    if (!isset($_POST['product_order_id'])) {
+        Flight::json([
+            'status' => 'error',
+            'message' => 'No se recibió product_order_id'
+        ]);
+        return;
+    }
+
+    $product_order_id = (int) $_POST['product_order_id'];
+
+    if ($product_order_id <= 0) {
+        Flight::json([
+            'status' => 'error',
+            'message' => 'product_order_id inválido'
+        ]);
+        return;
+    }
+
+    /* ================================
+     * CREAR DIRECTORIO
+     * ================================ */
+    if (!is_dir($UPLOAD_DIR)) {
+        mkdir($UPLOAD_DIR, 0755, true);
+    }
+
+    try {
+
+        /* ================================
+         * PROCESAR IMAGEN
+         * ================================ */
+        $img = new SimpleImage();
+        $img->load($_FILES['imagen']['tmp_name']);
+
+        $nombreArchivo = 'yape_' . $product_order_id . '_' . date('Ymd_His') . '.jpg';
+        $rutaFisica    = $UPLOAD_DIR . $nombreArchivo;
+        $rutaRelativa  = 'pics/yape/' . $nombreArchivo;
+
+        $img->save($rutaFisica, IMAGETYPE_JPEG, 90);
+
+        /* ================================
+         * INSERT BD
+         * ================================ */
+        DB::insert('yape', [
+            'product_order_id' => $product_order_id,
+            'img'              => $rutaRelativa
+        ]);
+
+        /* ================================
+         * RUTA COMPLETA
+         * ================================ */
+        $urlCompleta = rtrim($varhost, '/') . '/ion/' . $rutaRelativa;
+
+        Flight::json([
+            'status' => 'success',
+            'message' => 'Imagen Yape guardada correctamente',
+            'img' => $urlCompleta
+        ]);
+
+    } catch (Exception $e) {
+
+        Flight::json([
+            'status' => 'error',
+            'message' => 'Error al guardar imagen',
+            'error' => $e->getMessage()
+        ]);
+    }
+});
