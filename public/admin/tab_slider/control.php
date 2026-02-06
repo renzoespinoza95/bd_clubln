@@ -2,37 +2,47 @@
 // este es mi backend usando php8.2 con flightphp y meekrodb2
 
 function resizeTo800Jpg(string $pathTmp): string {
-    // Crear imagen desde archivo
+
     $src = imagecreatefromstring(file_get_contents($pathTmp));
+    if (!$src) {
+        throw new Exception('No se pudo crear la imagen');
+    }
 
-    // Tamaños finales
+    // Ancho deseado
     $newW = 610;
-    $newH = 215;
 
-    // Crear destino con canal alfa
-    $dst = imagecreatetruecolor($newW, $newH);
-
-    // Habilitar transparencia en PNG
-    imagealphablending($dst, false);
-    imagesavealpha($dst, true);
-
-    // Obtener tamaño original
+    // Tamaño original
     $w = imagesx($src);
     $h = imagesy($src);
 
-    // Redimensionar
-    imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $w, $h);
+    // Calcular alto proporcional
+    $newH = intval(($newW * $h) / $w);
 
-    // Crear archivo temporal PNG
-    $tempOut = tempnam(sys_get_temp_dir(), 'slider_') . '.png';
-    imagepng($dst, $tempOut);
+    // Crear imagen destino
+    $dst = imagecreatetruecolor($newW, $newH);
 
-    // Liberar memoria
+    // Fondo blanco (porque el destino final es JPG)
+    $white = imagecolorallocate($dst, 255, 255, 255);
+    imagefill($dst, 0, 0, $white);
+
+    // Redimensionar proporcional
+    imagecopyresampled(
+        $dst, $src,
+        0, 0, 0, 0,
+        $newW, $newH,
+        $w, $h
+    );
+
+    // Archivo temporal JPG
+    $tempOut = tempnam(sys_get_temp_dir(), 'slider_') . '.jpg';
+    imagejpeg($dst, $tempOut, 90);
+
     imagedestroy($src);
     imagedestroy($dst);
 
     return $tempOut;
 }
+
 
 function bunnyUpload(string $localPath, string $destName): bool {
     $url = BUNNY_STORAGE_URL . '/' . SLIDER_DIR . '/' . $destName;

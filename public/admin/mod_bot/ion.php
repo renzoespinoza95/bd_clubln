@@ -1011,3 +1011,81 @@ Flight::route('POST /api/order/submitMesa', function () {
         ]);
     }
 });
+
+Flight::route('POST /ion/mesa/liberarMesaVacia', function () {
+
+    // 📥 Leer payload JSON
+    $payload = json_decode(file_get_contents('php://input'), true);
+
+    if (!$payload || empty($payload['mesa_id'])) {
+        Flight::json([
+            'status' => 'failed',
+            'msg'    => 'mesa_id requerido'
+        ], 400);
+        return;
+    }
+
+    $mesa_id = (int)$payload['mesa_id'];
+
+    // 🔎 Verificar que la mesa exista
+    $mesa = DB::queryFirstRow("
+        SELECT mesa_id, estado
+        FROM mesa
+        WHERE mesa_id = %i
+        LIMIT 1
+    ", $mesa_id);
+
+    if (!$mesa) {
+        Flight::json([
+            'status' => 'failed',
+            'msg'    => 'La mesa no existe'
+        ], 404);
+        return;
+    }
+
+    // 🔓 Liberar mesa
+    DB::update('mesa', [
+        'estado' => 'DISPONIBLE'
+    ], 'mesa_id = %i', $mesa_id);
+
+    Flight::json([
+        'status' => 'success',
+        'data'   => [
+            'mesa_id' => $mesa_id,
+            'estado'  => 'DISPONIBLE'
+        ]
+    ]);
+});
+
+Flight::route('GET /ion/slider/yape', function () {
+
+    $row = DB::queryFirstRow("
+        SELECT
+            slider_id,
+            img,
+            descripcion
+        FROM slider
+        WHERE grupo = 'B'
+          AND is_visible = 1
+        ORDER BY orden ASC
+        LIMIT 1
+    ");
+
+    if (!$row) {
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'No hay slider Yape disponible'
+        ], 404);
+        return;
+    }
+
+    Flight::json([
+        'status' => 'success',
+        'data' => [
+            'slider_id'  => (int)$row['slider_id'],
+            'image'      => BUNNY_CDN_BASE . '/' . SLIDER_DIR . '/' . $row['img'],
+            'descripcion'=> $row['descripcion']
+        ]
+    ]);
+});
+
