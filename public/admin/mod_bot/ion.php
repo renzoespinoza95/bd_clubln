@@ -155,7 +155,6 @@ Flight::route('GET /api/product/list', function () {
             p.name,
             p.price,
             p.price_discount,
-            p.status,
             p.created_at,
             p.last_update,
             p.fecha_creacion,
