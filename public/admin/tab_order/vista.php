@@ -1071,6 +1071,36 @@ new Vue({
       $('#modalNuevoCliente').modal('show');
     },    
 
+    confirmarLiberarMesa(mesa){
+          apprise(
+            `¿Deseas liberar la mesa <b>${mesa.nombre}</b>?<br>
+             Se verificará si tiene pedidos pendientes.`,
+            { confirm: true },
+            ok => {
+              if(!ok) return;
+              this.liberarMesa(mesa);
+            }
+          );
+    },
+
+    liberarMesa(mesa){
+      axios.post(`${this.apphost}/ventas/liberarMesaOcupada`, {
+        mesa_id: mesa.mesa_id
+      })
+      .then(r => {
+        if(r.data.status !== 'ok'){
+          apprise(r.data.msg || 'No se pudo liberar la mesa');
+          return;
+        }
+        apprise('Mesa liberada correctamente');
+        this.cargarMesas(); // refresca estado
+      })
+      .catch(e => {
+        apprise(e.response?.data?.msg || 'Error al liberar mesa');
+      });
+    },
+
+
     cargarProductos(){
         axios.get(`${this.apphost}/product/listar`)
         .then(r => this.productos = r.data);
@@ -1196,37 +1226,7 @@ new Vue({
         (s,i)=> s + (i.amount * i.price_item),
         0
       ).toFixed(2);
-    },
-
-    confirmarLiberarMesa(mesa){
-      apprise(
-        `¿Deseas liberar la mesa <b>${mesa.nombre}</b>?<br>
-         Se verificará si tiene pedidos pendientes.`,
-        { confirm: true },
-        ok => {
-          if(!ok) return;
-          this.liberarMesa(mesa);
-        }
-      );
-    },
-
-    liberarMesa(mesa){
-      axios.post(`${this.apphost}/ventas/liberarMesaOcupada`, {
-        mesa_id: mesa.mesa_id
-      })
-      .then(r => {
-        if(r.data.status !== 'ok'){
-          apprise(r.data.msg || 'No se pudo liberar la mesa');
-          return;
-        }
-        apprise('Mesa liberada correctamente');
-        this.cargarMesas(); // refresca estado
-      })
-      .catch(e => {
-        apprise(e.response?.data?.msg || 'Error al liberar mesa');
-      });
-    },
-    
+    },   
     
     totalItemNuevaOrden(){
       return (this.itemForm.amount || 0) *
