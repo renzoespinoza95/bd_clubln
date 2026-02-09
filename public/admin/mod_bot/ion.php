@@ -993,6 +993,7 @@ Flight::route('POST /api/order/submitMesa', function () {
         // 🔒 CERRAR PEDIDO (PAGADO)
         // =====================================================
         DB::update('product_order', [
+            'modo_order_id'    => 3, // 🟢 MESA PAGADO
             'serial'           => $serial,
             'total_fees'       => $total,
             'fecha_fin'        => $nowSql,
@@ -1002,6 +1003,7 @@ Flight::route('POST /api/order/submitMesa', function () {
             'cliente_id'       => $clienteId,
             'tipo_pago_id'     => $tipoPagoId
         ], 'product_order_id = %i', $order_id);
+
 
         // =====================================================
         // 🔓 LIBERAR MESA
