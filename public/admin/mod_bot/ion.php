@@ -551,19 +551,19 @@ Flight::route('POST /api/mesa/crear-pedido', function () {
     }
 
     $mesa_id = (int)$payload['mesa_id'];
-    $modo    = $payload['modo'] ?? 'MESA';
 
-    // ⏱️ Fecha y hora actual
+    // 🧭 modo_order_id = 2 → MESA PEDIDO
+    $modo_order_id = 2;
+
+    // ⏱️ Fechas
     $fecha_inicio = date('Y-m-d H:i:s');
-
-    // ⏱️ Timestamp en ms (para Android)
     $now_ms = (int)(microtime(true) * 1000);
 
     DB::startTransaction();
 
     try {
 
-        // 🔎 VALIDAR QUE LA MESA EXISTA Y ESTÉ DISPONIBLE
+        // 🔎 Validar mesa
         $mesa = DB::queryFirstRow("
             SELECT estado
             FROM mesa
@@ -589,21 +589,20 @@ Flight::route('POST /api/mesa/crear-pedido', function () {
             return;
         }
 
-        // 🧾 CREAR PEDIDO
+        // 🧾 Crear pedido (SOLO CAMPOS EXISTENTES)
         DB::insert('product_order', [
-            'mesa_id'      => $mesa_id,
-            'modo'         => $modo,
-            'status'       => 'ABIERTA',
-            'fecha_inicio' => $fecha_inicio,
-            'created_at'   => $now_ms,
-            'last_update'  => $now_ms,
-            'total_fees'   => 0,
-            'tax'          => 0
+            'mesa_id'        => $mesa_id,
+            'modo_order_id'  => $modo_order_id,
+            'fecha_inicio'   => $fecha_inicio,
+            'created_at'     => $now_ms,
+            'last_update'    => $now_ms,
+            'total_fees'     => 0,
+            'tax'            => 0
         ]);
 
         $order_id = DB::insertId();
 
-        // 🔒 MARCAR MESA COMO OCUPADA
+        // 🔒 Marcar mesa ocupada
         DB::update('mesa', [
             'estado' => 'OCUPADA'
         ], 'mesa_id = %i', $mesa_id);
@@ -615,6 +614,7 @@ Flight::route('POST /api/mesa/crear-pedido', function () {
             'order'  => [
                 'product_order_id' => $order_id,
                 'mesa_id'          => $mesa_id,
+                'modo_order_id'    => $modo_order_id,
                 'fecha_inicio'     => $fecha_inicio
             ]
         ]);
@@ -623,9 +623,11 @@ Flight::route('POST /api/mesa/crear-pedido', function () {
 
         DB::rollback();
 
+        // ⚠️ En desarrollo (opcional)
         Flight::json([
             'status' => 'failed',
-            'msg'    => 'No se pudo crear el pedido'
+            'msg'    => $e->getMessage(),
+            'error'  => DB::error()
         ]);
     }
 });
