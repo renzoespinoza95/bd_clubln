@@ -115,6 +115,42 @@
       </div>
     </div>
 
+    <div id="modalLimitesInv" class="modal hide fade">
+  <div class="modal-header">
+    <h3>Establecer límites</h3>
+  </div>
+
+  <div class="modal-body">
+
+    <p><b>Producto:</b> {{ form.producto }}</p>
+
+    <div class="control-group">
+      <label>Stock mínimo</label>
+      <div class="controls">
+        <input type="number" v-model.number="form.stock_min">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Stock máximo</label>
+      <div class="controls">
+        <input type="number" v-model.number="form.stock_max">
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-primary" @click="guardarLimites">
+      Guardar
+    </button>
+    <button class="btn" data-dismiss="modal">
+      Cancelar
+    </button>
+  </div>
+</div>
+
+
   </div>
 </div>
 
@@ -162,6 +198,11 @@ new Vue({
                 const item=self.inventario.find(x=>x.inventario_id==id);
                 self.abrirEditar(item);
               })
+              .on("click","a.limites",function(){
+                const id = $(this).data("id");
+                const item = self.inventario.find(x => x.inventario_id == id);
+                self.abrirLimites(item);
+              })
               .on("click","a.eliminar",function(){
                 const id=$(this).data("id");
                 const item=self.inventario.find(x=>x.inventario_id==id);
@@ -172,19 +213,45 @@ new Vue({
           this.dt.clear();
           this.inventario.forEach(i=>{
             const acciones = `
-            <div class="btn-group">
-              <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">
-                Opciones <span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu">
-                <li><a href="#" class="detalle" data-id="${i.inventario_id}">Detalle</a></li>
-              </ul>
-            </div>`;
+              <div class="btn-group">
+                <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">
+                  Opciones <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li>
+                    <a href="#" class="detalle" data-id="${i.inventario_id}">
+                      Detalle
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#" class="limites" data-id="${i.inventario_id}">
+                      Establecer límites
+                    </a>
+                  </li>
+                  <li class="divider"></li>
+                  <li>
+                    <a href="#" class="eliminar" data-id="${i.inventario_id}">
+                      Eliminar
+                    </a>
+                  </li>
+                </ul>
+              </div>`;
+
+            const iconoStock = i.stock_actual > i.stock_min
+              ? `<i class="fa fa-thumbs-up" style="color:green"></i>`
+              : `<i class="fa fa-thumbs-down" style="color:red"></i>`;
+
+            const stockTxt = `
+              ${i.stock_actual}
+              &nbsp;${iconoStock}
+            `;
+  
+
 
             this.dt.row.add([
               i.inventario_id,
               i.producto,
-              i.stock_actual,
+              stockTxt,
               i.stock_min,
               i.stock_max,
               acciones
@@ -195,6 +262,23 @@ new Vue({
         });
       });
     },
+
+    abrirLimites(i){
+      this.form = JSON.parse(JSON.stringify(i));
+      $('#modalLimitesInv').modal('show');
+    },
+
+    guardarLimites(){
+      axios.post(`${this.apphost}/inventario/limites`,{
+        inventario_id: this.form.inventario_id,
+        stock_min: this.form.stock_min,
+        stock_max: this.form.stock_max
+      }).then(()=>{
+        $('#modalLimitesInv').modal('hide');
+        this.listar();
+      });
+    },
+
 
     verDetalle(i){
       axios.get(`${this.apphost}/inventario/detalle/${i.inventario_id}`).then(r=>{

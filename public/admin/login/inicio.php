@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- este es mi pagina login  -->
 <html lang="es" ng-app="loginApp">
 <head>
       <meta charset="utf-8">
@@ -19,7 +20,10 @@
 
   <form class="login" @submit.prevent="submit" id="appLogin">
     <fieldset>
-      <legend class="legend">Ingreso</legend>
+      <legend class="legend">
+        <img src="images/logo_login.png" alt="Logo" class="login-logo">
+      </legend>
+
 
       <div class="input" :class="{'focused': usuarioFocused}">
         <input type="text" placeholder="Usuario" required

@@ -12,34 +12,24 @@ Flight::route('GET /order', function () {
 ====================================== */
 Flight::route('GET /product_order/listar', function(){
 
-    DB::query("SET NAMES 'utf8mb4'");
-
     $rows = DB::query("
         SELECT 
           po.product_order_id,
           po.serial,
-          po.status,
-          po.cliente_id,
-          cl.nombre AS cliente,
           po.total_fees,
-          po.modo,
-          po.mesa_id,
+          po.modo_order_id,
+          mo.nombre AS modo_order,
+          cl.nombre AS cliente,
           m.nombre AS mesa_nombre,
-          DATE_FORMAT(
-            FROM_UNIXTIME(po.created_at/1000),
-            '%d/%m/%Y %H:%i'
-          ) AS fecha,
           a.nombres_apellidos AS administrador,
-          tp.descripcion AS tipo_pago
+          tp.descripcion AS tipo_pago,
+          DATE_FORMAT(po.fecha_creacion,'%d/%m/%Y %H:%i') AS fecha
         FROM product_order po
-        LEFT JOIN cliente cl
-               ON cl.cliente_id = po.cliente_id
-        LEFT JOIN administradortbl a 
-               ON a.administrador_id = po.administrador_id
-        LEFT JOIN mesa m
-               ON m.mesa_id = po.mesa_id
-        LEFT JOIN tipo_pago tp
-               ON tp.tipo_pago_id = po.tipo_pago_id
+        LEFT JOIN cliente cl ON cl.cliente_id = po.cliente_id
+        LEFT JOIN mesa m ON m.mesa_id = po.mesa_id
+        LEFT JOIN modo_order mo ON mo.modo_order_id = po.modo_order_id
+        LEFT JOIN tipo_pago tp ON tp.tipo_pago_id = po.tipo_pago_id
+        LEFT JOIN administradortbl a ON a.administrador_id = po.administrador_id
         ORDER BY po.product_order_id DESC
     ");
 
@@ -156,39 +146,31 @@ Flight::route('POST /product_order/crear', function () {
     }
 
     // Valores por defecto: VENTA DIRECTA
-    $modo          = 'DIRECTA';
-    $mesa_id_db    = null;
-    $status_orden  = 'PAGADO';
+    // valores por defecto
+    $modo_order_id = 1; // PAGO DIRECTO
+    $mesa_id_db = null;
+    $fecha_inicio = null;
+    $fecha_fin = null;
 
-    // -------------------------------
-    // Si es consumo por mesa
-    // -------------------------------
+    // si es mesa
     if ($mesa_id > 0) {
 
-        // 🔒 verificar que no exista orden ABIERTA en esa mesa
         $ocupada = DB::queryFirstField("
-            SELECT COUNT(*)
+            SELECT COUNT(*) 
             FROM product_order
-            WHERE mesa_id = %i
-              AND status = 'ABIERTA'
+            WHERE mesa_id=%i AND modo_order_id=2
         ", $mesa_id);
 
         if ($ocupada) {
-            Flight::json([
-                'status' => 'error',
-                'msg'    => 'La mesa ya está ocupada'
-            ], 409);
+            Flight::json(['status'=>'error','msg'=>'Mesa ocupada'],409);
             return;
         }
 
-        $modo         = 'MESA';
-        $mesa_id_db   = $mesa_id;
-        $status_orden = 'ABIERTA';
+        $modo_order_id = 2; // MESA PEDIDO
+        $mesa_id_db = $mesa_id;
+        $fecha_inicio = date('Y-m-d H:i:s');
 
-        // 🪑 marcar mesa como OCUPADA
-        DB::update('mesa', [
-            'estado' => 'OCUPADA'
-        ], "mesa_id = %i", $mesa_id);
+        DB::update('mesa',['estado'=>'OCUPADA'],"mesa_id=%i",$mesa_id);
     }
 
     // ===============================
@@ -196,50 +178,50 @@ Flight::route('POST /product_order/crear', function () {
     // ===============================
     DB::startTransaction();
 
-    try {
+            try {
 
-        $now = time() * 1000;
+                $now = time() * 1000;
 
-        DB::insert('product_order', [
-            'serial'               => generarCodigoOrden(),
-            'cliente_id'              => $d['cliente_id'],
-            'administrador_id'   => $administrador_id,
-            'caja_id'            => $caja['caja_id'],
-            'tipo_pago_id'       => $d['tipo_pago_id'],
-            'mesa_id'            => $mesa_id_db,     // NULL o ID
-            'modo'               => $modo,            // DIRECTA | MESA
-            'status'             => $status_orden,    // PAGADO | ABIERTA
-            'fecha_inicio'       => $modo === 'MESA' ? date('Y-m-d H:i:s') : null,
-            'total_fees'         => $d['total_fees'],
-            'created_at'         => $now,
-            'last_update'        => $now,
-            'fecha_creacion'     => date('Y-m-d H:i:s'),
-            'fecha_modificacion' => date('Y-m-d H:i:s')
-        ]);
+                DB::insert('product_order',[
+                  'serial' => generarCodigoOrden(),
+                  'administrador_id' => $administrador_id,
+                  'cliente_id' => $d['cliente_id'],
+                  'caja_id' => $caja['caja_id'],
+                  'tipo_pago_id' => $d['tipo_pago_id'],
+                  'mesa_id' => $mesa_id_db,
+                  'modo_order_id' => $modo_order_id,
+                  'total_fees' => 0,
+                  'tax' => 0,
+                  'fecha_inicio' => $fecha_inicio,
+                  'fecha_creacion' => date('Y-m-d H:i:s'),
+                  'fecha_modificacion' => date('Y-m-d H:i:s'),
+                  'created_at' => time()*1000,
+                  'last_update' => time()*1000
+                ]);
 
-        $order_id = DB::insertId();
 
-        // ===============================
-        // 7) Insertar detalles + inventario
-        // ===============================
-        foreach ($d['items'] as $i) {
+                $order_id = DB::insertId();
+
+                // ===============================
+                // 7) Insertar detalles + inventario
+                // ===============================
+                foreach ($d['items'] as $i) {
 
             DB::insert('product_order_detail', [
-                'order_id'            => $order_id,
-                'product_id'          => $i['product_id'],
-                'product_name'        => DB::queryFirstField(
+                'order_id'       => $order_id,
+                'product_id'     => $i['product_id'],
+                'product_name'   => DB::queryFirstField(
                     "SELECT name FROM product WHERE product_id = %i",
                     $i['product_id']
                 ),
-                'amount'              => $i['amount'],
-                'price_item'          => $i['price_item'],
-                'created_at'          => $now,
-                'last_update'         => $now,
-                'fecha_creacion'      => date('Y-m-d H:i:s'),
-                'fecha_modificacion'  => date('Y-m-d H:i:s')
+                'amount'         => $i['amount'],
+                'price_item'     => $i['price_item'],
+                'created_at'     => $now,
+                'last_update'    => $now,
+                'fecha_creacion' => date('Y-m-d H:i:s'),
+                'fecha_modificacion' => date('Y-m-d H:i:s')
             ]);
 
-            // 📦 movimiento de inventario
             registrar_movimiento_inventario(
                 $i['product_id'],
                 'SALIDA',
@@ -251,7 +233,11 @@ Flight::route('POST /product_order/crear', function () {
             );
         }
 
+        // 🔥 ESTA LÍNEA ES LA CLAVE
+        recalcular_total_orden($order_id);
+
         DB::commit();
+
 
         // ===============================
         // 8) Respuesta final
@@ -1040,16 +1026,14 @@ Flight::route('POST /product_order/liberar_mesa', function(){
 
         // cerrar orden
         DB::update('product_order',[
+          'modo_order_id' => 3, // MESA PAGADO
           'fecha_fin' => date('Y-m-d H:i:s'),
-          'status' => 'CERRADA',
           'fecha_modificacion' => date('Y-m-d H:i:s'),
           'last_update' => time()*1000
         ],"product_order_id=%i",$order_id);
 
-        // liberar mesa
-        DB::update('mesa',[
-          'estado' => 'DISPONIBLE'
-        ],"mesa_id=%i",$order['mesa_id']);
+        DB::update('mesa',['estado'=>'DISPONIBLE'],"mesa_id=%i",$mesa_id);
+
 
         DB::commit();
         Flight::json(['status'=>'ok']);
@@ -1101,4 +1085,159 @@ Flight::route('POST /product_order/liberar_mesa', function(){
         DB::rollback();
         Flight::json(['status'=>'error','msg'=>$e->getMessage()],500);
     }
+});
+
+
+Flight::route('POST /ventas/liberarMesaOcupada', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    $d = Flight::request()->data;
+    $mesa_id = (int)($d['mesa_id'] ?? 0);
+
+    if(!$mesa_id){
+        Flight::json([
+            'status' => 'error',
+            'msg' => 'Mesa inválida'
+        ], 400);
+        return;
+    }
+
+    // 🔍 verificar pedidos pendientes (hoy o antes)
+    $pendientes = DB::queryFirstField("
+        SELECT COUNT(*)
+        FROM product_order
+        WHERE mesa_id = %i
+          AND modo_order_id = 2
+          AND DATE(fecha_creacion) <= CURDATE()
+    ", $mesa_id);
+
+    if($pendientes > 0){
+        Flight::json([
+            'status' => 'error',
+            'msg' => 'La mesa tiene pedidos pendientes'
+        ], 409);
+        return;
+    }
+
+    DB::startTransaction();
+    try {
+
+        // liberar mesa
+        DB::update('mesa',[
+            'estado' => 'DISPONIBLE'
+        ], "mesa_id=%i", $mesa_id);
+
+        DB::commit();
+
+        Flight::json([
+            'status' => 'ok'
+        ]);
+
+    } catch(Exception $e){
+        DB::rollback();
+        Flight::json([
+            'status' => 'error',
+            'msg' => $e->getMessage()
+        ], 500);
+    }
+});
+
+
+Flight::route('GET /reporte/resumen-ventas', function () {
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+    global $wkh_pdf, $varhost;
+
+    $ini = trim($_GET['ini'] ?? '');
+    $fin = trim($_GET['fin'] ?? '');
+
+    if ($ini === '' || $fin === '') {
+        Flight::halt(400, 'Fechas requeridas');
+    }
+
+    DB::query("SET NAMES 'utf8mb4'");
+
+    // ===============================
+    // 1️⃣ PAGO DIRECTO (modo 1)
+    // ===============================
+    $pago_directo = DB::queryFirstField("
+        SELECT IFNULL(SUM(total_fees),0)
+        FROM product_order
+        WHERE modo_order_id = 1
+          AND fecha_creacion BETWEEN %s AND %s
+    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+    // ===============================
+    // 2️⃣ MESAS PAGADAS (modo 3)
+    // ===============================
+    $rows = DB::query("
+        SELECT 
+            m.nombre AS mesa,
+            SUM(po.total_fees) AS total
+        FROM product_order po
+        INNER JOIN mesa m ON m.mesa_id = po.mesa_id
+        WHERE po.modo_order_id = 3
+          AND po.fecha_creacion BETWEEN %s AND %s
+        GROUP BY m.mesa_id
+        ORDER BY m.nombre
+    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+    $total_mesas = array_sum(array_column($rows, 'total'));
+    $total_general = $pago_directo + $total_mesas;
+
+    // ===============================
+    // 3️⃣ DATA PARA MUSTACHE
+    // ===============================
+    $template_data = [
+        'fecha_ini'     => date('d/m/Y', strtotime($ini)),
+        'fecha_fin'     => date('d/m/Y', strtotime($fin)),
+        'pago_directo'  => number_format($pago_directo, 2),
+        'mesas'         => array_map(function($r){
+            return [
+                'mesa'  => $r['mesa'],
+                'total' => number_format($r['total'], 2)
+            ];
+        }, $rows),
+        'total_general' => number_format($total_general, 2)
+    ];
+
+    // ===============================
+    // 4️⃣ RENDER HTML
+    // ===============================
+    $html = (new Mustache)->render(
+        file_get_contents(
+            VARPATH . '/public/reportes/reporte_html/imp_resumen_ventas_dia.html'
+        ),
+        $template_data
+    );
+
+    // ===============================
+    // 5️⃣ ARCHIVO TEMPORAL (HTML)
+    // ===============================
+    $tmp_html = VARPATH . '/public/reportes/archivos_temporales/tmp_resumen.html';
+    file_put_contents($tmp_html, $html);
+
+    // ===============================
+    // 6️⃣ GENERAR PDF
+    // ===============================
+    $nombre_pdf = 'resumen_ventas_' . time() . '.pdf';
+    $ruta_pdf   = VARPATH . '/public/reportes/archivos_temporales/' . $nombre_pdf;
+
+    $wkh_pdf->addPage($tmp_html);
+    exec($wkh_pdf->getCommand($ruta_pdf), $out, $ret);
+
+    if ($ret !== 0 || !file_exists($ruta_pdf)) {
+        echo "<pre>NO SE CREÓ EL PDF</pre>";
+        exit;
+    }
+
+    // ===============================
+    // 7️⃣ DESCARGA
+    // ===============================
+    Flight::redirect(
+        $varhost . '/public/reportes/archivos_temporales/' . $nombre_pdf
+    );
 });

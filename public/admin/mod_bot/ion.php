@@ -703,6 +703,7 @@ Flight::route('POST /api/order/submit', function () {
                 'cliente_id'       => $o['cliente_id'] ?? null,
                 'administrador_id' => $o['administrador_id'] ?? null,
                 'caja_id'          => $o['caja_id'] ?? null,
+                'tipo_pago_id'     => $o['tipo_pago_id'] ?? null,
                 'mesa_id'          => $mesa_id ?: null,
                 'modo'             => $modo,
                 'status'           => $status,
@@ -1218,5 +1219,50 @@ Flight::route('GET /ion/listaYape', function () {
             'message' => 'Error al listar yapes',
             'error'   => $e->getMessage()
         ], 500);
+    }
+});
+
+
+Flight::route('GET /ion/pantallaYape/@product_order_id', function ($product_order_id) {
+
+    include DEFINITION; // donde está DB y $varhost
+
+    try {
+
+        $row = DB::queryFirstRow("
+            SELECT
+                yape_id,
+                fecha_creacion,
+                product_order_id,
+                img
+            FROM yape
+            WHERE product_order_id = %i
+            ORDER BY fecha_creacion DESC
+            LIMIT 1
+        ", $product_order_id);
+
+        if (!$row) {
+            Flight::json([
+                'status'  => 'error',
+                'message' => 'No existe Yape para este pedido'
+            ]);
+            return;
+        }
+
+        // ruta completa de la imagen
+        $row['img_full'] = $varhost . "/" . $row['img'];
+
+        Flight::json([
+            'status' => 'success',
+            'data'   => $row
+        ]);
+
+    } catch (Exception $e) {
+
+        Flight::json([
+            'status'  => 'error',
+            'message' => 'Error al obtener Yape',
+            'error'   => $e->getMessage()
+        ]);
     }
 });

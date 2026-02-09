@@ -21,6 +21,11 @@
           <li>
             <a href="#" @click="abrirReporteVentasAdmin">Ventas por Fecha + Admin</a>
           </li>
+          <li>
+            <a href="#" @click="abrirReporteResumenVentas">
+              Resumen Ventas
+            </a>
+          </li>
         </ul>
       </div>
 
@@ -41,7 +46,6 @@
           <th>Mesa</th>
           <th>Modo</th>
           <th>Administrador</th>
-          <th>Estado</th>
           <th>Tipo de pago</th>
           <th>Fecha</th>
           <th>Total</th>
@@ -67,8 +71,7 @@
             <p><b>Tipo de pago:</b> {{ detalle.tipo_pago }}</p>
           </div>
 
-          <div class="span6">
-            <p><b>Estado:</b> {{ detalle.status }}</p>
+          <div class="span6">            
             <p><b>Total orden:</b> 
               <span class="label label-success">
                 S/ {{ totalDetalleOrden }}
@@ -429,6 +432,7 @@
             <tr>
               <th>Mesa</th>
               <th>Estado</th>
+              <th>Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -441,9 +445,18 @@
                   {{ m.estado }}
                 </span>
               </td>
+              <td>
+                <button
+                  class="btn btn-mini btn-danger"
+                  v-if="m.estado === 'OCUPADA'"
+                  @click="confirmarLiberarMesa(m)">
+                  Liberar
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
+
 
       </div>
 
@@ -490,6 +503,28 @@
     </div>
 
 
+    <div id="modalResumenVentas" class="modal hide fade">
+      <div class="modal-header">
+        <h3>Resumen de Ventas</h3>
+      </div>
+
+      <div class="modal-body">
+        <label>Fecha Inicio</label>
+        <input type="date" v-model="resumen.fecha_inicio">
+
+        <label>Fecha Fin</label>
+        <input type="date" v-model="resumen.fecha_fin">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-danger" @click="resumenVentasPDF">
+          📄 PDF
+        </button>
+        <button class="btn" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+
+
 
 
 
@@ -510,6 +545,10 @@ new Vue({
     mesas: [],  
     form:{},
     detalle:{},
+    resumen:{
+      fecha_inicio:'',
+      fecha_fin:''
+    },
     detallesOrder:[],
     administradores: [],
     reporte:{
@@ -601,29 +640,39 @@ new Vue({
           this.dt.clear();
           this.ordenes.forEach(o=>{
 
-            let extra = '';
+              let extra = '';
 
-            if(o.modo === 'MESA' && !o.fecha_fin){
-              extra = `
-                <li>
-                  <a href="#" class="liberar" data-id="${o.product_order_id}">
-                    Liberar mesa
-                  </a>
-                </li>`;
-            }
+              // 👇 AQUÍ VA TU CÓDIGO
+              if(o.modo_order_id === 2){
+                extra = `
+                  <li>
+                    <a href="#" class="liberar" data-id="${o.product_order_id}">
+                      Liberar mesa
+                    </a>
+                  </li>`;
+              }
 
-            const actions = `
-            <div class="btn-group">
-              <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">
-                Opciones <span class="caret"></span>
-              </button>
-              <ul class="dropdown-menu">
-                <li><a href="#" class="detalle" data-id="${o.product_order_id}">Detalle</a></li>
-                ${extra}
-                <li class="divider"></li>
-                <li><a href="#" class="eliminar" data-id="${o.product_order_id}">Eliminar</a></li>
-              </ul>
-            </div>`;
+              const actions = `
+                <div class="btn-group">
+                  <button class="btn btn-mini btn-primary dropdown-toggle" data-toggle="dropdown">
+                    Opciones <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li>
+                      <a href="#" class="detalle" data-id="${o.product_order_id}">
+                        Detalle
+                      </a>
+                    </li>
+                    ${extra}
+                    <li class="divider"></li>
+                    <li>
+                      <a href="#" class="eliminar" data-id="${o.product_order_id}">
+                        Eliminar
+                      </a>
+                    </li>
+                  </ul>
+                </div>`;
+
 
             const tipoPagoTxt = o.tipo_pago || '—';
 
@@ -631,24 +680,25 @@ new Vue({
               ? (o.mesa_nombre || `#${o.mesa_id}`)
               : '—';
 
-            const modoTxt = o.modo === 'MESA'
-              ? '<span class="label label-warning">MESA</span>'
-              : '<span class="label label-info">DIRECTA</span>';
+            const modoTxt = o.modo_order_id === 2
+              ? `<span class="label label-important">${o.modo_order}</span>`
+              : `<span class="label label-success">${o.modo_order}</span>`;
+
 
 
             this.dt.row.add([
               o.product_order_id,
               o.serial,
               o.cliente,
-              mesaTxt,
-              modoTxt,              
+              o.mesa_nombre || '—',
+              modoTxt,
               o.administrador || '—',
-              o.status,
-              tipoPagoTxt,
+              o.tipo_pago || '—',
               o.fecha,
               o.total_fees,
               actions
             ]);
+
 
           });
           this.dt.draw(false);
@@ -902,11 +952,6 @@ new Vue({
       });
     },
 
-    abrirModalItem(){
-      this.itemForm={ product_id:null, amount:1, price_item:0 };
-      $('#modalAgregarItem').modal('show');
-    },
-
     agregarItem(){
       const p = this.productos.find(
         x=>x.product_id==this.itemForm.product_id
@@ -1007,7 +1052,19 @@ new Vue({
         .then(r => this.mesas = r.data);
     },
 
+    abrirReporteResumenVentas(){
+      this.resumen = { fecha_inicio:'', fecha_fin:'' };
+      $('#modalResumenVentas').modal('show');
+    },
 
+    resumenVentasPDF(){
+      const { fecha_inicio, fecha_fin } = this.resumen;
+
+      window.open(
+        `${this.apphost}/reporte/resumen-ventas?ini=${fecha_inicio}&fin=${fecha_fin}`,
+        '_blank'
+      );
+    },
 
     abrirModalNuevoCliente(){
       this.clienteForm = { dni:'', nombre:'' };
@@ -1140,6 +1197,36 @@ new Vue({
         0
       ).toFixed(2);
     },
+
+    confirmarLiberarMesa(mesa){
+      apprise(
+        `¿Deseas liberar la mesa <b>${mesa.nombre}</b>?<br>
+         Se verificará si tiene pedidos pendientes.`,
+        { confirm: true },
+        ok => {
+          if(!ok) return;
+          this.liberarMesa(mesa);
+        }
+      );
+    },
+
+    liberarMesa(mesa){
+      axios.post(`${this.apphost}/ventas/liberarMesaOcupada`, {
+        mesa_id: mesa.mesa_id
+      })
+      .then(r => {
+        if(r.data.status !== 'ok'){
+          apprise(r.data.msg || 'No se pudo liberar la mesa');
+          return;
+        }
+        apprise('Mesa liberada correctamente');
+        this.cargarMesas(); // refresca estado
+      })
+      .catch(e => {
+        apprise(e.response?.data?.msg || 'Error al liberar mesa');
+      });
+    },
+    
     
     totalItemNuevaOrden(){
       return (this.itemForm.amount || 0) *

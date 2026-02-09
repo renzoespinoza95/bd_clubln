@@ -334,3 +334,131 @@ Flight::route('GET /imp_lista_prod', function () {
         echo $e->getMessage();
     }
 });
+
+Flight::route('GET /producto/reporteCategoriaProducto', function () {
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    // ===============================
+    // CATEGORÍAS SELECCIONADAS
+    // ===============================
+    $cats = json_decode($_GET['categorias'] ?? '[]', true);
+
+    $where = '';
+    if (!empty($cats) && !in_array('ALL', $cats)) {
+        $where = "WHERE c.id IN %ls";
+    }
+
+    // ===============================
+    // QUERY PRODUCTOS POR CATEGORÍA
+    // ===============================
+    if ($where) {
+        $rows = DB::query("
+            SELECT
+              c.name AS categoria,
+              p.name AS producto,
+              p.price,
+              IFNULL(MAX(i.stock_actual),0) AS stock
+            FROM category c
+            INNER JOIN product_category pc ON pc.category_id = c.id
+            INNER JOIN product p ON p.product_id = pc.product_id
+            LEFT JOIN inventario i ON i.product_id = p.product_id
+            $where
+            GROUP BY c.name, p.product_id
+            ORDER BY c.name, p.name
+        ", array_map('intval', $cats));
+    } else {
+        // TODAS LAS CATEGORÍAS
+        $rows = DB::query("
+            SELECT
+              c.name AS categoria,
+              p.name AS producto,
+              p.price,
+              IFNULL(MAX(i.stock_actual),0) AS stock
+            FROM category c
+            INNER JOIN product_category pc ON pc.category_id = c.id
+            INNER JOIN product p ON p.product_id = pc.product_id
+            LEFT JOIN inventario i ON i.product_id = p.product_id
+            GROUP BY c.name, p.product_id
+            ORDER BY c.name, p.name
+        ");
+    }
+
+    // ===============================
+    // AGRUPAR POR CATEGORÍA
+    // ===============================
+    $agrupado = [];
+    foreach ($rows as $r) {
+        $agrupado[$r['categoria']][] = $r;
+    }
+
+    // ===============================
+    // TEMPLATE DATA
+    // ===============================
+    $template_data = [];
+
+    $template_data['informacion'] = [
+        [
+            'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
+            'ruc'            => '20202020',
+            'titulo_reporte' => 'REPORTE DE PRODUCTOS POR CATEGORÍA',
+            'fecha'          => date('d/m/Y H:i'),
+            'total_items'    => count($rows)
+        ]
+    ];
+
+    $template_data['categorias'] = [];
+
+    foreach ($agrupado as $nombre => $items) {
+        $template_data['categorias'][] = [
+            'nombre' => $nombre,
+            'items'  => $items
+        ];
+    }
+
+    // ===============================
+    // RENDER MUSTACHE
+    // ===============================
+    $mustache = new Mustache;
+
+    $ruta_tpl = VARPATH . '/public/reportes/reporte_html/reporte_categoria_producto.html';
+
+    $html = $mustache->render(
+        file_get_contents($ruta_tpl),
+        $template_data
+    );
+
+    // ===============================
+    // HTML TEMPORAL (FIX WINDOWS)
+    // ===============================
+    $tmp_html = VARPATH . '/public/reportes/archivos_temporales/tmp_categoria.html';
+    file_put_contents($tmp_html, $html);
+
+    // ===============================
+    // GENERAR PDF (REUSANDO $wkh_pdf)
+    // ===============================
+    $nombre_pdf = 'reporte_categoria_' . time() . '.pdf';
+    $ruta_pdf   = VARPATH . '/public/reportes/archivos_temporales/' . $nombre_pdf;
+
+    $wkh_pdf->addPage($tmp_html);
+    $comando = $wkh_pdf->getCommand($ruta_pdf);
+
+    exec($comando, $out, $ret);
+
+    if ($ret !== 0 || !file_exists($ruta_pdf)) {
+        echo "<pre>";
+        echo "NO SE CREÓ EL PDF\n\n";
+        echo "Comando:\n$comando\n\n";
+        echo "Return code: $ret\n";
+        echo "</pre>";
+        exit;
+    }
+
+    // ===============================
+    // REDIRECT FINAL
+    // ===============================
+    Flight::redirect(
+        $varhost . '/public/reportes/archivos_temporales/' . $nombre_pdf
+    );
+});

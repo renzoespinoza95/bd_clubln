@@ -11,6 +11,11 @@
       <button class="btn btn-warning" style="margin-left:10px" @click="abrirReporteProductos">
         <i class="icon-print icon-white"></i> Reporte Productos
       </button>
+
+      <button class="btn btn-info" style="margin-left:10px" @click="abrirReporteCategoria">
+        <i class="icon-list icon-white"></i> Reporte x Categoría
+      </button>
+
     </div>
 
     <!-- ===========================
@@ -183,6 +188,40 @@
       </div>
 
 
+      <div id="modalReporteCategoria" class="modal hide fade">
+        <div class="modal-header">
+          <h3>Reporte por Categoría</h3>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="control-group">
+            <label>Categorías</label>
+            <v-select
+              multiple
+              :options="categorias"
+              label="descripcion"
+              v-model="reporteCategorias"
+              class="input-xxlarge">
+            </v-select>
+
+            <p class="help-block">
+              Si no seleccionas ninguna, se incluirán <b>todas</b>.
+            </p>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary" @click="generarReporteCategoria">
+            <i class="icon-print icon-white"></i> PDF
+          </button>
+          <button class="btn" data-dismiss="modal">Cancelar</button>
+        </div>
+      </div>
+
+
+
   </div>
 </div>
 
@@ -198,6 +237,7 @@ new Vue({
     categorias: [],
     nuevo: { name:'', price:0, description:'', categorias:[] },
     form: {},
+    reporteCategorias: [],
     detalle:{},
     dt:null
   },
@@ -354,7 +394,27 @@ new Vue({
     abrirReporteProductos(){
       const url = `${this.apphost}/imp_lista_prod`;
       window.open(url, '_blank');
-    }
+    },
+
+    abrirReporteCategoria(){
+      this.reporteCategorias = [];
+      $('#modalReporteCategoria').modal('show');
+    },
+
+    generarReporteCategoria(){
+
+      // si no selecciona nada → todas
+      const ids = this.reporteCategorias.length
+        ? this.reporteCategorias.map(c => c.category_id)
+        : ['ALL'];
+
+      const query = encodeURIComponent(JSON.stringify(ids));
+      const url = `${this.apphost}/producto/reporteCategoriaProducto?categorias=${query}`;
+
+      window.open(url, '_blank');
+      $('#modalReporteCategoria').modal('hide');
+    },
+
 
   },
 

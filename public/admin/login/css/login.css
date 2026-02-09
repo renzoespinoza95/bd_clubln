@@ -28,8 +28,7 @@ body {
   position: relative;
   width: 100%;
   display: block;
-  background: #FF7052;
-  padding: 15px;
+  background: #000;
   color: #fff;
   font-size: 20px;
 }
@@ -134,4 +133,11 @@ body {
   display: block;
   opacity: 1;
   bottom: 0;
+}
+
+.login-logo {
+  display: block;
+  margin: 0 auto;
+  max-width: 200px;   /* ajusta si quieres más grande */
+  max-height: 80px;
 }

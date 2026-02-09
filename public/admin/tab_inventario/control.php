@@ -171,3 +171,24 @@ Flight::route('POST /inventario/movimiento', function () {
         Flight::json(['status'=>'error','msg'=>$e->getMessage()], 500);
     }
 });
+
+
+Flight::route('POST /inventario/limites', function () {
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    $d = Flight::request()->data;
+
+    if(!isset($d['inventario_id'])){
+        Flight::json(['status'=>'error','msg'=>'Inventario inválido'],400);
+        return;
+    }
+
+    DB::update('inventario',[
+        'stock_min' => (int)$d['stock_min'],
+        'stock_max' => (int)$d['stock_max']
+    ], "inventario_id=%i", $d['inventario_id']);
+
+    Flight::json(['status'=>'ok']);
+});

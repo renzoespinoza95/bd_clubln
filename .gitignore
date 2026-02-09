@@ -18,6 +18,7 @@ npm-debug.log*
 tmp/
 temp/
 /data/
+/pics/
 /public/reportes/archivos_temporales/
 inc/config.inc.php
 /plugins
