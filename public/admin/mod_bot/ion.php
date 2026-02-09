@@ -333,7 +333,6 @@ Flight::route('GET /ion/slider', function () {
     ]);
 });
 
-
 Flight::route(
     'GET /ion/reportepos/@administrador_id/@fecha',
     function ($administrador_id, $fecha) {
@@ -353,7 +352,8 @@ Flight::route(
         }
 
         // =====================================================
-        // 📦 VENTAS DEL DÍA
+        // 📦 VENTAS PAGADAS DEL DÍA (MESAS)
+        // modo_order_id = 3 → MESA PAGADA
         // =====================================================
         $ventas = DB::query("
             SELECT
@@ -362,15 +362,15 @@ Flight::route(
                 cliente_id,
                 tipo_pago_id,
                 mesa_id,
-                modo,
-                status,
+                modo_order_id,
                 total_fees,
                 tax,
-                fecha_creacion
+                fecha_fin
             FROM product_order
             WHERE administrador_id = %i
-              AND DATE(fecha_creacion) = %s
-            ORDER BY fecha_creacion ASC
+              AND modo_order_id = 3
+              AND DATE(fecha_fin) = %s
+            ORDER BY fecha_fin ASC
         ", $administrador_id, $fecha);
 
         // =====================================================
@@ -382,7 +382,8 @@ Flight::route(
                 IFNULL(SUM(total_fees), 0) AS total_dia
             FROM product_order
             WHERE administrador_id = %i
-              AND DATE(fecha_creacion) = %s
+              AND modo_order_id = 3
+              AND DATE(fecha_fin) = %s
         ", $administrador_id, $fecha);
 
         // =====================================================
@@ -392,7 +393,7 @@ Flight::route(
             SELECT caja_id
             FROM caja
             WHERE administrador_id = %i
-              AND DATE(fecha_apertura) = %s
+              AND DATE(fecha_hora_inicio) = %s
             ORDER BY caja_id DESC
             LIMIT 1
         ", $administrador_id, $fecha);
