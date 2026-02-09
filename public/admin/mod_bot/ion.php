@@ -393,10 +393,11 @@ Flight::route(
             SELECT caja_id
             FROM caja
             WHERE administrador_id = %i
-              AND DATE(fecha_hora_inicio) = %s
+              AND DATE(fecha_apertura) = %s
             ORDER BY caja_id DESC
             LIMIT 1
         ", $administrador_id, $fecha);
+
 
         $movimientos = [];
         $totalIngresos = 0;
