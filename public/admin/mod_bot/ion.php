@@ -819,19 +819,20 @@ Flight::route('POST /api/order/submit', function () {
 });
 
 
-
 Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
 
+    // 🔎 Buscar pedido abierto de mesa
     $order = DB::queryFirstRow("
         SELECT *
         FROM product_order
         WHERE mesa_id = %i
-          AND status = 'ABIERTA'
+          AND modo_order_id = 2
           AND fecha_fin IS NULL
         ORDER BY product_order_id DESC
         LIMIT 1
     ", $mesa_id);
 
+    // 🔴 No hay pedido abierto
     if (!$order) {
         Flight::json([
             'status' => 'empty'
@@ -839,6 +840,7 @@ Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
         return;
     }
 
+    // 📦 Detalle del pedido
     $items = DB::query("
         SELECT 
             product_id,
@@ -850,18 +852,21 @@ Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
         WHERE order_id = %i
     ", $order['product_order_id']);
 
+    // 🧮 Totales
     $subtotal = 0;
     foreach ($items as $i) {
-        $subtotal += $i['total'];
+        $subtotal += (float)$i['total'];
     }
 
-    $tax   = $order['tax'] ?? 0;
+    $tax   = (float)($order['tax'] ?? 0);
     $total = $subtotal + $tax;
 
+    // ✅ Response final
     Flight::json([
         'status' => 'success',
         'data' => [
             'order_id' => $order['product_order_id'],
+            'mesa_id'  => $order['mesa_id'],
             'subtotal' => $subtotal,
             'tax'      => $tax,
             'total'    => $total,
@@ -869,6 +874,7 @@ Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
         ]
     ]);
 });
+
 
 
 Flight::route('GET /api/order/detail/@id', function ($id) {
