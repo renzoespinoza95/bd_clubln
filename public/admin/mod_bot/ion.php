@@ -925,7 +925,11 @@ Flight::route('POST /api/order/submitMesa', function () {
 
     $payload = json_decode(file_get_contents('php://input'), true);
 
-    if (!$payload || empty($payload['product_order']['mesa_id'])) {
+    if (
+        !$payload ||
+        empty($payload['product_order']) ||
+        empty($payload['product_order']['mesa_id'])
+    ) {
         Flight::json([
             'status' => 'failed',
             'msg'    => 'mesa_id requerido'
@@ -935,7 +939,7 @@ Flight::route('POST /api/order/submitMesa', function () {
 
     $o = $payload['product_order'];
 
-    $mesa_id    = (int) $o['mesa_id'];
+    $mesa_id    = (int)$o['mesa_id'];
     $adminId    = $o['administrador_id'] ?? null;
     $cajaId     = $o['caja_id'] ?? null;
     $clienteId  = $o['cliente_id'] ?? null;
@@ -950,12 +954,14 @@ Flight::route('POST /api/order/submitMesa', function () {
 
         // =====================================================
         // 🔎 BUSCAR PEDIDO ABIERTO DE LA MESA
+        // modo_order_id = 2  → MESA
+        // fecha_fin IS NULL  → ABIERTO
         // =====================================================
         $order = DB::queryFirstRow("
             SELECT product_order_id
             FROM product_order
             WHERE mesa_id = %i
-              AND status = 'ABIERTA'
+              AND modo_order_id = 2
               AND fecha_fin IS NULL
             ORDER BY product_order_id DESC
             LIMIT 1
@@ -979,15 +985,14 @@ Flight::route('POST /api/order/submitMesa', function () {
         $total = round((float)$total, 2);
 
         // =====================================================
-        // 🧾 SERIAL SEGURO
+        // 🧾 SERIAL
         // =====================================================
         $serial = 'MESA-' . date('Y') . '-' . strtoupper(substr(md5(uniqid()), 0, 6));
 
         // =====================================================
-        // 🔒 CERRAR PEDIDO
+        // 🔒 CERRAR PEDIDO (PAGADO)
         // =====================================================
         DB::update('product_order', [
-            'status'           => 'PAGADO',
             'serial'           => $serial,
             'total_fees'       => $total,
             'fecha_fin'        => $nowSql,
@@ -995,12 +1000,11 @@ Flight::route('POST /api/order/submitMesa', function () {
             'administrador_id' => $adminId,
             'caja_id'          => $cajaId,
             'cliente_id'       => $clienteId,
-            'tipo_pago_id'     => $tipoPagoId,
-            'modo'             => 'MESA'
+            'tipo_pago_id'     => $tipoPagoId
         ], 'product_order_id = %i', $order_id);
 
         // =====================================================
-        // 🔓 LIBERAR MESA (AQUÍ ESTÁ LA CLAVE)
+        // 🔓 LIBERAR MESA
         // =====================================================
         DB::update('mesa', [
             'estado' => 'DISPONIBLE'
@@ -1012,7 +1016,7 @@ Flight::route('POST /api/order/submitMesa', function () {
             'status' => 'success',
             'data' => [
                 'order_id' => $order_id,
-                'serial'     => $serial,
+                'serial'   => $serial,
                 'total'    => number_format($total, 2, '.', '')
             ]
         ]);
@@ -1029,6 +1033,7 @@ Flight::route('POST /api/order/submitMesa', function () {
         ]);
     }
 });
+
 
 Flight::route('POST /ion/mesa/liberarMesaVacia', function () {
 
