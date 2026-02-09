@@ -102,14 +102,13 @@ Flight::route('GET /api/category/list', function () {
     ]);
 });
 
-// antes: getListProduct
 Flight::route('GET /api/product/list', function () {
 
     // ============================
     // 📄 Paginación
     // ============================
-    $page  = max(1, (int)(Flight::request()->query['page'] ?? 1));
-    $count = (int)(Flight::request()->query['count'] ?? 10);
+    $page   = max(1, (int)(Flight::request()->query['page'] ?? 1));
+    $count  = (int)(Flight::request()->query['count'] ?? 10);
     $offset = ($page - 1) * $count;
 
     // ============================
@@ -119,9 +118,9 @@ Flight::route('GET /api/product/list', function () {
     $category_id = Flight::request()->query['category_id'] ?? null;
 
     // ============================
-    // 🧠 WHERE dinámico (IGUAL AL ANTIGUO)
+    // 🧠 WHERE dinámico (actualizado)
     // ============================
-    $where  = "p.draft = 0";
+    $where  = "1=1";
     $params = [];
 
     if ($q !== '') {
@@ -157,7 +156,6 @@ Flight::route('GET /api/product/list', function () {
             p.image,
             p.price,
             p.price_discount,
-            p.draft,
             p.status,
             p.created_at,
             p.last_update,
@@ -171,16 +169,18 @@ Flight::route('GET /api/product/list', function () {
     ", ...$params);
 
     // ============================
-    // 📤 RESPONSE (CLON DEL ANTIGUO)
+    // 📤 RESPONSE
     // ============================
     Flight::json([
-        'status'       => 'success',
-        'count'        => $count,
-        'count_total'  => (int)$count_total,
-        'pages'        => (int)ceil($count_total / $count),
-        'products'     => $products
+        'status'      => 'success',
+        'count'       => $count,
+        'count_total' => (int)$count_total,
+        'pages'       => (int)ceil($count_total / $count),
+        'products'    => $products
     ]);
 });
+
+
 
 // antes: getProductDetails
 Flight::route('GET /api/product/detail/@id', function ($id) {
