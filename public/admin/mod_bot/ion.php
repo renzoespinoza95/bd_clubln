@@ -466,20 +466,22 @@ Flight::route(
 
 Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
 
+    // ⏱️ Rango del día (en ms)
     $todayStart = strtotime('today') * 1000;
     $todayEnd   = strtotime('tomorrow') * 1000;
 
+    // 🧾 PEDIDO ACTIVO DE MESA (MESA PEDIDO = 2)
     $order = DB::queryFirstRow("
         SELECT *
         FROM product_order
         WHERE mesa_id = %i
-          AND modo = 'MESA'
-          AND status = 'ABIERTA'
+          AND modo_order_id = 2
           AND created_at BETWEEN %i AND %i
         ORDER BY product_order_id DESC
         LIMIT 1
     ", $mesa_id, $todayStart, $todayEnd);
 
+    // 🔴 NO HAY PEDIDO ACTIVO
     if (!$order) {
         Flight::json([
             'status' => 'empty'
@@ -487,6 +489,7 @@ Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
         return;
     }
 
+    // 📦 DETALLE DEL PEDIDO
     $details = DB::query("
         SELECT *
         FROM product_order_detail
@@ -499,6 +502,7 @@ Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
         'items'  => $details
     ]);
 });
+
 
 
 Flight::route('POST /api/mesa/agregar-productos', function () {
