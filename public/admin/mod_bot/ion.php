@@ -178,9 +178,6 @@ Flight::route('GET /api/product/list', function () {
     ]);
 });
 
-
-
-// antes: getProductDetails
 Flight::route('GET /api/product/detail/@id', function ($id) {
 
     // ============================
@@ -188,7 +185,15 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
     // ============================
     $product = DB::queryFirstRow("
         SELECT 
-            p.*,
+            p.product_id,
+            p.name,
+            p.price,
+            p.price_discount,
+            p.description,
+            p.created_at,
+            p.last_update,
+            p.fecha_creacion,
+            p.fecha_modificacion,
             IFNULL(i.stock_actual, 0) AS stock
         FROM product p
         LEFT JOIN inventario i 
@@ -206,7 +211,7 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
     }
 
     // ============================
-    // 🖼️ IMÁGENES (MISMO NOMBRE)
+    // 🖼️ IMÁGENES
     // ============================
     $product_images = DB::query("
         SELECT product_id, name
@@ -215,19 +220,16 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
     ", $id);
 
     // ============================
-    // 🏷️ CATEGORÍAS (COMPLETAS)
+    // 🏷️ CATEGORÍAS
     // ============================
     $categories = DB::query("
         SELECT 
             c.id,
             c.name,
             c.icon,
-            c.draft,
             c.brief,
             c.color,
-            c.priority,
-            c.created_at,
-            c.last_update
+            c.priority
         FROM category c
         INNER JOIN product_category pc 
             ON pc.category_id = c.id
@@ -236,29 +238,28 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
     ", $id);
 
     // ============================
-    // 📤 RESPONSE (CLON DEL ANTIGUO)
+    // 📤 RESPONSE LIMPIO
     // ============================
     Flight::json([
         'status' => 'success',
         'product' => [
-            'product_id'        => (int)$product['product_id'],
-            'name'              => $product['name'],
-            'image'             => $product['image'],
-            'price'             => (float)$product['price'],
-            'price_discount'    => (float)$product['price_discount'],
-            'draft'             => (int)$product['draft'],
-            'description'       => $product['description'],
-            'status'            => $product['status'],
-            'created_at'        => (int)$product['created_at'],
-            'last_update'       => (int)$product['last_update'],
-            'fecha_creacion'    => $product['fecha_creacion'],
-            'fecha_modificacion'=> $product['fecha_modificacion'],
-            'stock'             => (int)$product['stock'],
-            'categories'        => $categories,
-            'product_images'    => $product_images
+            'product_id'         => (int)$product['product_id'],
+            'name'               => $product['name'],
+            'price'              => (float)$product['price'],
+            'price_discount'     => (float)$product['price_discount'],
+            'description'        => $product['description'],
+            'created_at'         => (int)$product['created_at'],
+            'last_update'        => (int)$product['last_update'],
+            'fecha_creacion'     => $product['fecha_creacion'],
+            'fecha_modificacion' => $product['fecha_modificacion'],
+            'stock'              => (int)$product['stock'],
+            'categories'         => $categories,
+            'product_images'     => $product_images
         ]
     ]);
 });
+
+
 
 
 Flight::route('GET /api/tipo-pago/list', function () {
