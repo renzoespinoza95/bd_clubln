@@ -153,7 +153,6 @@ Flight::route('GET /api/product/list', function () {
         SELECT DISTINCT
             p.product_id,
             p.name,
-            p.image,
             p.price,
             p.price_discount,
             p.status,
