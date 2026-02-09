@@ -697,25 +697,30 @@ Flight::route('POST /api/order/submit', function () {
         // =====================================================
         // ➕ CREAR PRODUCT_ORDER SI NO EXISTE
         // =====================================================
+        // =====================================================
+        // ➕ CREAR PRODUCT_ORDER (PAGO DIRECTO)
+        // =====================================================
         if (!$order_id) {
 
-            $modo   = ($mesa_id > 0) ? 'MESA' : 'DIRECTA';
-            $status = ($mesa_id > 0) ? 'ABIERTA' : 'PAGADO';
-
-            $serial = 'ORD-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $modo_order_id = 1; // ✅ PAGO DIRECTO
+            $serial = 'POS-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
 
             DB::insert('product_order', [
                 'cliente_id'       => $o['cliente_id'] ?? null,
                 'administrador_id' => $o['administrador_id'] ?? null,
                 'caja_id'          => $o['caja_id'] ?? null,
                 'tipo_pago_id'     => $o['tipo_pago_id'] ?? null,
-                'mesa_id'          => $mesa_id ?: null,
-                'modo'             => $modo,
-                'status'           => $status,
+
+                'mesa_id'          => null,              // 👈 DIRECTO, no mesa
+                'modo_order_id'    => $modo_order_id,    // 👈 1 = DIRECTO
+
                 'total_fees'       => $o['total_fees'] ?? 0,
                 'tax'              => $o['tax'] ?? 0,
                 'serial'           => $serial,
-                'fecha_inicio'     => $nowSql,
+
+                'fecha_inicio'     => null,
+                'fecha_fin'        => $nowSql,            // 👈 ya está pagado
+
                 'created_at'       => $nowMs,
                 'last_update'      => $nowMs
             ]);
@@ -726,6 +731,7 @@ Flight::route('POST /api/order/submit', function () {
                 throw new Exception("No se pudo crear product_order", 200);
             }
         }
+
 
         // =====================================================
         // 📦 INSERTAR DETALLES
