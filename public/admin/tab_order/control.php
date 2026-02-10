@@ -669,7 +669,8 @@ Flight::route('GET /imp_ventas_fecha', function(){
     $template_data = [
         'informacion' => [[
             'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
-            'ruc'            => '20202020',
+            'ruc'            => vari('RUC'),
+            'logo'           => $varhost . '/public/admin/login/images/logo_login.png',
             'titulo_reporte' => "REPORTE DE VENTAS DEL $ini AL $fin",
             'fecha'          => date('d/m/Y H:i'),
             'total_items'    => count($ventas),
@@ -713,7 +714,7 @@ Flight::route('GET /imp_ventas_fecha_excel', function(){
     include DEFINITION;
     login_admin::autentificar_administrador();
 
-    header("Content-Type: application/vnd.ms-excel");
+    header("Content-Type: application/vnd.ms-excel; charset=utf-8");
     header("Content-Disposition: attachment; filename=ventas.xls");
 
     $ini = trim($_GET['ini'] ?? '');
@@ -726,16 +727,17 @@ Flight::route('GET /imp_ventas_fecha_excel', function(){
     DB::query("SET NAMES 'utf8mb4'");
 
     // ===============================
-    // CABECERA VENTAS
+    // CABECERA DE VENTAS
     // ===============================
     $ventas = DB::query("
         SELECT 
             po.product_order_id,
-            po.buyer AS cliente,
-            a.nombres_apellidos AS administrador,
             po.fecha_creacion,
-            po.total_fees
+            c.nombre AS cliente,
+            a.nombres_apellidos AS administrador
         FROM product_order po
+        LEFT JOIN cliente c 
+               ON c.cliente_id = po.cliente_id
         LEFT JOIN administradortbl a 
                ON a.administrador_id = po.administrador_id
         WHERE po.fecha_creacion BETWEEN %s AND %s
@@ -760,32 +762,40 @@ Flight::route('GET /imp_ventas_fecha_excel', function(){
             <th>Subtotal</th>
           </tr>";
 
+    // ===============================
+    // DETALLE POR VENTA
+    // ===============================
     foreach ($ventas as $v) {
 
         $detalles = DB::query("
             SELECT 
-                product_name,
-                amount,
-                price_item,
-                (amount * price_item) AS subtotal
-            FROM product_order_detail
-            WHERE order_id = %i
+                d.product_name,
+                d.amount,
+                d.price_item,
+                (d.amount * d.price_item) AS subtotal
+            FROM product_order_detail d
+            WHERE d.order_id = %i
         ", $v['product_order_id']);
 
         foreach ($detalles as $d) {
+
+            $subtotal = (float)$d['subtotal'];
+            $total_general += $subtotal;
+
             echo "<tr>
                 <td>{$v['product_order_id']}</td>
                 <td>{$v['cliente']}</td>
                 <td>{$v['administrador']}</td>
                 <td>{$d['product_name']}</td>
                 <td>{$d['amount']}</td>
-                <td>{$d['subtotal']}</td>
+                <td>".number_format($subtotal,2)."</td>
             </tr>";
         }
-
-        $total_general += $v['total_fees'];
     }
 
+    // ===============================
+    // TOTAL GENERAL
+    // ===============================
     echo "<tr>
             <td colspan='5'><strong>TOTAL GENERAL</strong></td>
             <td><strong>".number_format($total_general,2)."</strong></td>
@@ -793,6 +803,7 @@ Flight::route('GET /imp_ventas_fecha_excel', function(){
 
     echo "</table>";
 });
+
 
 
 Flight::route('GET /reporte_ventas_fecha_admin', function(){
@@ -949,7 +960,8 @@ Flight::route('GET /imp_ventas_fecha_admin', function(){
     $template_data = [
         'informacion' => [[
             'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
-            'ruc'            => '20202020',
+            'ruc'            => vari('RUC'),
+            'logo'           => $varhost . '/public/admin/login/images/logo_login.png',
             'titulo_reporte' => "REPORTE DE VENTAS DEL $ini AL $fin",
             'fecha'          => date('d/m/Y H:i'),
             'total_items'    => count($ventas),
@@ -957,6 +969,28 @@ Flight::route('GET /imp_ventas_fecha_admin', function(){
         ]],
         'listado' => $listado
     ];
+
+    $total_general = 0;
+
+        foreach ($ventas as &$v) {
+
+            $detalles = DB::query("
+                SELECT 
+                    d.product_name AS producto,
+                    d.amount AS cantidad,
+                    d.price_item AS precio,
+                    (d.amount * d.price_item) AS subtotal
+                FROM product_order_detail d
+                WHERE d.order_id = %i
+            ", $v['product_order_id']);
+
+            foreach ($detalles as $d) {
+                $total_general += $d['subtotal'];
+            }
+
+            $v['detalles'] = $detalles;
+        }
+
 
     // ===============================
     // RENDER HTML
@@ -967,6 +1001,9 @@ Flight::route('GET /imp_ventas_fecha_admin', function(){
         ),
         $template_data
     );
+
+    //echo $html;
+    //exit;
 
     // ===============================
     // GENERAR PDF
@@ -1240,4 +1277,109 @@ Flight::route('GET /reporte/resumen-ventas', function () {
     Flight::redirect(
         $varhost . '/public/reportes/archivos_temporales/' . $nombre_pdf
     );
+});
+
+
+Flight::route('GET /imp_ventas_fecha_admin_excel', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    header("Content-Type: application/vnd.ms-excel; charset=utf-8");
+    header("Content-Disposition: attachment; filename=ventas_admin.xls");
+
+    $ini = trim($_GET['ini'] ?? '');
+    $fin = trim($_GET['fin'] ?? '');
+    $admin_id = (int)($_GET['admin_id'] ?? 0);
+
+    if ($ini === '' || $fin === '') {
+        Flight::halt(400, 'Debe enviar las fechas ini y fin');
+    }
+
+    DB::query("SET NAMES 'utf8mb4'");
+
+    // ===============================
+    // CABECERA DE VENTAS (ADMIN)
+    // ===============================
+    $ventas = DB::query("
+        SELECT 
+            po.product_order_id,
+            po.fecha_creacion,
+            c.nombre AS cliente,
+            a.nombres_apellidos AS administrador
+        FROM product_order po
+        LEFT JOIN cliente c 
+               ON c.cliente_id = po.cliente_id
+        LEFT JOIN administradortbl a 
+               ON a.administrador_id = po.administrador_id
+        WHERE po.fecha_creacion BETWEEN %s AND %s
+          AND ( %i = 0 OR po.administrador_id = %i )
+        ORDER BY po.product_order_id
+    ",
+        $ini.' 00:00:00',
+        $fin.' 23:59:59',
+        $admin_id,
+        $admin_id
+    );
+
+    $total_general = 0;
+
+    echo "<table border='1'>";
+
+    echo "<tr>
+            <th colspan='6'>
+              REPORTE DE VENTAS POR ADMINISTRADOR
+              DEL $ini AL $fin
+            </th>
+          </tr>";
+
+    echo "<tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Administrador</th>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Subtotal</th>
+          </tr>";
+
+    // ===============================
+    // DETALLE POR VENTA
+    // ===============================
+    foreach ($ventas as $v) {
+
+        $detalles = DB::query("
+            SELECT 
+                d.product_name,
+                d.amount,
+                d.price_item,
+                (d.amount * d.price_item) AS subtotal
+            FROM product_order_detail d
+            WHERE d.order_id = %i
+        ", $v['product_order_id']);
+
+        foreach ($detalles as $d) {
+
+            $subtotal = (float)$d['subtotal'];
+            $total_general += $subtotal;
+
+            echo "<tr>
+                <td>{$v['product_order_id']}</td>
+                <td>{$v['cliente']}</td>
+                <td>{$v['administrador']}</td>
+                <td>{$d['product_name']}</td>
+                <td>{$d['amount']}</td>
+                <td>".number_format($subtotal,2)."</td>
+            </tr>";
+        }
+    }
+
+    // ===============================
+    // TOTAL GENERAL
+    // ===============================
+    echo "<tr>
+            <td colspan='5'><strong>TOTAL GENERAL</strong></td>
+            <td><strong>".number_format($total_general,2)."</strong></td>
+          </tr>";
+
+    echo "</table>";
 });

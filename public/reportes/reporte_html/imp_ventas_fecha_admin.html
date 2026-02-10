@@ -21,13 +21,34 @@ th { background: #1997AD; color: #fff; }
 <!-- =========================
      CABECERA
 ========================== -->
-{{#informacion}}
 <div class="header">
-  <div class="titulo">{{ razon_social }}</div>
-  <div class="titulo">{{ titulo_reporte }}</div>
-  <div>Fecha: {{ fecha }} | Total ventas: {{ total_items }} | RUC: {{ ruc }}</div>
+
+  <div class="header-left">
+    {{#informacion}}
+    <table width="100%" cellspacing="0" cellpadding="0" style="border:none">
+      <tr>
+        <td style="border:none; width:80px;">
+          <img src="{{ logo }}" style="width:140px;">
+        </td>
+        <td style="border:none;">
+          <div class="titulo-empresa">{{ razon_social }}</div>
+          <div class="titulo">{{ titulo_reporte }}</div>
+        </td>
+      </tr>
+    </table>
+    {{/informacion}}
+  </div>
+
+  <div class="header-right">
+    {{#informacion}}
+      <div><strong>Fecha:</strong> {{ fecha }}</div>
+      <div><strong>Total ventas:</strong> {{ total_items }}</div>
+      <div><strong>RUC:</strong> {{ ruc }}</div>
+    {{/informacion}}
+  </div>
+
 </div>
-{{/informacion}}
+
 
 <!-- =========================
      LISTADO DE VENTAS

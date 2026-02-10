@@ -70,12 +70,22 @@ th {
 ========================== -->
 <div class="header">
 
-  <div class="header-left">
-    {{#informacion}}
-    <div class="titulo-empresa">{{ razon_social }}</div>
-    <div class="titulo">{{ titulo_reporte }}</div>
-    {{/informacion}}
-  </div>
+    <div class="header-left">
+      {{#informacion}}
+      <table width="100%" cellspacing="0" cellpadding="0" style="border:none">
+        <tr>
+          <td style="border:none; width:80px; text-align:left;">
+            <img src="{{ logo }}" style="width:140px;">
+          </td>
+          <td style="border:none; text-align:left;">
+            <div class="titulo-empresa">{{ razon_social }}</div>
+            <div class="titulo">{{ titulo_reporte }}</div>
+          </td>
+        </tr>
+      </table>
+      {{/informacion}}
+    </div>
+
 
   <div class="header-right">
     {{#informacion}}
@@ -113,6 +123,18 @@ th {
     </tr>
     {{/listado}}
   </tbody>
+
+  <tfoot>
+    <tr>
+      <td colspan="4" style="text-align:right; font-weight:bold;">
+        TOTAL GENERAL
+      </td>
+      <td style="text-align:right; font-weight:bold;">
+        S/ {{ total_general }}
+      </td>
+    </tr>
+  </tfoot>
+
 </table>
 
 </body>

@@ -357,9 +357,10 @@ Flight::route('GET /imp_compras_fecha', function(){
 
     $template_data['informacion'] = [[
         'razon_social'  => 'CLUB SOCIAL LIMA NORTE S.A.C',
-        'ruc'           => '20202020',
+        'ruc'           => vari('RUC'),
         'titulo_reporte'=> 'REPORTE DE COMPRAS DEL ' . $fini . ' AL ' . $ffin,
         'fecha'         => date('d/m/Y H:i'),
+        'logo'           => $varhost . '/public/admin/login/images/logo_login.png',
         'total_items'   => count($rows)
     ]];
 
@@ -369,6 +370,15 @@ Flight::route('GET /imp_compras_fecha', function(){
     }
 
     $template_data['listado'] = $rows;
+
+
+    $total_general = 0;
+    foreach ($rows as $r) {
+        $total_general += $r['total_compra'];
+    }
+
+    $template_data['total_general'] = number_format($total_general, 2);
+
 
     $html = (new Mustache)->render(
         file_get_contents(VARPATH.'/public/reportes/reporte_html/imp_compras_fecha.html'),

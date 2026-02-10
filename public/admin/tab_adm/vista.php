@@ -45,13 +45,13 @@
       <div class="modal-header"><h3>{{ form.administrador_id?'Editar':'Nuevo' }}</h3></div>
       <div class="modal-body">
 
-        <label>Nombre</label>
+        <label>Nombres y apellidos</label>
         <input class="input-xxlarge" v-model="form.nombres_apellidos">
 
-        <label>Email</label>
+        <label>Nombre de usuario (Ej. lucia)</label>
         <input class="input-xxlarge" v-model="form.email">
 
-        <label>Clave</label>
+        <label>Clave (Ej. 101112)</label>
         <input class="input-large" type="password" v-model="form.clavel">
 
         <label>Tipo de administrador</label>

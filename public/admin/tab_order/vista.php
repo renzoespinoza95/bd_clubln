@@ -878,12 +878,23 @@ new Vue({
     },
 
     reporteVentasAdminExcel(){
-      const { fecha_inicio, fecha_fin, admin_id } = this.reporte;
+      let { fecha_inicio, fecha_fin, admin_id } = this.reporte;
+
+      // 🔧 NORMALIZAR
+      if (!fecha_inicio || !fecha_fin) {
+        alert('Debe seleccionar fecha inicio y fin');
+        return;
+      }
+
+      if (!admin_id) admin_id = 0;
+
       window.open(
-        `${this.apphost}/imp_ventas_fecha_admin_excel?ini=${fecha_inicio}&fin=${fecha_fin}&admin_id=${admin_id}`,
+        `${this.apphost}/imp_ventas_fecha_admin_excel` +
+        `?ini=${fecha_inicio}&fin=${fecha_fin}&admin_id=${admin_id}`,
         '_blank'
       );
     },
+
 
     crearOrder() {
 
