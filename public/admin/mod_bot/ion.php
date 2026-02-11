@@ -1292,3 +1292,56 @@ Flight::route('GET /ion/pantallaYape/@product_order_id', function ($product_orde
         ]);
     }
 });
+
+
+Flight::route('POST /pos/eliminarDetallePedido', function () {
+
+    $payload = json_decode(file_get_contents('php://input'), true);
+
+    if (!$payload || empty($payload['order_id'])) {
+        Flight::json([
+            'status' => 'failed',
+            'msg'    => 'order_id requerido'
+        ]);
+        return;
+    }
+
+    $order_id = (int)$payload['order_id'];
+
+    DB::startTransaction();
+
+    try {
+
+        // 🔎 Verificar que exista
+        $exists = DB::queryFirstField("
+            SELECT COUNT(*)
+            FROM product_order_detail
+            WHERE order_id = %i
+        ", $order_id);
+
+        if ($exists == 0) {
+            throw new Exception("No existen detalles para esta orden");
+        }
+
+        // 🗑️ Eliminar todos los detalles
+        DB::query("
+            DELETE FROM product_order_detail
+            WHERE order_id = %i
+        ", $order_id);
+
+        DB::commit();
+
+        Flight::json([
+            'status' => 'success'
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        Flight::json([
+            'status' => 'failed',
+            'msg'    => $e->getMessage()
+        ]);
+    }
+});
