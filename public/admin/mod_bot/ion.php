@@ -368,7 +368,8 @@ Flight::route(
                 fecha_fin
             FROM product_order
             WHERE administrador_id = %i
-              AND modo_order_id = 3
+              AND modo_order_id IN (1,3)
+              AND DATE(fecha_fin) = %s
               AND DATE(fecha_fin) = %s
             ORDER BY fecha_fin ASC
         ", $administrador_id, $fecha);
@@ -382,7 +383,8 @@ Flight::route(
                 IFNULL(SUM(total_fees), 0) AS total_dia
             FROM product_order
             WHERE administrador_id = %i
-              AND modo_order_id = 3
+              AND modo_order_id IN (1,3)
+              AND DATE(fecha_fin) = %s
               AND DATE(fecha_fin) = %s
         ", $administrador_id, $fecha);
 
