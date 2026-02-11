@@ -62,12 +62,9 @@ Flight::route('POST /product/crear', function () {
         // ==========================
         DB::insert('product', [
             'name'               => $d['name'],
-            'image'              => '',
             'price'              => $d['price'],
             'price_discount'     => 0,
-            'draft'              => 0,
             'description'        => $d['description'],
-            'status'             => 'READY STOCK',
             'created_at'         => $now_unix,
             'last_update'        => $now_unix,
             'fecha_creacion'     => $now_dt,
