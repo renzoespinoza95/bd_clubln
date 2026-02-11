@@ -460,7 +460,7 @@ Flight::route('POST /compra/agregar-items', function(){
     ]);
 
     registrar_movimiento_inventario(
-      $it['product_id'],'ENTRADA','COMPRA_ADICIONAL',
+      $it['product_id'],'ENTRADA','AJUSTE',
       $it['cantidad'],$it['costo_unitario'],
       $data['compra_id'],'compra'
     );
