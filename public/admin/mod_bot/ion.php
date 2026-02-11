@@ -1298,36 +1298,36 @@ Flight::route('POST /pos/eliminarDetallePedido', function () {
 
     $payload = json_decode(file_get_contents('php://input'), true);
 
-    if (!$payload || empty($payload['order_id'])) {
+    if (!$payload || empty($payload['product_order_detail_id'])) {
         Flight::json([
             'status' => 'failed',
-            'msg'    => 'order_id requerido'
+            'msg'    => 'product_order_detail_id requerido'
         ]);
         return;
     }
 
-    $order_id = (int)$payload['order_id'];
+    $detail_id = (int)$payload['product_order_detail_id'];
 
     DB::startTransaction();
 
     try {
 
-        // 🔎 Verificar que exista
+        // 🔎 Verificar que exista el detalle
         $exists = DB::queryFirstField("
             SELECT COUNT(*)
             FROM product_order_detail
-            WHERE order_id = %i
-        ", $order_id);
+            WHERE product_order_detail_id = %i
+        ", $detail_id);
 
         if ($exists == 0) {
-            throw new Exception("No existen detalles para esta orden");
+            throw new Exception("Detalle no encontrado");
         }
 
-        // 🗑️ Eliminar todos los detalles
+        // 🗑️ Eliminar SOLO el detalle seleccionado
         DB::query("
             DELETE FROM product_order_detail
-            WHERE order_id = %i
-        ", $order_id);
+            WHERE product_order_detail_id = %i
+        ", $detail_id);
 
         DB::commit();
 
