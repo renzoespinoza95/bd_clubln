@@ -20,7 +20,7 @@ temp/
 /data/
 /pics/
 /public/reportes/archivos_temporales/
-inc/config.inc.php
+/inc/
 /plugins
 plugins/android.json
 plugins/ios.json

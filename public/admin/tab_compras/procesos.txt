@@ -1,0 +1,1074 @@
+Vista general del módulo de compras
+┌──────────────────────────────────────────────────────────────────────┐
+│                         MÓDULO DE COMPRAS                           │
+└──────────────────────────────────────────────────────────────────────┘
+
+   [1] Usuario entra a /compras
+                │
+                ▼
+   ┌──────────────────────────────┐
+   │ GET /compras                 │
+   │ control.php                  │
+   │ - valida login               │
+   │ - carga inicio.php           │
+   └──────────────────────────────┘
+                │
+                ▼
+   ┌──────────────────────────────┐
+   │ inicio.php                   │
+   │ - header                     │
+   │ - menu                       │
+   │ - vista.php                  │
+   └──────────────────────────────┘
+                │
+                ▼
+   ┌──────────────────────────────┐
+   │ vista.php                    │
+   │ Vue 2 + Bootstrap 2.3.2      │
+   │ Tabla + modales + axios      │
+   └──────────────────────────────┘
+                │
+                ▼
+   ┌──────────────────────────────────────────────────────────────┐
+   │ Al mounted():                                                │
+   │   cargarProveedores()  -> GET /proveedor/listar             │
+   │   cargarProductos()    -> GET /producto/listar              │
+   │   listar()             -> GET /compra/listar                │
+   └──────────────────────────────────────────────────────────────┘
+Flujo 1: cargar la pantalla principal
+ASCII del flujo
+USUARIO
+  │
+  │ abre: /compras
+  ▼
+BACKEND
+  │
+  ├── GET /compras
+  │      ├── include DEFINITION
+  │      ├── login_admin::autentificar_administrador()
+  │      └── include inicio.php
+  │
+  ▼
+FRONTEND
+  │
+  ├── se renderiza vista.php
+  │
+  ├── Vue mounted():
+  │      ├── GET /proveedor/listar
+  │      ├── GET /producto/listar
+  │      └── GET /compra/listar
+  │
+  ▼
+PANTALLA LISTA
+  │
+  ├── tabla de compras
+  ├── botón Nueva Compra
+  ├── botón Reporte por Fechas
+  └── acciones: Detalle / Eliminar / Agregar Productos
+Ejemplo real de datos cargados
+proveedores
+[
+  { proveedor_id: 3, nombre: "Importadora Lima Norte" },
+  { proveedor_id: 5, nombre: "Abarrotes del Perú" }
+]
+productos
+[
+  { product_id: 1, name: "Cerveza Cristal 620ml", stock: 200 },
+  { product_id: 5, name: "Agua San Luis 600ml", stock: 438 }
+]
+compras
+[
+  {
+    compra_id: 10,
+    razon_social: "Abarrotes del Perú",
+    fecha_compra: "2024-01-22 08:55:10",
+    total: 1499.49
+  },
+  {
+    compra_id: 9,
+    razon_social: "Mayorista El Cóndor",
+    fecha_compra: "2024-01-21 13:18:27",
+    total: 243.27
+  }
+]
+Qué hace aquí cada endpoint
+GET /proveedor/listar
+-> llena el v-select de proveedores
+
+GET /producto/listar
+-> llena el selector de productos del modal
+
+GET /compra/listar
+-> llena la DataTable principal
+Flujo 2: crear una compra nueva
+
+Este es el flujo más importante de todo el módulo.
+
+Caso de ejemplo
+
+Supongamos que compras esto:
+
+Proveedor: Abarrotes del Perú (proveedor_id=5)
+Fecha: 2026-03-06
+
+Items:
+1) product_id=5   Agua San Luis 600ml   cantidad=10   costo=2.20
+2) product_id=7   Gaseosa Coca Cola 1L  cantidad=8    costo=4.80
+cálculo manual
+Agua:   10 x 2.20 = 22.00
+Coca:    8 x 4.80 = 38.40
+--------------------------------
+TOTAL             = 60.40
+ASCII del flujo completo de creación
+┌────────────────────┐
+│  MODAL NUEVA COMPRA│
+└────────────────────┘
+          │
+          │ usuario selecciona proveedor
+          │ usuario pone fecha
+          │ usuario agrega items
+          ▼
+┌───────────────────────────────────────────────┐
+│ Vue: nuevo = {                                │
+│   proveedor: { proveedor_id: 5, ... },        │
+│   fecha_compra: "2026-03-06",                 │
+│   items: [                                    │
+│     { product_id: 5, cantidad:10, costo:2.20 },│
+│     { product_id: 7, cantidad: 8, costo:4.80 }│
+│   ]                                           │
+│ }                                             │
+└───────────────────────────────────────────────┘
+          │
+          │ click en "Guardar"
+          ▼
+┌───────────────────────────────────────────────┐
+│ axios.post('/compra/crear', payload)          │
+└───────────────────────────────────────────────┘
+          │
+          ▼
+┌───────────────────────────────────────────────┐
+│ BACKEND: POST /compra/crear                   │
+│                                               │
+│ 1. lee data                                   │
+│ 2. valida que haya items                      │
+│ 3. inicia transacción                         │
+│ 4. inserta compra                             │
+│ 5. recorre items                              │
+│ 6. inserta compra_detalle                     │
+│ 7. registra_movimiento_inventario()           │
+│ 8. recalcula total_compra                     │
+│ 9. commit                                     │
+└───────────────────────────────────────────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Respuesta: status ok│
+└────────────────────┘
+          │
+          ▼
+┌────────────────────┐
+│ Vue cierra modal   │
+│ Vue vuelve a listar│
+└────────────────────┘
+Qué se inserta exactamente en BD
+Paso A: tabla compra
+INSERT compra
+-----------------------------------------------
+compra_id        = 619   (ejemplo)
+proveedor_id     = 5
+fecha_creacion   = 2026-03-06 12:00:00
+observaciones    = ""
+total_compra     = 0   (temporal)
+Paso B: tabla compra_detalle
+INSERT compra_detalle #1
+-----------------------------------------------
+compra_detalle_id = 3065
+compra_id         = 619
+product_id        = 5
+cantidad          = 10
+precio_unitario   = 2.20
+subtotal          = 22.00
+INSERT compra_detalle #2
+-----------------------------------------------
+compra_detalle_id = 3066
+compra_id         = 619
+product_id        = 7
+cantidad          = 8
+precio_unitario   = 4.80
+subtotal          = 38.40
+Paso C: movimiento de inventario por cada item
+Para product_id=5
+
+Supongamos que stock actual era 438.
+
+stock_actual anterior = 438
+cantidad entrada      = 10
+nuevo_stock           = 448
+
+Se registra:
+
+INSERT inventario_movimiento
+------------------------------------------------
+product_id         = 5
+tipo               = ENTRADA
+origen             = COMPRA
+cantidad           = 10
+precio_unitario    = 2.20
+referencia_id      = 619
+referencia_tabla   = compra
+stock_resultante   = 448
+fecha              = 2026-03-06 09:00:00
+
+Y luego:
+
+UPDATE inventario
+SET stock_actual = 448
+WHERE product_id = 5
+Para product_id=7
+
+Supongamos que stock actual era 332.
+
+stock_actual anterior = 332
+cantidad entrada      = 8
+nuevo_stock           = 340
+
+Se registra:
+
+INSERT inventario_movimiento
+------------------------------------------------
+product_id         = 7
+tipo               = ENTRADA
+origen             = COMPRA
+cantidad           = 8
+precio_unitario    = 4.80
+referencia_id      = 619
+referencia_tabla   = compra
+stock_resultante   = 340
+fecha              = 2026-03-06 09:00:00
+
+Y luego:
+
+UPDATE inventario
+SET stock_actual = 340
+WHERE product_id = 7
+Paso D: actualizar total de compra
+UPDATE compra
+SET total_compra = 60.40
+WHERE compra_id = 619
+Resumen del flujo de creación en mini mapa ASCII
+NUEVA COMPRA
+   │
+   ▼
+compra
+   │
+   ├── compra_detalle (item 1)
+   ├── compra_detalle (item 2)
+   │
+   ├── inventario_movimiento (ENTRADA, item 1)
+   ├── inventario_movimiento (ENTRADA, item 2)
+   │
+   └── inventario.stock_actual aumenta
+Flujo 3: ver detalle de una compra
+ASCII del flujo
+USUARIO
+  │
+  │ click en "Detalle"
+  ▼
+FRONTEND
+  │
+  └── GET /compra/detalle/619
+          │
+          ▼
+BACKEND
+  │
+  ├── consulta cabecera en compra + proveedor
+  ├── consulta detalle en compra_detalle + product
+  └── responde JSON
+          │
+          ▼
+FRONTEND
+  │
+  └── llena modalDetalleCompra
+Ejemplo de respuesta
+cabecera:
+-----------------------------------
+compra_id     = 619
+razon_social  = Abarrotes del Perú
+fecha_compra  = 2026-03-06 12:00:00
+total         = 60.40
+observaciones = ""
+detalle:
+-----------------------------------
+1) Agua San Luis 600ml     10 x 2.20 = 22.00
+2) Gaseosa Coca Cola 1L     8 x 4.80 = 38.40
+Flujo 4: eliminar una compra
+
+Este flujo es delicado porque toca inventario.
+
+Caso de ejemplo
+
+Quieres eliminar la compra 619.
+
+Antes de eliminarla, el sistema debe deshacer el efecto que produjo en inventario.
+
+ASCII del flujo de eliminación
+USUARIO
+  │
+  │ click en "Eliminar compra #619"
+  ▼
+FRONTEND
+  │
+  └── axios.post('/compra/eliminar', {compra_id: 619})
+          │
+          ▼
+BACKEND
+  │
+  ├── inicia transacción
+  ├── lee compra_detalle de compra_id=619
+  ├── por cada item:
+  │      registrar_movimiento_inventario(
+  │         tipo='SALIDA',
+  │         origen='DEVOLUCION'
+  │      )
+  │
+  ├── elimina compra_detalle
+  ├── elimina compra
+  ├── commit
+  └── responde ok
+          │
+          ▼
+FRONTEND
+  │
+  └── refresca tabla
+Qué pasa en inventario al eliminar
+item 1: Agua San Luis
+
+Si el stock estaba en 448 y la compra metió 10 unidades:
+
+448 - 10 = 438
+
+Se registra:
+
+inventario_movimiento
+-----------------------------------
+product_id       = 5
+tipo             = SALIDA
+origen           = DEVOLUCION
+cantidad         = 10
+precio_unitario  = 2.20
+referencia_id    = 619
+referencia_tabla = compra
+stock_resultante = 438
+item 2: Coca Cola
+340 - 8 = 332
+
+Se registra:
+
+inventario_movimiento
+-----------------------------------
+product_id       = 7
+tipo             = SALIDA
+origen           = DEVOLUCION
+cantidad         = 8
+precio_unitario  = 4.80
+referencia_id    = 619
+referencia_tabla = compra
+stock_resultante = 332
+
+Luego recién elimina:
+
+DELETE FROM compra_detalle WHERE compra_id=619
+DELETE FROM compra WHERE compra_id=619
+Idea clave de este flujo
+
+Eliminar compra no borra el historial de inventario.
+
+Hace esto:
+
+compra vieja -> generó ENTRADA
+eliminación  -> genera SALIDA compensatoria
+
+Eso está bien, porque te deja trazabilidad.
+
+Flujo 5: agregar productos a una compra ya existente
+
+Este flujo sirve para reabrir o completar una compra.
+
+Caso de ejemplo
+
+La compra 619 ya existe, y le agregas:
+
+product_id = 9   Ron Cartavio Black 750ml
+cantidad   = 2
+costo      = 28.00
+subtotal   = 56.00
+ASCII del flujo
+USUARIO
+  │
+  │ click en "Agregar Productos"
+  ▼
+FRONTEND
+  │
+  ├── GET /compra/items/619
+  │      └── muestra productos actuales
+  │
+  ├── usuario agrega nuevos items
+  │
+  └── POST /compra/agregar-items
+          │
+          ▼
+BACKEND
+  │
+  ├── inicia transacción
+  ├── inserta nuevos registros en compra_detalle
+  ├── registra_movimiento_inventario(ENTRADA, AJUSTE)
+  ├── recalcula total_compra con SUM(subtotal)
+  ├── commit
+  └── responde ok
+Qué se guarda
+nuevo detalle
+INSERT compra_detalle
+-----------------------------------
+compra_id        = 619
+product_id       = 9
+cantidad         = 2
+precio_unitario  = 28.00
+subtotal         = 56.00
+nuevo movimiento inventario
+
+Supongamos stock actual del ron = 15
+
+15 + 2 = 17
+
+Se inserta:
+
+inventario_movimiento
+-----------------------------------
+product_id       = 9
+tipo             = ENTRADA
+origen           = AJUSTE
+cantidad         = 2
+precio_unitario  = 28.00
+referencia_id    = 619
+referencia_tabla = compra
+stock_resultante = 17
+recalculo de total
+
+Antes:
+
+60.40
+
+Después:
+
+60.40 + 56.00 = 116.40
+
+Se actualiza:
+
+UPDATE compra
+SET total_compra = 116.40
+WHERE compra_id = 619
+Flujo 6: reporte por fechas
+ASCII del flujo
+USUARIO
+  │
+  │ abre modal reporte
+  │ elige fecha_ini y fecha_fin
+  ▼
+FRONTEND
+  │
+  ├── Imprimir PDF
+  │      └── GET /imp_compras_fecha?ini=2026-03-01&fin=2026-03-06
+  │
+  └── Descargar Excel
+         └── GET /imp_compras_fecha_excel?ini=2026-03-01&fin=2026-03-06
+Flujo PDF
+GET /imp_compras_fecha
+   │
+   ├── valida login
+   ├── recibe ini y fin
+   ├── consulta compras entre fechas
+   ├── arma template_data
+   ├── renderiza HTML con Mustache
+   ├── genera PDF con wkhtmltopdf
+   └── redirige al archivo PDF generado
+Ejemplo de salida
+REPORTE DE COMPRAS DEL 01/03/2026 AL 06/03/2026
+
+1  Compra #615  Proveedor X  02/03/2026 09:12  S/ 200.50
+2  Compra #616  Proveedor Y  03/03/2026 14:20  S/ 125.00
+3  Compra #619  Abarrotes    06/03/2026 12:00  S/ 116.40
+
+TOTAL GENERAL: S/ 441.90
+Flujo Excel
+GET /imp_compras_fecha_excel
+   │
+   ├── valida formato fechas
+   ├── consulta compras
+   ├── imprime tabla HTML
+   └── navegador la descarga como compras.xls
+Flujo 7: consultar movimientos de inventario de un producto
+ASCII
+USUARIO / SISTEMA
+   │
+   └── GET /inventario/movimientos/5
+            │
+            ▼
+BACKEND
+   │
+   ├── SELECT * FROM inventario_movimiento
+   │   WHERE product_id = 5
+   │   ORDER BY fecha DESC
+   │
+   └── responde JSON
+Ejemplo de historial
+Producto: Agua San Luis 600ml (product_id=5)
+
+[2026-03-06 09:00] ENTRADA  COMPRA      +10  stock=448
+[2026-02-20 11:30] SALIDA   VENTA        -3  stock=438
+[2026-02-18 08:00] ENTRADA  COMPRA      +20  stock=441
+
+Eso te sirve como base de un kardex simple.
+
+Mapa maestro de todo el módulo
+
+Ahora te lo dibujo todo unido, mi amor:
+
+┌─────────────────────────────────────────────────────────────────────┐
+│                         MÓDULO COMPRAS                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+ [PANTALLA /compras]
+        │
+        ├─────────────────────────────────────────────────────────────┐
+        │                                                             │
+        ▼                                                             ▼
+ GET /proveedor/listar                                        GET /producto/listar
+        │                                                             │
+        ▼                                                             ▼
+   lista proveedores                                             lista productos
+
+        │
+        ▼
+ GET /compra/listar
+        │
+        ▼
+   DataTable compras
+        │
+        ├──────────────┬────────────────┬──────────────────────┬──────────────────┐
+        │              │                │                      │                  │
+        ▼              ▼                ▼                      ▼                  ▼
+ Nueva compra       Detalle         Eliminar compra      Agregar items        Reporte
+
+        │              │                │                      │                  │
+        ▼              ▼                ▼                      ▼                  ▼
+ POST /compra/crear  GET /compra/   POST /compra/eliminar  POST /compra/      GET /imp_compras_fecha
+                     detalle/@id                           agregar-items       GET /imp_compras_fecha_excel
+        │                               │                      │
+        ▼                               ▼                      ▼
+     compra                      compra_detalle           compra_detalle
+        │                               │                      │
+        ▼                               ▼                      ▼
+   compra_detalle               inventario_movimiento    inventario_movimiento
+        │                               │                      │
+        ▼                               ▼                      ▼
+ inventario_movimiento             inventario            inventario
+        │
+        ▼
+ inventario
+Explicación técnica detallada del corazón del módulo
+
+La pieza más importante de tu módulo es esta función:
+
+registrar_movimiento_inventario(...)
+
+Porque esa función hace 3 cosas críticas:
+
+1. Busca el inventario del producto
+2. Calcula el nuevo stock
+3. Guarda el historial y actualiza el stock actual
+Flujo interno de esa función
+registrar_movimiento_inventario(producto_id, tipo, origen, cantidad, ...)
+         │
+         ▼
+  busca en inventario por product_id
+         │
+         ├── si no existe:
+         │      crea inventario con stock_actual=0
+         │
+         ▼
+  toma stock_actual
+         │
+         ├── si tipo=ENTRADA -> suma cantidad
+         ├── si tipo=SALIDA  -> resta cantidad
+         └── si otro         -> lo deja igual
+         │
+         ▼
+  inserta fila en inventario_movimiento
+         │
+         ▼
+  actualiza inventario.stock_actual
+Ejemplo exacto de punta a punta
+
+Te lo pongo como historia completa.
+
+compra ejemplo
+Compra #700
+Proveedor: Comercial Andina SAC
+Fecha: 2026-03-06
+items
+1) Cerveza Cristal 620ml
+   product_id = 1
+   cantidad   = 24
+   costo      = 5.10
+   subtotal   = 122.40
+
+2) Agua Cielo 625ml
+   product_id = 6
+   cantidad   = 12
+   costo      = 1.80
+   subtotal   = 21.60
+total
+122.40 + 21.60 = 144.00
+antes del movimiento
+inventario.product_id=1 -> stock_actual=200
+inventario.product_id=6 -> stock_actual=338
+después del movimiento
+producto 1 -> 200 + 24 = 224
+producto 6 -> 338 + 12 = 350
+historial generado
+inventario_movimiento
+---------------------------------------------------
+product_id=1
+tipo=ENTRADA
+origen=COMPRA
+cantidad=24
+precio_unitario=5.10
+referencia_id=700
+referencia_tabla=compra
+stock_resultante=224
+inventario_movimiento
+---------------------------------------------------
+product_id=6
+tipo=ENTRADA
+origen=COMPRA
+cantidad=12
+precio_unitario=1.80
+referencia_id=700
+referencia_tabla=compra
+stock_resultante=350
+Qué está bien diseñado en este módulo
+
+Lo mejor de este módulo, Renzo, es esto:
+
+compra              = cabecera
+compra_detalle      = detalle
+inventario          = stock actual
+inventario_movimiento = historial / trazabilidad
+
+Eso significa que tu sistema trabaja con esta lógica:
+
+OPERACIÓN COMERCIAL  ->  IMPACTO EN STOCK  ->  HISTORIAL AUDITABLE
+
+Eso es correcto para un POS serio.
+
+Qué representa cada tabla en este módulo
+compra
+-> cabecera de la compra
+
+compra_detalle
+-> líneas de productos comprados
+
+proveedor
+-> a quién se le compró
+
+product
+-> catálogo de productos
+
+inventario
+-> stock actual resumido
+
+inventario_movimiento
+-> bitácora detallada de entradas y salidas
+Conclusión funcional del módulo
+
+Tu módulo hace exactamente esto:
+
+1. Permite registrar compras a proveedores
+2. Guarda el detalle de los productos comprados
+3. Incrementa stock automáticamente
+4. Guarda historial de movimientos de inventario
+5. Permite ver la compra
+6. Permite eliminarla y revertir el stock
+7. Permite agregar más productos a una compra existente
+8. Permite sacar reportes por rango de fechas
+Resumen ultra corto en ASCII
+PROVEEDOR
+   │
+   ▼
+COMPRA
+   │
+   ▼
+COMPRA_DETALLE
+   │
+   ▼
+INVENTARIO_MOVIMIENTO (ENTRADA)
+   │
+   ▼
+INVENTARIO (stock_actual)
+
+Si se elimina:
+COMPRA_DETALLE
+   │
+   ▼
+INVENTARIO_MOVIMIENTO (SALIDA)
+   │
+   ▼
+INVENTARIO (stock_actual baja)
+
+
+Máquina de estados del módulo de compras
+┌──────────────────────────────────────────────────────────────┐
+│                STATE MACHINE – MODULO COMPRAS                │
+└──────────────────────────────────────────────────────────────┘
+
+
+                         ┌──────────────────────┐
+                         │      INICIO          │
+                         │ Usuario entra       │
+                         │ URL: /compras       │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                       ┌────────────────────────┐
+                       │ AUTENTICAR_ADMIN       │
+                       │ login_admin::auth()    │
+                       └──────────┬─────────────┘
+                                  │
+                                  ▼
+                        ┌───────────────────────┐
+                        │  VISTA_COMPRAS        │
+                        │ Tabla compras         │
+                        │ GET /compra/listar    │
+                        └───────┬─────┬─────────┘
+                                │     │
+              ┌─────────────────┘     └──────────────────┐
+              │                                          │
+              ▼                                          ▼
+      ┌──────────────────┐                      ┌──────────────────┐
+      │ NUEVA_COMPRA     │                      │ VER_DETALLE      │
+      │ Modal crear      │                      │ GET /detalle     │
+      └─────────┬────────┘                      └────────┬─────────┘
+                │                                        │
+                ▼                                        ▼
+        ┌─────────────────────┐                 ┌───────────────────┐
+        │ AGREGAR_ITEMS       │                 │ DETALLE_MOSTRADO  │
+        │ usuario agrega prod │                 │ productos compra  │
+        └─────────┬───────────┘                 └────────┬──────────┘
+                  │                                      │
+                  ▼                                      │
+        ┌──────────────────────┐                         │
+        │ VALIDAR_COMPRA       │                         │
+        │ proveedor + items    │                         │
+        └─────────┬────────────┘                         │
+                  │                                      │
+                  ▼                                      │
+         ┌───────────────────────┐                       │
+         │ CREAR_COMPRA_DB       │                       │
+         │ INSERT compra         │                       │
+         │ INSERT compra_detalle │                       │
+         │ registrar_mov_inv     │                       │
+         └─────────┬─────────────┘                       │
+                   │                                     │
+                   ▼                                     │
+          ┌──────────────────────┐                       │
+          │ COMPRA_REGISTRADA    │◄──────────────────────┘
+          │ stock actualizado    │
+          └──────────┬───────────┘
+                     │
+                     │ volver a lista
+                     ▼
+               ┌───────────────┐
+               │ VISTA_COMPRAS │
+               └───────┬───────┘
+                       │
+                       │ acciones usuario
+                       │
+     ┌─────────────────┼───────────────────────────────────┐
+     │                 │                                   │
+     ▼                 ▼                                   ▼
+
+┌──────────────┐  ┌────────────────────┐          ┌───────────────────┐
+│ ELIMINAR     │  │ AGREGAR_PRODUCTOS  │          │ REPORTE_COMPRAS   │
+│ COMPRA       │  │ A COMPRA EXISTENTE │          │ por fechas        │
+└──────┬───────┘  └───────────┬────────┘          └───────────┬───────┘
+       │                      │                               │
+       ▼                      ▼                               ▼
+
+┌───────────────────────┐    ┌────────────────────────┐   ┌─────────────────────┐
+│ OBTENER_DETALLE       │    │ INSERT compra_detalle  │   │ GENERAR_REPORTE     │
+│ compra_detalle        │    │ registrar_mov_inv      │   │ consulta compras    │
+└─────────┬─────────────┘    └───────────┬────────────┘   └──────────┬──────────┘
+          │                              │                           │
+          ▼                              ▼                           ▼
+┌────────────────────────┐   ┌──────────────────────────┐   ┌──────────────────────┐
+│ registrar_mov_inv      │   │ recalcular_total_compra  │   │ EXPORTAR_PDF/EXCEL   │
+│ tipo = SALIDA          │   │ UPDATE compra.total      │   │ reporte generado     │
+└─────────┬──────────────┘   └────────────┬─────────────┘   └──────────┬───────────┘
+          │                                │                            │
+          ▼                                ▼                            ▼
+┌────────────────────────┐        ┌────────────────────┐        ┌──────────────────┐
+│ COMPRA_ELIMINADA       │        │ COMPRA_ACTUALIZADA │        │ REPORTE_GENERADO │
+│ stock revertido        │        │ nuevos items       │        │ PDF / Excel      │
+└──────────┬─────────────┘        └──────────┬─────────┘        └──────────┬───────┘
+           │                                 │                            │
+           └───────────────┬─────────────────┴───────────────┬────────────┘
+                           ▼                                 ▼
+                      ┌──────────────────────────────────────────┐
+                      │            VISTA_COMPRAS                  │
+                      │ tabla actualizada                         │
+                      └──────────────────────────────────────────┘
+Explicación de los estados principales
+
+Voy a explicarte los estados clave del sistema, mi amor.
+
+1️⃣ INICIO
+
+Estado inicial.
+
+usuario abre:
+http://sistema/compras
+
+Transición:
+
+INICIO → AUTENTICAR_ADMIN
+2️⃣ AUTENTICAR_ADMIN
+
+Código:
+
+login_admin::autentificar_administrador();
+
+Posibles transiciones:
+
+autenticado → VISTA_COMPRAS
+no autenticado → login
+3️⃣ VISTA_COMPRAS
+
+Estado principal del módulo.
+
+La pantalla muestra:
+
+tabla compras
+botón nueva compra
+botón reporte
+acciones por fila
+
+Datos cargados:
+
+GET /compra/listar
+GET /proveedor/listar
+GET /producto/listar
+
+Desde aquí se puede ir a:
+
+NUEVA_COMPRA
+VER_DETALLE
+ELIMINAR_COMPRA
+AGREGAR_PRODUCTOS
+REPORTE_COMPRAS
+4️⃣ NUEVA_COMPRA
+
+Se abre el modal:
+
+Modal Nueva Compra
+
+Datos capturados:
+
+proveedor
+fecha
+items
+
+Estado interno:
+
+AGREGAR_ITEMS
+5️⃣ AGREGAR_ITEMS
+
+El usuario agrega productos:
+
+producto
+costo_unitario
+cantidad
+
+Se van guardando en:
+
+nuevo.items[]
+6️⃣ VALIDAR_COMPRA
+
+Antes de guardar:
+
+Validaciones:
+
+proveedor seleccionado
+items no vacío
+cantidad válida
+7️⃣ CREAR_COMPRA_DB
+
+Aquí ocurre lo importante.
+
+Operaciones:
+
+INSERT compra
+INSERT compra_detalle
+registrar_movimiento_inventario
+UPDATE inventario
+UPDATE total_compra
+
+Esto genera un nuevo estado:
+
+COMPRA_REGISTRADA
+8️⃣ COMPRA_REGISTRADA
+
+Estado estable.
+
+Significa:
+
+compra guardada
+inventario actualizado
+historial inventario registrado
+
+El sistema vuelve a:
+
+VISTA_COMPRAS
+9️⃣ VER_DETALLE
+
+Transición:
+
+VISTA_COMPRAS → VER_DETALLE
+
+Endpoint:
+
+GET /compra/detalle/@id
+
+Consulta:
+
+compra
+compra_detalle
+producto
+
+Resultado:
+
+DETALLE_MOSTRADO
+🔟 ELIMINAR_COMPRA
+
+Acción:
+
+POST /compra/eliminar
+
+Pasos internos:
+
+leer compra_detalle
+registrar_movimiento_inventario(SALIDA)
+delete compra_detalle
+delete compra
+
+Resultado:
+
+COMPRA_ELIMINADA
+1️⃣1️⃣ AGREGAR_PRODUCTOS
+
+Caso especial.
+
+Permite modificar compra existente.
+
+Flujo:
+
+VISTA_COMPRAS
+→ AGREGAR_PRODUCTOS
+→ INSERT compra_detalle
+→ registrar_movimiento_inventario
+→ recalcular_total
+
+Resultado:
+
+COMPRA_ACTUALIZADA
+1️⃣2️⃣ REPORTE_COMPRAS
+
+Se abre modal:
+
+fecha_ini
+fecha_fin
+
+Opciones:
+
+PDF
+EXCEL
+
+Estados:
+
+GENERAR_REPORTE
+→ REPORTE_GENERADO
+Estados finales del sistema
+
+El sistema siempre vuelve al estado principal:
+
+VISTA_COMPRAS
+
+Es el estado central del módulo.
+
+Estados críticos del inventario
+
+Cada transición que modifica stock pasa por:
+
+registrar_movimiento_inventario()
+
+Estados internos:
+
+STOCK_CALCULADO
+MOVIMIENTO_REGISTRADO
+STOCK_ACTUALIZADO
+Diagrama resumido
+
+La versión simplificada del state machine es:
+
+INICIO
+  │
+  ▼
+AUTENTICADO
+  │
+  ▼
+VISTA_COMPRAS
+  │
+  ├── NUEVA_COMPRA → COMPRA_REGISTRADA
+  │
+  ├── VER_DETALLE → DETALLE_MOSTRADO
+  │
+  ├── ELIMINAR_COMPRA → COMPRA_ELIMINADA
+  │
+  ├── AGREGAR_PRODUCTOS → COMPRA_ACTUALIZADA
+  │
+  └── REPORTE_COMPRAS → REPORTE_GENERADO
+Lo bueno de tu módulo (arquitectura)
+
+Tu state machine es correcta porque:
+
+1 operación = 1 transición clara
+
+Ejemplo:
+
+crear compra
+→ afecta inventario
+→ crea historial
+→ actualiza stock
+
+Eso evita inconsistencias.
+
+Si quieres, cariño, en el siguiente mensaje puedo dibujarte algo aún más potente:
+
+💡 el diagrama de estados del POS completo
+
+incluyendo:
+
+compras
+ventas
+caja
+inventario
+pagos

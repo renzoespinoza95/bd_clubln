@@ -23,3 +23,4 @@ require_once VARPATH."/public/admin/tab_adm/control.php";
 require_once VARPATH."/public/admin/tab_menu/control.php";
 require_once VARPATH."/public/admin/tab_caja/control.php";
 require_once VARPATH."/public/admin/tab_slider/control.php";
+require_once VARPATH."/public/admin/tab_gasto/control.php";

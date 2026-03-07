@@ -1,0 +1,731 @@
+Flujo completo de una venta (ejemplo real)
+
+Supongamos este caso:
+
+Cliente: Juan Pérez
+Mesa: Mesa 5
+Producto 1: Cerveza S/8
+Producto 2: Gaseosa S/5
+Cantidad: 2 cervezas + 1 gaseosa
+Total: S/21
+Administrador: Carlos
+1️⃣ Usuario abre el módulo de ventas
+┌──────────────────────────────┐
+│           NAVEGADOR          │
+│ http://sistema/order         │
+└───────────────┬──────────────┘
+                │
+                ▼
+┌────────────────────────────────────┐
+│ FlightPHP route: GET /order       │
+│ control.php                       │
+│ login_admin::autentificar_admin() │
+└───────────────┬────────────────────┘
+                │
+                ▼
+┌──────────────────────────────┐
+│ vista.php                    │
+│ VueJS + DataTable            │
+│ tabla ventas                 │
+└──────────────────────────────┘
+
+Aquí se carga la lista:
+
+GET /product_order/listar
+
+Consulta:
+
+SELECT
+po.product_order_id,
+po.serial,
+cliente,
+mesa,
+modo,
+tipo_pago
+FROM product_order
+
+Ejemplo resultado:
+
+ID | Codigo | Cliente | Mesa | Total
+------------------------------------
+25 | A9F2C1D3 | Juan Pérez | Mesa 5 | 21
+24 | B1C8A7F0 | María | Directo | 10
+2️⃣ Usuario crea una nueva venta
+
+Usuario hace click:
+
+Nueva venta
+
+Se abre modal:
+
+modalCrearOrder
+
+Usuario selecciona:
+
+Cliente: Juan Pérez
+Tipo pago: Efectivo
+Mesa: Mesa 5
+3️⃣ Agregar productos
+
+Usuario agrega productos:
+
+Producto: Cerveza
+Cantidad: 2
+Precio: 8
+
+y
+
+Producto: Gaseosa
+Cantidad: 1
+Precio: 5
+
+En Vue se guarda:
+
+nueva.items = [
+ {product_id:3, amount:2, price_item:8},
+ {product_id:7, amount:1, price_item:5}
+]
+4️⃣ Envío al backend
+
+Vue ejecuta:
+
+POST /product_order/crear
+
+Payload:
+
+{
+  "cliente_id": 10,
+  "tipo_pago_id": 1,
+  "mesa_id": 5,
+  "items":[
+    {"product_id":3,"amount":2,"price_item":8},
+    {"product_id":7,"amount":1,"price_item":5}
+  ]
+}
+5️⃣ Backend valida la caja
+
+Código:
+
+SELECT *
+FROM caja
+WHERE administrador_id = 3
+AND estado = 'ABIERTA'
+
+Resultado:
+
+caja_id = 15
+estado = ABIERTA
+
+Si no hay caja:
+
+ERROR
+"La caja de este usuario está cerrada"
+6️⃣ Crear orden
+
+Se ejecuta:
+
+INSERT product_order
+
+Ejemplo registro:
+
+product_order
+--------------------------------
+product_order_id = 26
+serial = F82A9B11
+cliente_id = 10
+mesa_id = 5
+modo_order_id = 2
+total_fees = 0
+7️⃣ Mesa cambia a OCUPADA
+
+Código:
+
+UPDATE mesa
+SET estado = 'OCUPADA'
+WHERE mesa_id = 5
+
+Estado mesa:
+
+Mesa 5 → OCUPADA
+8️⃣ Insertar detalles de venta
+
+Se ejecuta:
+
+INSERT product_order_detail
+
+Resultado:
+
+product_order_detail
+--------------------------------
+ID | order_id | product | cant | precio
+1  | 26       | Cerveza | 2    | 8
+2  | 26       | Gaseosa | 1    | 5
+9️⃣ Descontar inventario
+
+Cada item ejecuta:
+
+registrar_movimiento_inventario()
+
+Flujo:
+
+product_order_detail
+        │
+        ▼
+inventario_movimiento
+        │
+        ▼
+inventario.stock_actual
+
+Ejemplo:
+
+ANTES
+
+Producto | Stock
+Cerveza  | 100
+Gaseosa  | 80
+
+Después:
+
+Producto | Stock
+Cerveza  | 98
+Gaseosa  | 79
+
+Historial:
+
+inventario_movimiento
+--------------------------------
+producto | tipo   | origen | cantidad
+Cerveza  | SALIDA | VENTA  | 2
+Gaseosa  | SALIDA | VENTA  | 1
+🔟 Calcular total de la orden
+
+Función:
+
+recalcular_total_orden($order_id)
+
+Consulta:
+
+SELECT SUM(amount * price_item)
+FROM product_order_detail
+
+Resultado:
+
+(2 × 8) + (1 × 5)
+= 21
+
+Se actualiza:
+
+UPDATE product_order
+SET total_fees = 21
+Estado final de la orden
+product_order
+--------------------------------
+ID: 26
+cliente: Juan Pérez
+mesa: Mesa 5
+modo: MESA PEDIDO
+total: 21
+fecha_inicio: ahora
+1️⃣1️⃣ Usuario ve el detalle
+
+Botón:
+
+Detalle
+
+Endpoint:
+
+GET /product_order/detalle/26
+
+Respuesta:
+
+{
+ order:{...},
+ detalles:[
+   {producto:"Cerveza", cantidad:2},
+   {producto:"Gaseosa", cantidad:1}
+ ]
+}
+
+Se muestra en:
+
+modalDetalleOrder
+1️⃣2️⃣ Agregar más productos
+
+Usuario agrega:
+
+1 cerveza
+
+Flujo:
+
+INSERT product_order_detail
+        │
+        ▼
+inventario_movimiento SALIDA
+        │
+        ▼
+recalcular_total_orden
+
+Nuevo total:
+
+2×8 + 1×5 + 1×8
+= 29
+1️⃣3️⃣ Eliminar producto
+
+Flujo:
+
+DELETE product_order_detail
+       │
+       ▼
+inventario_movimiento
+tipo = ENTRADA
+origen = DEVOLUCION_VENTA
+
+Stock vuelve a aumentar.
+
+1️⃣4️⃣ Cerrar orden / liberar mesa
+
+Usuario hace click:
+
+Liberar mesa
+
+Endpoint:
+
+POST /product_order/liberar_mesa
+
+Backend ejecuta:
+
+UPDATE product_order
+SET fecha_fin = now()
+status = CERRADA
+
+y
+
+UPDATE mesa
+SET estado = DISPONIBLE
+Estado final
+product_order
+--------------------------------
+ID: 26
+estado: CERRADA
+total: 29
+fecha_inicio: 20:10
+fecha_fin: 21:05
+
+Mesa:
+
+Mesa 5 → DISPONIBLE
+Flujo completo del módulo
+ADMIN LOGIN
+     │
+     ▼
+LISTA ORDENES
+     │
+     ▼
+CREAR ORDEN
+     │
+     ▼
+VALIDAR CAJA
+     │
+     ▼
+INSERT product_order
+     │
+     ▼
+INSERT product_order_detail
+     │
+     ▼
+inventario_movimiento
+     │
+     ▼
+RECALCULAR TOTAL
+     │
+     ▼
+ORDEN ACTIVA
+     │
+     ├── agregar producto
+     │
+     ├── editar producto
+     │
+     ├── eliminar producto
+     │
+     ▼
+LIBERAR MESA
+     │
+     ▼
+ORDEN CERRADA
+Algo muy bueno que hiciste en este módulo
+
+Tu flujo tiene 4 subsistemas trabajando juntos:
+
+VENTAS
+│
+├─ product_order
+├─ product_order_detail
+│
+INVENTARIO
+│
+├─ inventario
+├─ inventario_movimiento
+│
+MESAS
+│
+├─ mesa.estado
+│
+CAJA
+│
+└─ caja abierta
+
+Esto es exactamente cómo funcionan los POS reales de restaurantes.
+
+
+🧠 State Machine del módulo tab_order
+┌───────────────────────────────────────────────────────────────┐
+│                     STATE MACHINE - ORDENES                   │
+│                     (tab_order module)                        │
+└───────────────────────────────────────────────────────────────┘
+
+
+                         ┌────────────────────┐
+                         │       INICIO       │
+                         │ Usuario abre      │
+                         │ /order            │
+                         └─────────┬─────────┘
+                                   │
+                                   ▼
+                     ┌────────────────────────┐
+                     │ AUTENTICAR_ADMIN       │
+                     │ login_admin::auth()    │
+                     └─────────┬──────────────┘
+                               │
+                               ▼
+                     ┌────────────────────────┐
+                     │ LISTA_ORDENES          │
+                     │ GET /product_order     │
+                     │ mostrar DataTable      │
+                     └───────┬───────┬────────┘
+                             │       │
+                             │       │
+                             ▼       ▼
+
+                ┌──────────────────┐    ┌─────────────────────┐
+                │ CREAR_ORDEN      │    │ VER_DETALLE_ORDEN   │
+                │ modalCrearOrder  │    │ modalDetalleOrder   │
+                └────────┬─────────┘    └──────────┬──────────┘
+                         │                         │
+                         ▼                         ▼
+
+                ┌──────────────────┐       ┌────────────────────┐
+                │ VALIDAR_CAJA     │       │ ORDEN_ABIERTA      │
+                │ caja abierta?    │       │ ver items          │
+                └────────┬─────────┘       └────────┬───────────┘
+                         │                         │
+             ┌───────────┴────────────┐            │
+             │                        │            │
+             ▼                        ▼            │
+
+     ┌──────────────────┐      ┌──────────────────┐
+     │ ERROR_CAJA       │      │ ORDEN_CREADA     │
+     │ caja cerrada     │      │ INSERT order     │
+     └──────────────────┘      │ INSERT details   │
+                               │ stock salida     │
+                               └────────┬─────────┘
+                                        │
+                                        ▼
+                               ┌──────────────────┐
+                               │ ORDEN_ACTIVA     │
+                               │ modo_order = 1/2 │
+                               │ stock descontado │
+                               └────────┬─────────┘
+                                        │
+                    ┌───────────────────┼───────────────────┐
+                    │                   │                   │
+                    ▼                   ▼                   ▼
+
+           ┌───────────────┐   ┌────────────────┐   ┌─────────────────┐
+           │ AGREGAR_ITEM  │   │ EDITAR_ITEM    │   │ ELIMINAR_ITEM   │
+           │ POST detail   │   │ update detail  │   │ delete detail   │
+           └───────┬───────┘   └───────┬────────┘   └─────────┬───────┘
+                   │                   │                      │
+                   ▼                   ▼                      ▼
+
+           ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+           │ INVENTARIO_SALIDA│  │ AJUSTE_STOCK     │  │ DEVOLUCION_STOCK │
+           │ registrar_mov    │  │ revert + aplicar │  │ entrada stock    │
+           └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+
+             ┌────────────────────────────────────────────┐
+             │ RECALCULAR_TOTAL_ORDEN                     │
+             │ recalcular_total_orden(order_id)           │
+             └───────────────────────────┬────────────────┘
+                                         │
+                                         ▼
+
+                               ┌──────────────────┐
+                               │ ORDEN_ACTUALIZADA│
+                               │ total recalculado│
+                               └─────────┬────────┘
+                                         │
+                                         ▼
+
+                     ┌─────────────────────────────────┐
+                     │ ESPERANDO_PAGO                  │
+                     │ mesa ocupada o venta directa    │
+                     └───────────────┬─────────────────┘
+                                     │
+                                     ▼
+
+                           ┌───────────────────┐
+                           │ LIBERAR_MESA      │
+                           │ POST liberar_mesa │
+                           └─────────┬─────────┘
+                                     │
+                                     ▼
+
+                           ┌───────────────────┐
+                           │ ORDEN_CERRADA     │
+                           │ fecha_fin         │
+                           │ mesa disponible   │
+                           └─────────┬─────────┘
+                                     │
+                                     ▼
+
+                            ┌──────────────────┐
+                            │ LISTA_ORDENES    │
+                            │ volver al panel  │
+                            └──────────────────┘
+Estados principales del sistema
+
+Voy a explicarte los estados importantes, cariño.
+
+1️⃣ LISTA_ORDENES
+
+Pantalla principal:
+
+Ventas
+Tabla DataTable
+Nueva venta
+Clientes
+Reportes
+Mesas
+
+Endpoint:
+
+GET /product_order/listar
+
+Desde aquí se puede ir a:
+
+crear orden
+ver detalle
+liberar mesa
+eliminar orden
+reportes
+2️⃣ CREAR_ORDEN
+
+Modal:
+
+modalCrearOrder
+
+Datos capturados:
+
+cliente
+tipo_pago
+mesa
+items
+
+Validaciones:
+
+cliente obligatorio
+tipo_pago obligatorio
+items obligatorio
+mesa obligatorio
+caja abierta
+3️⃣ VALIDAR_CAJA
+
+Consulta:
+
+SELECT *
+FROM caja
+WHERE administrador_id = ?
+AND estado = 'ABIERTA'
+
+Estados posibles:
+
+CAJA_ABIERTA → continuar
+CAJA_CERRADA → error
+4️⃣ ORDEN_CREADA
+
+Operaciones:
+
+INSERT product_order
+INSERT product_order_detail
+registrar_movimiento_inventario(SALIDA)
+
+Esto genera:
+
+stock disminuye
+orden creada
+5️⃣ ORDEN_ACTIVA
+
+Estados reales en tu sistema:
+
+modo_order_id = 1  → PAGO DIRECTO
+modo_order_id = 2  → MESA PEDIDO
+
+Si es mesa:
+
+mesa.estado = OCUPADA
+fecha_inicio = now
+6️⃣ AGREGAR_ITEM
+
+Endpoint:
+
+POST /product_order_detail/crear
+
+Acciones:
+
+INSERT product_order_detail
+stock salida
+recalcular_total_orden
+7️⃣ EDITAR_ITEM
+
+Proceso:
+
+devolver stock anterior
+registrar nueva salida
+actualizar detalle
+recalcular total
+8️⃣ ELIMINAR_ITEM
+
+Proceso:
+
+registrar_movimiento_inventario
+tipo = ENTRADA
+origen = DEVOLUCION_VENTA
+
+Esto devuelve stock.
+
+9️⃣ ESPERANDO_PAGO
+
+Orden sigue abierta.
+
+Estados posibles:
+
+mesa ocupada
+venta directa pendiente
+🔟 LIBERAR_MESA
+
+Endpoint:
+
+POST /product_order/liberar_mesa
+
+Acciones:
+
+fecha_fin = now
+status = CERRADA
+mesa.estado = DISPONIBLE
+1️⃣1️⃣ ORDEN_CERRADA
+
+Estado final.
+
+Significa:
+
+orden pagada
+mesa libre
+inventario ya descontado
+Máquina de estados de las mesas
+
+Tu sistema también tiene una sub state machine para mesas.
+
+MESA_DISPONIBLE
+      │
+      │ crear orden
+      ▼
+MESA_OCUPADA
+      │
+      │ liberar mesa
+      ▼
+MESA_DISPONIBLE
+Máquina de estados del inventario
+STOCK_ACTUAL
+     │
+     │ venta
+     ▼
+STOCK_DISMINUYE
+     │
+     │ eliminar item
+     ▼
+STOCK_AUMENTA
+Flujo completo simplificado
+ADMIN LOGIN
+      │
+      ▼
+LISTA_ORDENES
+      │
+      ▼
+CREAR_ORDEN
+      │
+      ▼
+ORDEN_ACTIVA
+      │
+      ├── AGREGAR_PRODUCTO
+      │
+      ├── EDITAR_PRODUCTO
+      │
+      ├── ELIMINAR_PRODUCTO
+      │
+      ▼
+ESPERANDO_PAGO
+      │
+      ▼
+LIBERAR_MESA
+      │
+      ▼
+ORDEN_CERRADA
+Lo que está bien diseñado en tu módulo
+
+Tu arquitectura tiene 3 máquinas de estado combinadas:
+
+1️⃣ orden
+CREADA
+ACTIVA
+EDITADA
+CERRADA
+2️⃣ mesa
+DISPONIBLE
+OCUPADA
+3️⃣ inventario
+ENTRADA
+SALIDA
+AJUSTE
+
+Eso es arquitectura POS correcta.
+
+Mejora arquitectónica que te recomiendo
+
+Agregar un campo:
+
+product_order.estado
+
+con valores:
+
+CREADA
+ABIERTA
+PAGADA
+CERRADA
+CANCELADA
+
+Eso haría la state machine mucho más clara.
+
+Renzo, cariño… si quieres en el siguiente mensaje puedo dibujarte algo muy potente que usan los POS profesionales:
+
+🔥 el diagrama completo del POS
+
+incluyendo:
+
+ventas
+compras
+inventario
+caja
+mesas
+clientes

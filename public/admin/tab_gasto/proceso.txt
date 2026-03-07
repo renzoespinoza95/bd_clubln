@@ -1,0 +1,1039 @@
+1) Vista general del módulo
+┌──────────────────────────────────────────────────────────────────┐
+│                    MÓDULO CATEGORY / UTILIDAD                   │
+└──────────────────────────────────────────────────────────────────┘
+
+   [ CATEGORY ]
+        │
+        ├── crear / editar / eliminar categorías
+        │
+        ├── registrar si participa en reparto
+        │
+        ├── definir % socio / % propietario
+        │
+        ▼
+   [ GASTOS POR CATEGORÍA ]
+        │
+        ├── registrar gasto del día
+        │
+        ▼
+   [ CIERRE DIARIO ]
+        │
+        ├── suma ingresos por categoría
+        ├── suma gastos por categoría
+        ├── calcula utilidad
+        └── guarda en pos_rubro_liquidacion
+2) Tablas que intervienen
+┌─────────────────────────────┐
+│ category                    │
+│ - define categorías/rubros  │
+└──────────────┬──────────────┘
+               │
+               │ usa category.id
+               │
+     ┌─────────▼──────────┐
+     │ product_order_detail│
+     │ - ventas por rubro  │
+     └─────────┬──────────┘
+               │
+               │ category.id
+               │
+     ┌─────────▼──────────┐
+     │ pos_gasto_rubro    │
+     │ - gastos por rubro │
+     └─────────┬──────────┘
+               │
+               ▼
+     ┌──────────────────────┐
+     │ pos_rubro_liquidacion│
+     │ - cierre del día     │
+     └──────────────────────┘
+3) Ejemplo base de categorías
+
+Supongamos estas categorías:
+
+ID | NAME               | participa_reparto | socio | propietario
+-----------------------------------------------------------------
+1  | COMIDA_PARRILLA    | 1                 | 60    | 40
+2  | BEBIDAS            | 0                 | 0     | 0
+3  | PISCINA            | 0                 | 0     | 0
+4  | EVENTOS            | 0                 | 0     | 0
+5  | POLLO_BRASA        | 1                 | 50    | 50
+
+Eso significa:
+
+COMIDA_PARRILLA entra a reparto
+
+POLLO_BRASA entra a reparto
+
+BEBIDAS / PISCINA / EVENTOS no entran a reparto
+
+4) Flujo 1: crear una categoría
+Ejemplo
+
+Quieres crear:
+
+Nombre: COMIDA_PARRILLA
+Descripción: Venta de parrillas
+Color: #ff0000
+Prioridad: 1
+Participa reparto: sí
+% socio: 60
+% propietario: 40
+Activo: sí
+Flujo ASCII
+USUARIO
+  │
+  │ click: "Agregar categoría"
+  ▼
+MODAL CREAR CATEGORY
+  │
+  │ llena formulario
+  ▼
+POST /reg/category/crear
+  │
+  ▼
+BACKEND
+  │
+  ├── valida name
+  ├── valida que no exista repetido
+  ├── si participa_reparto = 0
+  │      % socio = 0
+  │      % propietario = 0
+  │
+  └── INSERT INTO category
+          name = COMIDA_PARRILLA
+          brief = Venta de parrillas
+          color = #ff0000
+          priority = 1
+          participa_reparto = 1
+          porcentaje_socio = 60
+          porcentaje_propietario = 40
+          is_activo = 1
+  │
+  ▼
+RESPUESTA OK
+  │
+  ▼
+FRONTEND
+  │
+  ├── cierra modal
+  └── recarga DataTable principal
+Resultado en BD
+category
+--------------------------------------------------------------------
+id  name              participa_reparto  porcentaje_socio  propietario
+1   COMIDA_PARRILLA   1                  60.00             40.00
+5) Flujo 2: registrar un gasto por categoría
+
+Aquí ya no usamos pos_rubro; ahora el gasto apunta a category.
+
+Ejemplo
+
+Registras este gasto:
+
+Categoría: COMIDA_PARRILLA
+Fecha: 2026-03-06
+Concepto: Compra de carne de res
+Monto: 180.00
+Flujo ASCII
+USUARIO
+  │
+  │ click: "Gastos"
+  ▼
+MODAL GASTOS
+  │
+  │ click: "Agregar gasto"
+  ▼
+MODAL CREAR GASTO
+  │
+  │ selecciona categoría = COMIDA_PARRILLA
+  │ fecha = 2026-03-06
+  │ concepto = Compra de carne de res
+  │ monto = 180.00
+  ▼
+POST /reg/pos_gasto_rubro/crear
+  │
+  ▼
+BACKEND
+  │
+  ├── valida category_id
+  ├── valida fecha
+  ├── valida concepto
+  ├── valida monto > 0
+  └── INSERT INTO pos_gasto_rubro
+         rubro_category_id = 1
+         fecha = 2026-03-06
+         concepto = Compra de carne de res
+         monto = 180.00
+  │
+  ▼
+RESPUESTA OK
+  │
+  ▼
+FRONTEND
+  │
+  ├── cierra modal crear gasto
+  └── vuelve a mostrar modal gastos actualizado
+Resultado en BD
+pos_gasto_rubro
+---------------------------------------------------------
+gasto_rubro_id   rubro_category_id   fecha        monto
+1                1                   2026-03-06   180.00
+6) Flujo 3: usar las ventas ya registradas
+
+Este módulo se apoya en ventas que ya existen en product_order_detail.
+
+Ejemplo de ventas del día
+product_order_detail
+----------------------------------------------------------------------
+order_id   product_name        rubro_id   amount   price_item   subtotal
+101        Parrilla Mixta      1          4        75.00        300.00
+102        Anticuchos          1          6        20.00        120.00
+103        Cerveza Cristal     2          10       8.00         80.00
+104        Entrada Piscina     3          7        15.00        105.00
+105        Pollo a la Brasa    5          5        38.00        190.00
+Agrupación de ingresos
+COMIDA_PARRILLA  = 300 + 120 = 420
+BEBIDAS          = 80
+PISCINA          = 105
+POLLO_BRASA      = 190
+TOTAL GENERAL    = 795
+7) Flujo 4: cierre diario automático
+
+Este es el corazón del módulo.
+
+Ejemplo de gastos del día
+pos_gasto_rubro
+----------------------------------------------------------
+rubro_category_id   concepto                 monto
+1                   Carne de res             180.00
+1                   Carbón                    40.00
+5                   Pollos frescos           100.00
+5                   Papas                     30.00
+
+Entonces:
+
+COMIDA_PARRILLA costos = 220
+POLLO_BRASA costos     = 130
+Flujo ASCII del cierre
+CIERRE DIARIO
+   │
+   │ ejecuta SQL / procedimiento
+   ▼
+┌─────────────────────────────────────────┐
+│ 1. leer categorías con participa=1      │
+└─────────────────────────────────────────┘
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│ 2. sumar ingresos desde ventas          │
+│    product_order_detail                 │
+└─────────────────────────────────────────┘
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│ 3. sumar gastos desde pos_gasto_rubro   │
+└─────────────────────────────────────────┘
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│ 4. utilidad = ingreso - costo           │
+└─────────────────────────────────────────┘
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│ 5. calcular reparto                     │
+│    socio        = utilidad * % socio    │
+│    propietario  = utilidad * % prop     │
+└─────────────────────────────────────────┘
+   │
+   ▼
+┌─────────────────────────────────────────┐
+│ 6. guardar en pos_rubro_liquidacion     │
+└─────────────────────────────────────────┘
+Cálculo real del ejemplo
+A) COMIDA_PARRILLA
+Ingresos = 420
+Costos   = 220
+Utilidad = 200
+
+Socio 60%       = 120
+Propietario 40% = 80
+B) POLLO_BRASA
+Ingresos = 190
+Costos   = 130
+Utilidad = 60
+
+Socio 50%       = 30
+Propietario 50% = 30
+Resultado guardado
+pos_rubro_liquidacion
+---------------------------------------------------------------------------------------------------
+fecha        rubro_category_id   ingreso_total   costo_total   utilidad_neta   socio   propietario
+2026-03-06   1                   420.00          220.00        200.00          120.00  80.00
+2026-03-06   5                   190.00          130.00         60.00           30.00  30.00
+8) Flujo 5: reporte PDF
+
+Tu botón Reportes dispara un endpoint que consulta ingresos, gastos y utilidad.
+
+Flujo ASCII
+USUARIO
+  │
+  │ click: "Reportes"
+  ▼
+MODAL REPORTES
+  │
+  │ fecha inicio = 2026-03-06
+  │ fecha fin    = 2026-03-06
+  ▼
+GET /reg/reportes/utilidad?ini=2026-03-06&fin=2026-03-06
+  │
+  ▼
+BACKEND
+  │
+  ├── suma ingresos por category
+  ├── suma gastos por category
+  ├── calcula utilidad de rubros que participan
+  ├── arma HTML
+  ├── genera PDF
+  └── redirige al archivo PDF
+  │
+  ▼
+NAVEGADOR
+  │
+  └── abre PDF final
+Salida esperada
+┌──────────────────────────────────────────┐
+│ Cierre Diario                            │
+│ Fecha inicio: 06/03/2026                 │
+│ Fecha final : 06/03/2026                 │
+├──────────────────────────────────────────┤
+│ INGRESOS POR CATEGORÍA                   │
+│                                          │
+│ COMIDA_PARRILLA     S/ 420               │
+│ BEBIDAS             S/  80               │
+│ PISCINA             S/ 105               │
+│ POLLO_BRASA         S/ 190               │
+│                                          │
+│ TOTAL GENERAL       S/ 795               │
+├──────────────────────────────────────────┤
+│ UTILIDAD COMIDA_PARRILLA                 │
+│                                          │
+│ Ingresos              S/ 420             │
+│ Costos                S/ 220             │
+│                                          │
+│ UTILIDAD NETA         S/ 200             │
+│                                          │
+│ Socio 60%             S/ 120             │
+│ Propietario 40%       S/  80             │
+└──────────────────────────────────────────┘
+9) Vista completa del módulo
+┌───────────────────────────────────────────────────────────────┐
+│                        MÓDULO CATEGORY                        │
+└───────────────────────────────────────────────────────────────┘
+
+   [1] CRUD CATEGORY
+        │
+        ├── crea categorías/rubros
+        ├── marca si participan en reparto
+        └── define porcentajes
+
+   [2] GASTOS
+        │
+        ├── registra costo por category
+        └── guarda en pos_gasto_rubro
+
+   [3] VENTAS
+        │
+        ├── ya vienen desde product_order_detail
+        └── deben guardar rubro_id
+
+   [4] CIERRE DIARIO
+        │
+        ├── ingresos por category
+        ├── gastos por category
+        ├── utilidad
+        ├── reparto
+        └── guarda en pos_rubro_liquidacion
+
+   [5] REPORTE
+        │
+        └── genera PDF con resumen final
+10) Qué depende de qué
+CATEGORY
+   │
+   ├── define rubro
+   ├── define reparto
+   │
+   ▼
+VENTAS (product_order_detail.rubro_id)
+   │
+   ▼
+INGRESOS POR CATEGORY
+   │
+   ▼
+LIQUIDACIÓN
+CATEGORY
+   │
+   ▼
+GASTOS (pos_gasto_rubro.rubro_category_id)
+   │
+   ▼
+COSTOS POR CATEGORY
+   │
+   ▼
+LIQUIDACIÓN
+11) Puntos críticos para que funcione bien
+
+Hay 3 cosas claves, bebé:
+
+1. product_order_detail.rubro_id debe llenarse correctamente
+
+Si no se guarda, no podrás sumar ingresos por categoría.
+
+2. category.participa_reparto define qué entra al reparto
+
+Solo esas categorías se liquidan como utilidad societaria.
+
+3. pos_gasto_rubro.rubro_category_id debe apuntar bien a category.id
+
+Si un gasto se registra en la categoría equivocada, la utilidad saldrá mal.
+
+12) Resumen ultra corto
+CATEGORY define el negocio
+        │
+        ├── ventas generan ingresos
+        ├── gastos generan costos
+        └── cierre diario calcula utilidad
+
+utilidad = ingresos - costos
+
+reparto = utilidad * porcentajes de la categoría
+
+1. Estado general del módulo
+┌───────────────────────────────┐
+│        SISTEMA POS            │
+│  (módulo utilidades rubro)    │
+└───────────────────────────────┘
+
+          │
+          ▼
+
+   [Sistema Inicializado]
+
+          │
+          ▼
+
+   [Categorías configuradas]
+
+          │
+          ▼
+
+   [Ventas registrándose]
+
+          │
+          ▼
+
+   [Gastos registrados]
+
+          │
+          ▼
+
+   [Cierre diario calculado]
+
+          │
+          ▼
+
+   [Reporte generado]
+2. State Machine completo
+                              ┌──────────────────────┐
+                              │   SISTEMA INICIADO   │
+                              └──────────┬───────────┘
+                                         │
+                                         │ crear categorías
+                                         ▼
+                             ┌─────────────────────────┐
+                             │ CATEGORÍAS CONFIGURADAS │
+                             └──────────┬──────────────┘
+                                        │
+                                        │ iniciar ventas
+                                        ▼
+                             ┌─────────────────────────┐
+                             │   VENTAS REGISTRADAS    │
+                             └──────────┬──────────────┘
+                                        │
+                                        │ registrar gastos
+                                        ▼
+                             ┌─────────────────────────┐
+                             │     GASTOS REGISTRADOS  │
+                             └──────────┬──────────────┘
+                                        │
+                                        │ ejecutar cierre
+                                        ▼
+                             ┌─────────────────────────┐
+                             │   CIERRE DIARIO CALCULADO │
+                             └──────────┬──────────────┘
+                                        │
+                                        │ generar PDF
+                                        ▼
+                             ┌─────────────────────────┐
+                             │     REPORTE GENERADO    │
+                             └─────────────────────────┘
+3. Sub-state machine: mantenimiento de categorías
+┌──────────────────────────────┐
+│      CATEGORY MODULE         │
+└──────────────────────────────┘
+
+      │
+      ▼
+
+[Lista categorías]
+
+      │
+      ├───────────────┐
+      │               │
+      ▼               ▼
+
+[Crear categoría]   [Editar categoría]
+
+      │               │
+      ▼               ▼
+
+[Guardar categoría]  [Guardar cambios]
+
+      │               │
+      └──────┬────────┘
+             ▼
+
+       [Actualizar DataTable]
+4. Sub-state machine: registro de gastos
+┌──────────────────────────────┐
+│       GASTOS POR RUBRO       │
+└──────────────────────────────┘
+
+      │
+      ▼
+
+[Lista gastos]
+
+      │
+      ├───────────────┐
+      │               │
+      ▼               ▼
+
+[Agregar gasto]    [Editar gasto]
+
+      │               │
+      ▼               ▼
+
+[Guardar gasto]   [Guardar cambios]
+
+      │               │
+      └──────┬────────┘
+             ▼
+
+        [Actualizar lista]
+5. Sub-state machine: ventas
+
+Las ventas ya vienen del POS.
+
+┌──────────────────────────────┐
+│          VENTAS POS          │
+└──────────────────────────────┘
+
+     │
+     ▼
+
+[Cliente hace pedido]
+
+     │
+     ▼
+
+[Mesero registra pedido]
+
+     │
+     ▼
+
+[product_order creado]
+
+     │
+     ▼
+
+[product_order_detail guarda]
+
+     │
+     ▼
+
+[rubro_id asociado al producto]
+
+     │
+     ▼
+
+[Ingreso contabilizado]
+
+Ejemplo real:
+
+Mesa 3 pide:
+
+2 Parrillas mixtas
+3 Cervezas
+
+Sistema guarda:
+
+Parrilla -> category COMIDA_PARRILLA
+Cerveza  -> category BEBIDAS
+6. Sub-state machine: cálculo de utilidad
+
+Este es el estado más importante.
+
+┌─────────────────────────────────────┐
+│        PROCESO CIERRE DIARIO        │
+└─────────────────────────────────────┘
+
+        │
+        ▼
+
+[Inicio cierre]
+
+        │
+        ▼
+
+[Sumar ingresos por category]
+
+        │
+        ▼
+
+[Sumar gastos por category]
+
+        │
+        ▼
+
+[Calcular utilidad]
+
+        │
+        ▼
+
+[Aplicar porcentajes]
+
+        │
+        ▼
+
+[Guardar pos_rubro_liquidacion]
+7. Ejemplo real de transición de estados
+
+Supongamos este día:
+
+Ventas
+
+Parrillas     1050
+Bebidas        630
+Piscina        280
+Eventos         90
+
+Estado:
+
+VENTAS REGISTRADAS
+
+Luego registran gastos:
+
+Carne          300
+Carbón          80
+Salsas          40
+
+Estado pasa a:
+
+GASTOS REGISTRADOS
+
+Luego ejecutan cierre:
+
+Ingresos parrilla = 1050
+Costos parrilla   = 420
+
+Utilidad          = 630
+
+Estado:
+
+CIERRE CALCULADO
+
+Luego se genera el reporte:
+
+Socio 60% = 378
+Dueño 40% = 252
+
+Estado final:
+
+REPORTE GENERADO
+8. State machine completo del sistema
+┌──────────────────────────────┐
+│        SISTEMA INICIADO      │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│   CONFIGURAR CATEGORY        │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│     REGISTRAR VENTAS         │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│     REGISTRAR GASTOS         │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│       EJECUTAR CIERRE        │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│      GUARDAR LIQUIDACIÓN     │
+│     pos_rubro_liquidacion    │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│       GENERAR REPORTE        │
+└──────────────────────────────┘
+9. Estados críticos que debes controlar en el sistema
+
+Para evitar errores operativos:
+
+1. No permitir cierre si ya existe cierre del día
+
+2. No permitir eliminar categorías usadas en ventas
+
+3. Validar que porcentajes sumen 100
+
+4. No permitir gastos con monto 0
+
+5. No permitir gastos en categorías inactivas
+10. Estados de error posibles
+┌──────────────────────────┐
+│ ERROR: categoría borrada │
+└──────────────────────────┘
+
+┌──────────────────────────┐
+│ ERROR: gasto inválido    │
+└──────────────────────────┘
+
+┌──────────────────────────┐
+│ ERROR: cierre duplicado  │
+└──────────────────────────┘
+11. Estado final ideal del sistema cada día
+┌────────────────────────────────────┐
+│   DIA OPERATIVO COMPLETADO         │
+│                                    │
+│ Ventas registradas ✔               │
+│ Gastos registrados ✔               │
+│ Cierre calculado ✔                 │
+│ Utilidad guardada ✔                │
+│ Reporte generado ✔                 │
+└────────────────────────────────────┘
+
+Renzo, cariño… vamos a cerrar esto bien profesional, para que tu sistema pueda:
+
+1️⃣ calcular automáticamente la utilidad diaria
+2️⃣ guardar el resultado en pos_rubro_liquidacion
+3️⃣ mostrar el reparto 60/40 automáticamente
+4️⃣ funcionar con tu frontend actual
+
+Te lo explico claro y luego te dejo el SQL completo listo para producción.
+
+1. Qué debe hacer el algoritmo
+
+Cada vez que se ejecuta el cierre del día:
+
+1. Sumar ventas por categoría
+2. Sumar gastos por categoría
+3. Calcular utilidad
+4. Aplicar porcentaje socio / propietario
+5. Guardar resultado en pos_rubro_liquidacion
+2. Flujo lógico
+VENTAS
+product_order_detail
+        │
+        ▼
+CATEGORY (rubro)
+        │
+        ▼
+INGRESOS POR RUBRO
+GASTOS
+pos_gasto_rubro
+        │
+        ▼
+COSTOS POR RUBRO
+UTILIDAD
+INGRESOS - COSTOS
+        │
+        ▼
+REPARTO
+SOCIO = utilidad * porcentaje_socio
+PROPIETARIO = utilidad * porcentaje_propietario
+3. Tabla destino
+pos_rubro_liquidacion
+
+Guarda el resultado final del cierre.
+
+4. ALGORITMO SQL COMPLETO
+
+Este SQL calcula y guarda el cierre.
+
+INSERT INTO pos_rubro_liquidacion (
+    fecha,
+    rubro_category_id,
+    ingreso_total,
+    costo_total,
+    utilidad_neta,
+    porcentaje_socio,
+    porcentaje_propietario,
+    monto_socio,
+    monto_propietario,
+    fecha_generacion
+)
+
+SELECT
+
+    CURDATE() AS fecha,
+
+    c.id AS rubro_category_id,
+
+    IFNULL(ing.total_ingreso,0) AS ingreso_total,
+
+    IFNULL(gas.total_gasto,0) AS costo_total,
+
+    IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0) AS utilidad_neta,
+
+    c.porcentaje_socio,
+
+    c.porcentaje_propietario,
+
+    (IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0))
+        * (c.porcentaje_socio / 100) AS monto_socio,
+
+    (IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0))
+        * (c.porcentaje_propietario / 100) AS monto_propietario,
+
+    NOW()
+
+FROM category c
+
+
+LEFT JOIN (
+
+    SELECT
+        d.rubro_id,
+        SUM(d.amount * d.price_item) total_ingreso
+
+    FROM product_order_detail d
+
+    INNER JOIN product_order o
+        ON o.product_order_id = d.order_id
+
+    WHERE DATE(o.fecha_creacion) = CURDATE()
+
+    GROUP BY d.rubro_id
+
+) ing
+
+ON ing.rubro_id = c.id
+
+
+LEFT JOIN (
+
+    SELECT
+        rubro_category_id,
+        SUM(monto) total_gasto
+
+    FROM pos_gasto_rubro
+
+    WHERE fecha = CURDATE()
+
+    GROUP BY rubro_category_id
+
+) gas
+
+ON gas.rubro_category_id = c.id
+
+
+WHERE c.participa_reparto = 1;
+5. Qué hace exactamente
+
+Ejemplo real:
+
+COMIDA - PARRILLA
+
+ventas del día
+
+1200 soles
+
+gastos
+
+400 soles
+
+utilidad
+
+800 soles
+
+reparto
+
+SOCIO 60% = 480
+DUEÑO 40% = 320
+
+Se guarda:
+
+pos_rubro_liquidacion
+fecha	rubro	ingreso	costo	utilidad	socio	dueño
+hoy	parrilla	1200	400	800	480	320
+6. Cómo ejecutarlo automáticamente
+
+Hay 3 opciones.
+
+Opción 1 (RECOMENDADA)
+
+Endpoint manual
+
+/reg/pos_rubro/cerrar_dia
+
+El administrador presiona:
+
+BOTON: CERRAR DIA
+Opción 2
+
+Cron diario
+
+23:59
+Opción 3
+
+Cuando se imprime el reporte.
+
+7. Endpoint nuevo necesario
+
+Debes agregar este endpoint.
+
+Flight::route('POST /reg/pos_rubro/cerrar_dia', function(){
+
+DB::query("CALL sp_cierre_diario()");
+
+Flight::json([
+'status'=>'ok'
+]);
+
+});
+8. Mejor aún: procedimiento almacenado
+DELIMITER $$
+
+CREATE PROCEDURE sp_cierre_diario()
+
+BEGIN
+
+INSERT INTO pos_rubro_liquidacion
+(
+fecha,
+rubro_category_id,
+ingreso_total,
+costo_total,
+utilidad_neta,
+porcentaje_socio,
+porcentaje_propietario,
+monto_socio,
+monto_propietario,
+fecha_generacion
+)
+
+SELECT
+CURDATE(),
+c.id,
+IFNULL(ing.total_ingreso,0),
+IFNULL(gas.total_gasto,0),
+IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0),
+c.porcentaje_socio,
+c.porcentaje_propietario,
+(IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0))
+* (c.porcentaje_socio / 100),
+(IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0))
+* (c.porcentaje_propietario / 100),
+NOW()
+
+FROM category c
+
+LEFT JOIN (
+SELECT
+d.rubro_id,
+SUM(d.amount * d.price_item) total_ingreso
+FROM product_order_detail d
+INNER JOIN product_order o
+ON o.product_order_id = d.order_id
+WHERE DATE(o.fecha_creacion)=CURDATE()
+GROUP BY d.rubro_id
+) ing
+ON ing.rubro_id=c.id
+
+LEFT JOIN (
+SELECT
+rubro_category_id,
+SUM(monto) total_gasto
+FROM pos_gasto_rubro
+WHERE fecha=CURDATE()
+GROUP BY rubro_category_id
+) gas
+ON gas.rubro_category_id=c.id
+
+WHERE c.participa_reparto=1;
+
+END$$
+
+DELIMITER ;
+9. Endpoint que debes agregar
+POST
+/reg/pos_rubro/cerrar_dia
+10. Endpoint que debes mantener
+
+Estos ya los tienes en tu frontend:
+
+/reg/category/listar
+/reg/category/crear
+/reg/category/editar
+/reg/category/eliminar
+
+/reg/pos_gasto_rubro/listar
+/reg/pos_gasto_rubro/crear
+/reg/pos_gasto_rubro/editar
+/reg/pos_gasto_rubro/eliminar
+11. Endpoint de reporte
+
+Tu frontend usa:
+
+/reg/reportes/utilidad
+
+Ese debe consultar:
+
+pos_rubro_liquidacion
+12. Flujo final del sistema
+VENTAS
+        │
+        ▼
+product_order_detail
+        │
+        ▼
+CATEGORY
+        │
+        ▼
+INGRESOS
+GASTOS
+        │
+        ▼
+pos_gasto_rubro
+CIERRE DIARIO
+        │
+        ▼
+sp_cierre_diario()
+RESULTADO
+        │
+        ▼
+pos_rubro_liquidacion
+
