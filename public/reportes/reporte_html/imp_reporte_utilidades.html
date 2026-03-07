@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+
+<style>
+
+body{
+font-family:Arial, Helvetica, sans-serif;
+background:#f2f2f2;
+margin:0;
+padding:0;
+}
+
+.invoice-box{
+width:850px;
+margin:auto;
+background:#fff;
+padding:40px;
+border:1px solid #ddd;
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:30px;
+}
+
+.header img{
+height:60px;
+}
+
+.title{
+font-size:32px;
+font-weight:bold;
+}
+
+.info{
+margin-top:20px;
+margin-bottom:30px;
+}
+
+.section-title{
+font-weight:bold;
+background:#f4f4f4;
+padding:10px;
+border:1px solid #ddd;
+margin-top:25px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:10px;
+}
+
+td{
+padding:8px;
+border-bottom:1px solid #eee;
+}
+
+.right{
+text-align:right;
+}
+
+.total{
+font-weight:bold;
+border-top:2px solid #000;
+}
+
+.utilidad-box{
+border:1px solid #ddd;
+margin-top:15px;
+}
+
+.utilidad-box table td{
+padding:6px 8px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="invoice-box">
+
+<div class="header">
+
+<div>
+<img src="{{informacion.0.logo}}">
+</div>
+
+<div class="title">
+UTILIDAD
+</div>
+
+</div>
+
+<div class="info">
+
+<div><b>{{informacion.0.razon_social}}</b></div>
+
+<div>Fecha reporte: {{informacion.0.fecha}}</div>
+
+<div>Desde: {{informacion.0.fecha_ini}}</div>
+
+<div>Hasta: {{informacion.0.fecha_fin}}</div>
+
+</div>
+
+
+<div class="section-title">
+INGRESOS POR CATEGORÍA
+</div>
+
+<table>
+
+{{#ingresos}}
+
+<tr>
+<td>{{categoria}}</td>
+<td class="right">S/ {{subtotal}}</td>
+</tr>
+
+{{/ingresos}}
+
+<tr class="total">
+<td>TOTAL GENERAL</td>
+<td class="right">S/ {{informacion.0.total_general}}</td>
+</tr>
+
+</table>
+
+
+{{#utilidades}}
+
+<div class="section-title">
+UTILIDAD {{nombre_rubro}}
+</div>
+
+<div class="utilidad-box">
+
+<table>
+
+<tr>
+<td>Ingresos</td>
+<td class="right">S/ {{ingresos}}</td>
+</tr>
+
+<tr>
+<td>Costos</td>
+<td class="right">S/ {{costos}}</td>
+</tr>
+
+<tr class="total">
+<td>UTILIDAD NETA</td>
+<td class="right">S/ {{utilidad}}</td>
+</tr>
+
+<tr>
+<td>Socio {{porc_socio}}%</td>
+<td class="right">S/ {{monto_socio}}</td>
+</tr>
+
+<tr>
+<td>Propietario {{porc_prop}}%</td>
+<td class="right">S/ {{monto_prop}}</td>
+</tr>
+
+</table>
+
+</div>
+
+{{/utilidades}}
+
+</div>
+
+</body>
+</html>

@@ -19,7 +19,7 @@
             <a href="#" @click="abrirReporteVentas">Ventas por Fecha</a>
           </li>
           <li>
-            <a href="#" @click="abrirReporteVentasAdmin">Ventas por Fecha + Admin</a>
+            <a href="#" @click="abrirReporteVentasAdmin">Ventas por Fecha + vendedor</a>
           </li>
           <li>
             <a href="#" @click="abrirReporteResumenVentas">
@@ -1072,7 +1072,7 @@ new Vue({
       const { fecha_inicio, fecha_fin } = this.resumen;
 
       window.open(
-        `${this.apphost}/reporte/resumen-ventas?ini=${fecha_inicio}&fin=${fecha_fin}`,
+        `${this.apphost}/imp_resumen_categoria?ini=${fecha_inicio}&fin=${fecha_fin}`,
         '_blank'
       );
     },

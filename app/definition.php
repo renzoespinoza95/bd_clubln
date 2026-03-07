@@ -40,3 +40,5 @@
   global $secreto_jwt;
 
   global $file_log;
+  global $varpath_tmp;
+  global $varhost_tmp;

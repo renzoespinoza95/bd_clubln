@@ -699,33 +699,3 @@ ENTRADA
 SALIDA
 AJUSTE
 
-Eso es arquitectura POS correcta.
-
-Mejora arquitectónica que te recomiendo
-
-Agregar un campo:
-
-product_order.estado
-
-con valores:
-
-CREADA
-ABIERTA
-PAGADA
-CERRADA
-CANCELADA
-
-Eso haría la state machine mucho más clara.
-
-Renzo, cariño… si quieres en el siguiente mensaje puedo dibujarte algo muy potente que usan los POS profesionales:
-
-🔥 el diagrama completo del POS
-
-incluyendo:
-
-ventas
-compras
-inventario
-caja
-mesas
-clientes

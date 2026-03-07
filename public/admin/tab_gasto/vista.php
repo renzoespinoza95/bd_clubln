@@ -205,35 +205,35 @@
       </select>
     </div>
   </div>
-    <div class="control-group">
-      <label>Tipo de costo</label>
-      <div class="controls">
-        <v-select
-        :options="tiposCosto"
-        label="nombre"
-        :reduce="o => o.tipo_costo_category_id"
-        v-model="nuevoGasto.tipo_costo_category_id">
-      </v-select>
-    </div>
-  </div>
   <div class="control-group">
-    <label>Fecha</label>
+    <label>Tipo de costo</label>
     <div class="controls">
-      <input type="date" v-model="nuevoGasto.fecha">
-    </div>
+      <v-select
+      :options="tiposCosto"
+      label="nombre"
+      :reduce="o => o.tipo_costo_category_id"
+      v-model="nuevoGasto.tipo_costo_category_id">
+    </v-select>
   </div>
-  <div class="control-group">
-    <label>Concepto</label>
-    <div class="controls">
-      <input v-model="nuevoGasto.concepto" class="input-xxlarge">
-    </div>
+</div>
+<div class="control-group">
+  <label>Fecha</label>
+  <div class="controls">
+    <input type="date" v-model="nuevoGasto.fecha">
   </div>
-  <div class="control-group">
-    <label>Monto</label>
-    <div class="controls">
-      <input type="number" step="0.01" v-model.number="nuevoGasto.monto">
-    </div>
+</div>
+<div class="control-group">
+  <label>Concepto</label>
+  <div class="controls">
+    <input v-model="nuevoGasto.concepto" class="input-xxlarge">
   </div>
+</div>
+<div class="control-group">
+  <label>Monto</label>
+  <div class="controls">
+    <input type="number" step="0.01" v-model.number="nuevoGasto.monto">
+  </div>
+</div>
 </div>
 <div class="modal-footer">
   <button class="btn btn-primary" @click="crearGasto">
@@ -346,10 +346,52 @@
 </div>
 
 
+<div id="modalReportes" class="modal hide fade">
+
+  <div class="modal-header">
+    <h3>Reportes</h3>
+  </div>
+
+  <div class="modal-body">
+
+    <div class="control-group">
+      <label>Fecha inicio</label>
+      <div class="controls">
+        <input type="date" v-model="reporte.ini">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Fecha término</label>
+      <div class="controls">
+        <input type="date" v-model="reporte.fin">
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+
+    <button class="btn btn-primary" @click="generarPDF">
+      PDF
+    </button>
+
+    <button class="btn btn-warning" @click="cerrarDia">
+      Cerrar día
+    </button>
+
+    <button class="btn" data-dismiss="modal">
+      Cancelar
+    </button>
+
+  </div>
+
+</div>
+
 </div>
 </div>
 <script>
-Vue.component('v-select', VueSelect.VueSelect);
+  Vue.component('v-select', VueSelect.VueSelect);
   new Vue({
     el:'#appCategory',
     data:{
@@ -367,13 +409,17 @@ Vue.component('v-select', VueSelect.VueSelect);
         porcentaje_propietario:40,
         is_activo:1
       },
+      reporte:{
+        ini:'',
+        fin:''
+      },
       form:{},
       nuevoGasto:{
-          rubro_category_id:null,
-          tipo_costo_category_id:null,
-          fecha:'',
-          concepto:'',
-          monto:null
+        rubro_category_id:null,
+        tipo_costo_category_id:null,
+        fecha:'',
+        concepto:'',
+        monto:null
       },     
 
 
@@ -527,10 +573,10 @@ Vue.component('v-select', VueSelect.VueSelect);
         })
       },
       cargarTiposCosto(){
-      axios.get(`${this.apphost}/reg/pos_tipo_costo_category/listar`)
-      .then(r=>{
-      this.tiposCosto = r.data.data;
-      })
+        axios.get(`${this.apphost}/reg/pos_tipo_costo_category/listar`)
+        .then(r=>{
+          this.tiposCosto = r.data.data;
+        })
       },
       abrirModalGastos(){
         this.listarGastos()
@@ -568,38 +614,64 @@ Vue.component('v-select', VueSelect.VueSelect);
         });
 
       },
+      generarPDF(){
+
+        let url = `${this.apphost}/reg/reportes/utilidad?ini=${this.reporte.ini}&fin=${this.reporte.fin}`
+
+        window.open(url)
+
+      },
+      cerrarDia(){
+
+        if(!confirm("¿Seguro que desea ejecutar el cierre del día?")){
+          return
+        }
+
+        axios.post(`${this.apphost}/reg/pos_rubro/cerrar_dia`)
+        .then(()=>{
+
+          alert("Cierre diario ejecutado correctamente")
+
+        })
+
+      },
       abrirModalReportes(){
-        window.open(`${this.apphost}/reg/reportes/utilidad`)
+
+        this.reporte.ini=this.hoy()
+        this.reporte.fin=this.hoy()
+
+        $("#modalReportes").modal("show")
+
       }
     },
     mounted() {
 
-        this.listarCategorias();
-        this.cargarCategoriasActivas();
-        this.cargarTiposCosto();
+      this.listarCategorias();
+      this.cargarCategoriasActivas();
+      this.cargarTiposCosto();
 
-        $("#tablaCategory").on("click", ".editarCategoria", (e) => {
-            let id = $(e.currentTarget).data("id");
-            let cat = this.categorias.find(c => c.id == id);
-            this.abrirModalEditar(cat);
-        });
+      $("#tablaCategory").on("click", ".editarCategoria", (e) => {
+        let id = $(e.currentTarget).data("id");
+        let cat = this.categorias.find(c => c.id == id);
+        this.abrirModalEditar(cat);
+      });
 
-        $("#tablaGastos").on("click", ".editarGasto", (e) => {
-            let id = $(e.currentTarget).data("id");
-            let gasto = this.gastos.find(g => g.gasto_rubro_id == id);
-            console.log(gasto);
+      $("#tablaGastos").on("click", ".editarGasto", (e) => {
+        let id = $(e.currentTarget).data("id");
+        let gasto = this.gastos.find(g => g.gasto_rubro_id == id);
+        console.log(gasto);
             // aquí luego abrirás modal editar gasto
-        });
+      });
 
-        $("#tablaGastos").on("click",".editarGasto",(e)=>{
+      $("#tablaGastos").on("click",".editarGasto",(e)=>{
 
-          let id=$(e.currentTarget).data("id")
+        let id=$(e.currentTarget).data("id")
 
-          let gasto=this.gastos.find(g=>g.gasto_rubro_id==id)
+        let gasto=this.gastos.find(g=>g.gasto_rubro_id==id)
 
-          this.abrirModalEditarGasto(gasto)
+        this.abrirModalEditarGasto(gasto)
 
-        });
+      });
 
     }
   })

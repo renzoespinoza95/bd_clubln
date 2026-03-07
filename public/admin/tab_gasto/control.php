@@ -431,6 +431,7 @@ Flight::route('GET /reg/reportes/utilidad', function () {
     global $wkh_pdf, $varhost;
 
     $req = Flight::request();
+
     $ini = trim($req->query->ini ?? $_GET['ini'] ?? date('Y-m-d'));
     $fin = trim($req->query->fin ?? $_GET['fin'] ?? date('Y-m-d'));
 
@@ -440,7 +441,10 @@ Flight::route('GET /reg/reportes/utilidad', function () {
 
     DB::query("SET NAMES 'utf8mb4'");
 
-    // INGRESOS POR CATEGORY
+    /* ==============================
+       INGRESOS POR CATEGORY
+    ============================== */
+
     $ingresos = DB::query("
         SELECT
             c.id,
@@ -449,131 +453,137 @@ Flight::route('GET /reg/reportes/utilidad', function () {
             c.porcentaje_socio,
             c.porcentaje_propietario,
             SUM(d.amount * d.price_item) AS subtotal
+
         FROM product_order_detail d
+
         INNER JOIN product_order o
             ON o.product_order_id = d.order_id
+
+        INNER JOIN product_category pc
+            ON pc.product_id = d.product_id
+
         INNER JOIN category c
-            ON c.id = d.rubro_id
+            ON c.id = pc.category_id
+
         WHERE DATE(o.fecha_creacion) BETWEEN %s AND %s
-        GROUP BY c.id, c.name, c.participa_reparto, c.porcentaje_socio, c.porcentaje_propietario
+
+        GROUP BY
+            c.id,
+            c.name,
+            c.participa_reparto,
+            c.porcentaje_socio,
+            c.porcentaje_propietario
+
         ORDER BY c.name ASC
     ", $ini, $fin);
 
     $total_general = 0;
-    $filas_ingresos = '';
-
-    $rubro_reparto = null;
-    $ingreso_reparto = 0;
+    $lista_ingresos = [];
 
     foreach ($ingresos as $r) {
+
         $subtotal = (float)$r['subtotal'];
         $total_general += $subtotal;
 
-        if ((int)$r['participa_reparto'] === 1 && $rubro_reparto === null) {
-            $rubro_reparto = $r;
-            $ingreso_reparto = $subtotal;
+        $lista_ingresos[] = [
+            'categoria' => $r['name'],
+            'subtotal'  => number_format($subtotal,2)
+        ];
+    }
+
+    /* ==============================
+       UTILIDADES POR RUBRO
+    ============================== */
+
+    $utilidades = [];
+
+    foreach ($ingresos as $r) {
+
+        if ((int)$r['participa_reparto'] !== 1) {
+            continue;
         }
 
-        $filas_ingresos .= '
-            <tr>
-              <td style="padding:6px 10px;">'.htmlspecialchars($r['name']).'</td>
-              <td style="padding:6px 10px; text-align:right;">S/ '.number_format($subtotal, 2).'</td>
-            </tr>';
-    }
+        $ingreso = (float)$r['subtotal'];
 
-    $costo_reparto = 0;
-    $utilidad_neta = 0;
-    $monto_socio = 0;
-    $monto_propietario = 0;
-    $porcentaje_socio = 0;
-    $porcentaje_propietario = 0;
-    $nombre_rubro_reparto = 'No configurado';
-
-    if ($rubro_reparto) {
-        $nombre_rubro_reparto = $rubro_reparto['name'];
-        $porcentaje_socio = (float)$rubro_reparto['porcentaje_socio'];
-        $porcentaje_propietario = (float)$rubro_reparto['porcentaje_propietario'];
-
-        $costo_reparto = (float) DB::queryFirstField("
-            SELECT IFNULL(SUM(monto), 0)
+        $costo = (float) DB::queryFirstField("
+            SELECT IFNULL(SUM(monto),0)
             FROM pos_gasto_rubro
-            WHERE rubro_category_id = %i
-              AND fecha BETWEEN %s AND %s
-        ", $rubro_reparto['id'], $ini, $fin);
+            WHERE rubro_category_id=%i
+            AND fecha BETWEEN %s AND %s
+        ", $r['id'], $ini, $fin);
 
-        $utilidad_neta = $ingreso_reparto - $costo_reparto;
-        $monto_socio = $utilidad_neta * ($porcentaje_socio / 100);
+        $utilidad_neta = $ingreso - $costo;
+
+        $porcentaje_socio       = (float)$r['porcentaje_socio'];
+        $porcentaje_propietario = (float)$r['porcentaje_propietario'];
+
+        $monto_socio       = $utilidad_neta * ($porcentaje_socio / 100);
         $monto_propietario = $utilidad_neta * ($porcentaje_propietario / 100);
+
+        $utilidades[] = [
+            'nombre_rubro' => $r['name'],
+            'ingresos'     => number_format($ingreso,2),
+            'costos'       => number_format($costo,2),
+            'utilidad'     => number_format($utilidad_neta,2),
+            'porc_socio'   => number_format($porcentaje_socio,2),
+            'porc_prop'    => number_format($porcentaje_propietario,2),
+            'monto_socio'  => number_format($monto_socio,2),
+            'monto_prop'   => number_format($monto_propietario,2)
+        ];
     }
 
-    $fini = date('d/m/Y', strtotime($ini));
-    $ffin = date('d/m/Y', strtotime($fin));
+    /* ==============================
+       DATA MUSTACHE
+    ============================== */
 
-    $html = '
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#222;}
-        .box{border:1px solid #222;width:700px;margin:0 auto;}
-        .head{padding:10px 15px;border-bottom:1px solid #222;}
-        .section-title{font-weight:bold;border-top:1px solid #222;border-bottom:1px solid #222;padding:8px 15px;background:#f3f3f3;}
-        table{width:100%;border-collapse:collapse;}
-        .total-row td{font-weight:bold;border-top:1px solid #222;}
-      </style>
-    </head>
-    <body>
-      <div class="box">
-        <div class="head">
-          <div><strong>Cierre Diario</strong></div>
-          <div>Fecha inicio: '.$fini.'</div>
-          <div>Fecha final : '.$ffin.'</div>
-        </div>
+    $template_data = [
 
-        <div class="section-title">INGRESOS POR CATEGORÍA</div>
-        <table>
-          '.$filas_ingresos.'
-          <tr class="total-row">
-            <td style="padding:6px 10px;">TOTAL GENERAL</td>
-            <td style="padding:6px 10px; text-align:right;">S/ '.number_format($total_general, 2).'</td>
-          </tr>
-        </table>
+        'informacion' => [[
+            'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
+            'logo'           => $varhost.'/public/admin/login/images/logo_login.png',
+            'titulo_reporte' => 'REPORTE DE UTILIDADES',
+            'fecha'          => date('d/m/Y H:i'),
+            'fecha_ini'      => date('d/m/Y', strtotime($ini)),
+            'fecha_fin'      => date('d/m/Y', strtotime($fin)),
+            'total_general'  => number_format($total_general,2)
+        ]],
 
-        <div class="section-title">UTILIDAD '.htmlspecialchars(strtoupper($nombre_rubro_reparto)).'</div>
-        <table>
-          <tr>
-            <td style="padding:6px 10px;">Ingresos</td>
-            <td style="padding:6px 10px; text-align:right;">S/ '.number_format($ingreso_reparto, 2).'</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 10px;">Costos</td>
-            <td style="padding:6px 10px; text-align:right;">S/ '.number_format($costo_reparto, 2).'</td>
-          </tr>
-          <tr class="total-row">
-            <td style="padding:6px 10px;">UTILIDAD NETA</td>
-            <td style="padding:6px 10px; text-align:right;">S/ '.number_format($utilidad_neta, 2).'</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 10px;">Socio '.number_format($porcentaje_socio,2).'%</td>
-            <td style="padding:6px 10px; text-align:right;">S/ '.number_format($monto_socio, 2).'</td>
-          </tr>
-          <tr>
-            <td style="padding:6px 10px;">Propietario '.number_format($porcentaje_propietario,2).'%</td>
-            <td style="padding:6px 10px; text-align:right;">S/ '.number_format($monto_propietario, 2).'</td>
-          </tr>
-        </table>
-      </div>
-    </body>
-    </html>';
+        'ingresos'   => $lista_ingresos,
+        'utilidades' => $utilidades
 
-    $pdf = VARPATH . '/public/reportes/archivos_temporales/utilidad_' . time() . '.pdf';
+    ];
+
+    /* ==============================
+       RENDER HTML
+    ============================== */
+
+    $html = (new Mustache)->render(
+
+        file_get_contents(
+            VARPATH.'/public/reportes/reporte_html/imp_reporte_utilidades.html'
+        ),
+
+        $template_data
+    );
+
+    /* ==============================
+       GENERAR PDF
+    ============================== */
+
+    $pdf = $varpath_tmp . 'utilidad_'.time().'.pdf';
 
     $wkh_pdf->addPage($html);
+
     exec($wkh_pdf->getCommand($pdf));
 
+    /* ==============================
+       REDIRECT
+    ============================== */
+
     Flight::redirect(
-        $varhost . '/public/reportes/archivos_temporales/' . basename($pdf)
+        $varhost_tmp . basename($pdf)
     );
+
 });
 
 Flight::route('GET /reg/pos_tipo_costo_category/listar', function(){
@@ -609,5 +619,84 @@ Flight::route('POST /reg/pos_gasto_rubro/editar', function(){
     ],'gasto_rubro_id=%i',$p['gasto_rubro_id']);
 
     Flight::json(['status'=>'ok']);
+
+});
+
+
+Flight::route('POST /reg/pos_rubro/cerrar_dia', function(){
+
+DB::query("
+
+INSERT INTO pos_rubro_liquidacion
+(
+    fecha,
+    rubro_category_id,
+    ingreso_total,
+    costo_total,
+    utilidad_neta,
+    porcentaje_socio,
+    porcentaje_propietario,
+    monto_socio,
+    monto_propietario,
+    fecha_generacion
+)
+
+SELECT
+    CURDATE(),
+    c.id,
+    IFNULL(ing.total_ingreso,0),
+    IFNULL(gas.total_gasto,0),
+    IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0),
+    c.porcentaje_socio,
+    c.porcentaje_propietario,
+    (IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0)) * (c.porcentaje_socio / 100),
+    (IFNULL(ing.total_ingreso,0) - IFNULL(gas.total_gasto,0)) * (c.porcentaje_propietario / 100),
+    NOW()
+
+FROM category c
+
+LEFT JOIN (
+
+    SELECT
+        pc.category_id,
+        SUM(d.amount * d.price_item) total_ingreso
+
+    FROM product_order_detail d
+
+    INNER JOIN product_order o
+        ON o.product_order_id = d.order_id
+
+    INNER JOIN product_category pc
+        ON pc.product_id = d.product_id
+
+    WHERE DATE(o.fecha_creacion)=CURDATE()
+
+    GROUP BY pc.category_id
+
+) ing
+ON ing.category_id = c.id
+
+LEFT JOIN (
+
+    SELECT
+        rubro_category_id,
+        SUM(monto) total_gasto
+
+    FROM pos_gasto_rubro
+
+    WHERE fecha=CURDATE()
+
+    GROUP BY rubro_category_id
+
+) gas
+ON gas.rubro_category_id = c.id
+
+WHERE c.participa_reparto = 1
+
+");
+
+Flight::json([
+    'status'=>'ok'
+]);
 
 });

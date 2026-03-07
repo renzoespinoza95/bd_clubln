@@ -694,7 +694,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
     // ===============================
     global $wkh_pdf;
 
-    $pdf = VARPATH . '/public/reportes/archivos_temporales/ventas_'
+    $pdf = $varpath_tmp . 'ventas_'
          . time() . '.pdf';
 
     $wkh_pdf->addPage($html);
@@ -704,7 +704,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
     // REDIRECT DESCARGA
     // ===============================
     Flight::redirect(
-        $varhost . '/public/reportes/archivos_temporales/' . basename($pdf)
+        $varhost_tmp . basename($pdf)
     );
 });
 
@@ -1010,7 +1010,7 @@ Flight::route('GET /imp_ventas_fecha_admin', function(){
     // ===============================
     global $wkh_pdf;
 
-    $pdf = VARPATH . '/public/reportes/archivos_temporales/ventas_admin_'
+    $pdf = $varpath_tmp . 'ventas_admin_'
          . time() . '.pdf';
 
     $wkh_pdf->addPage($html);
@@ -1020,7 +1020,7 @@ Flight::route('GET /imp_ventas_fecha_admin', function(){
     // DESCARGA
     // ===============================
     Flight::redirect(
-        $varhost . '/public/reportes/archivos_temporales/' . basename($pdf)
+        $varhost_tmp . basename($pdf)
     );
 });
 
@@ -1181,105 +1181,6 @@ Flight::route('POST /ventas/liberarMesaOcupada', function(){
     }
 });
 
-
-Flight::route('GET /reporte/resumen-ventas', function () {
-
-    include DEFINITION;
-    login_admin::autentificar_administrador();
-    global $wkh_pdf, $varhost;
-
-    $ini = trim($_GET['ini'] ?? '');
-    $fin = trim($_GET['fin'] ?? '');
-
-    if ($ini === '' || $fin === '') {
-        Flight::halt(400, 'Fechas requeridas');
-    }
-
-    DB::query("SET NAMES 'utf8mb4'");
-
-    // ===============================
-    // 1️⃣ PAGO DIRECTO (modo 1)
-    // ===============================
-    $pago_directo = DB::queryFirstField("
-        SELECT IFNULL(SUM(total_fees),0)
-        FROM product_order
-        WHERE modo_order_id = 1
-          AND fecha_creacion BETWEEN %s AND %s
-    ", $ini.' 00:00:00', $fin.' 23:59:59');
-
-    // ===============================
-    // 2️⃣ MESAS PAGADAS (modo 3)
-    // ===============================
-    $rows = DB::query("
-        SELECT 
-            m.nombre AS mesa,
-            SUM(po.total_fees) AS total
-        FROM product_order po
-        INNER JOIN mesa m ON m.mesa_id = po.mesa_id
-        WHERE po.modo_order_id = 3
-          AND po.fecha_creacion BETWEEN %s AND %s
-        GROUP BY m.mesa_id
-        ORDER BY m.nombre
-    ", $ini.' 00:00:00', $fin.' 23:59:59');
-
-    $total_mesas = array_sum(array_column($rows, 'total'));
-    $total_general = $pago_directo + $total_mesas;
-
-    // ===============================
-    // 3️⃣ DATA PARA MUSTACHE
-    // ===============================
-    $template_data = [
-        'fecha_ini'     => date('d/m/Y', strtotime($ini)),
-        'fecha_fin'     => date('d/m/Y', strtotime($fin)),
-        'pago_directo'  => number_format($pago_directo, 2),
-        'mesas'         => array_map(function($r){
-            return [
-                'mesa'  => $r['mesa'],
-                'total' => number_format($r['total'], 2)
-            ];
-        }, $rows),
-        'total_general' => number_format($total_general, 2)
-    ];
-
-    // ===============================
-    // 4️⃣ RENDER HTML
-    // ===============================
-    $html = (new Mustache)->render(
-        file_get_contents(
-            VARPATH . '/public/reportes/reporte_html/imp_resumen_ventas_dia.html'
-        ),
-        $template_data
-    );
-
-    // ===============================
-    // 5️⃣ ARCHIVO TEMPORAL (HTML)
-    // ===============================
-    $tmp_html = VARPATH . '/public/reportes/archivos_temporales/tmp_resumen.html';
-    file_put_contents($tmp_html, $html);
-
-    // ===============================
-    // 6️⃣ GENERAR PDF
-    // ===============================
-    $nombre_pdf = 'resumen_ventas_' . time() . '.pdf';
-    $ruta_pdf   = VARPATH . '/public/reportes/archivos_temporales/' . $nombre_pdf;
-
-    $wkh_pdf->addPage($tmp_html);
-    exec($wkh_pdf->getCommand($ruta_pdf), $out, $ret);
-
-    if ($ret !== 0 || !file_exists($ruta_pdf)) {
-        echo "<pre>NO SE CREÓ EL PDF</pre>";
-        exit;
-    }
-
-    // ===============================
-    // 7️⃣ DESCARGA
-    // ===============================
-    Flight::redirect(
-        $varhost . '/public/reportes/archivos_temporales/' . $nombre_pdf
-    );
-});
-
-
 Flight::route('GET /imp_ventas_fecha_admin_excel', function(){
 
     include DEFINITION;
@@ -1382,4 +1283,102 @@ Flight::route('GET /imp_ventas_fecha_admin_excel', function(){
           </tr>";
 
     echo "</table>";
+});
+
+
+Flight::route('GET /imp_resumen_categoria', function(){
+
+    include DEFINITION;
+    login_admin::autentificar_administrador();
+
+    $req = Flight::request();
+
+    $ini = trim($req->query->ini ?? $_GET['ini'] ?? '');
+    $fin = trim($req->query->fin ?? $_GET['fin'] ?? '');
+
+    if ($ini === '' || $fin === '') {
+        Flight::halt(400, 'Debe enviar las fechas ini y fin');
+    }
+
+    DB::query("SET NAMES 'utf8mb4'");
+
+    // ===============================
+    // VENTAS POR CATEGORIA
+    // ===============================
+    $rows = DB::query("
+        SELECT
+            c.name AS categoria,
+            SUM(d.amount * d.price_item) AS total
+        FROM product_order_detail d
+
+        INNER JOIN product_order po
+            ON po.product_order_id = d.order_id
+
+        INNER JOIN product_category pc
+            ON pc.product_id = d.product_id
+
+        INNER JOIN category c
+            ON c.id = pc.category_id
+
+        WHERE po.fecha_creacion BETWEEN %s AND %s
+
+        GROUP BY c.id
+        ORDER BY total DESC
+    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+
+    $total_general = array_sum(array_column($rows,'total'));
+
+    // ===============================
+    // DATA PARA MUSTACHE
+    // ===============================
+    $template_data = [
+        'informacion' => [[
+            'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
+            'ruc'            => vari('RUC'),
+            'logo'           => $varhost . '/public/admin/login/images/logo_login.png',
+            'titulo_reporte' => "VENTAS POR CATEGORÍA DEL $ini AL $fin",
+            'fecha'          => date('d/m/Y H:i'),
+            'total_items'    => count($rows),
+            'total_general'  => number_format($total_general, 2)
+        ]],
+
+        'listado' => array_map(function($r){
+            return [
+                'categoria' => $r['categoria'],
+                'total' => number_format($r['total'],2)
+            ];
+        }, $rows)
+    ];
+
+
+    // ===============================
+    // RENDER HTML
+    // ===============================
+    $html = (new Mustache)->render(
+        file_get_contents(
+            VARPATH . '/public/reportes/reporte_html/imp_resumen_categoria.html'
+        ),
+        $template_data
+    );
+
+
+    // ===============================
+    // GENERAR PDF
+    // ===============================
+    global $wkh_pdf;
+
+    $pdf = $varpath_tmp . 'resumen_categoria_'
+         . time() . '.pdf';
+
+    $wkh_pdf->addPage($html);
+    exec($wkh_pdf->getCommand($pdf));
+
+
+    // ===============================
+    // DESCARGA
+    // ===============================
+    Flight::redirect(
+        $varhost_tmp . basename($pdf)
+    );
 });

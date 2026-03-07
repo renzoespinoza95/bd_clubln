@@ -319,14 +319,14 @@ Flight::route('GET /imp_lista_prod', function () {
     // GENERAR PDF
     // ===============================
     $nombre_pdf = 'lista_productos_' . time() . '.pdf';
-    $ruta_pdf  = VARPATH . '/public/reportes/archivos_temporales/' . $nombre_pdf;
+    $ruta_pdf  = $varpath_tmp . $nombre_pdf;
 
     $wkh_pdf->addPage($html);
     $comando = $wkh_pdf->getCommand($ruta_pdf);
 
     try {
         exec($comando);
-        Flight::redirect($varhost . '/public/reportes/archivos_temporales/' . $nombre_pdf);
+        Flight::redirect($varhost_tmp . $nombre_pdf);
     } catch (Exception $e) {
         echo $e->getMessage();
     }
@@ -429,14 +429,14 @@ Flight::route('GET /producto/reporteCategoriaProducto', function () {
     // ===============================
     // HTML TEMPORAL (FIX WINDOWS)
     // ===============================
-    $tmp_html = VARPATH . '/public/reportes/archivos_temporales/tmp_categoria.html';
+    $tmp_html = $varpath_tmp . 'tmp_categoria.html';
     file_put_contents($tmp_html, $html);
 
     // ===============================
     // GENERAR PDF (REUSANDO $wkh_pdf)
     // ===============================
     $nombre_pdf = 'reporte_categoria_' . time() . '.pdf';
-    $ruta_pdf   = VARPATH . '/public/reportes/archivos_temporales/' . $nombre_pdf;
+    $ruta_pdf   = $varpath_tmp . $nombre_pdf;
 
     $wkh_pdf->addPage($tmp_html);
     $comando = $wkh_pdf->getCommand($ruta_pdf);
@@ -456,6 +456,6 @@ Flight::route('GET /producto/reporteCategoriaProducto', function () {
     // REDIRECT FINAL
     // ===============================
     Flight::redirect(
-        $varhost . '/public/reportes/archivos_temporales/' . $nombre_pdf
+        $varhost_tmp . $nombre_pdf
     );
 });

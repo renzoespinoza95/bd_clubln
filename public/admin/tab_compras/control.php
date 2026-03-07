@@ -385,11 +385,11 @@ Flight::route('GET /imp_compras_fecha', function(){
         $template_data
     );
 
-    $pdf = VARPATH.'/public/reportes/archivos_temporales/compras_'.time().'.pdf';
+    $pdf = $varpath_tmp . 'compras_'.time().'.pdf';
     $wkh_pdf->addPage($html);
     exec($wkh_pdf->getCommand($pdf));
 
-    Flight::redirect($varhost.'/public/reportes/archivos_temporales/'.basename($pdf));
+    Flight::redirect($varhost_tmp . basename($pdf));
 });
 
 
