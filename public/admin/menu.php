@@ -5,6 +5,7 @@ $tipo_admin = (int)$info_admin['tipo_administrador_id'];
 <div class="container">
     <a class="brand" href="<?php echo $apphost ?>/admin/dash">
         <img src="<?php echo $varhost ?>/public/ico/logo-admin.png" alt="logo-admin" />
+        CLUBLN
     </a>
 
       <!-- Botón lupa (a la izquierda del dropdown de usuario) -->

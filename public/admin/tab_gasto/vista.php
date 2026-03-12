@@ -1,6 +1,6 @@
 <div class="row-fluid" id="appCategory">
   <div class="span12">
-    <h2>Categorías</h2>
+    <h2 class="titulo-fijo">Gastos - Utilidades</h2>
     <div class="form-actions">
       <button class="btn btn-success" @click="abrirModalCrear">
         <i class="icon-plus icon-white"></i> Agregar categoría
@@ -497,7 +497,20 @@
         })
       },
       abrirModalCrear(){
+
+        this.nuevo = {
+          name:'',
+          brief:'',
+          color:'#000000',
+          priority:0,
+          participa_reparto:false,
+          porcentaje_socio:60,
+          porcentaje_propietario:40,
+          is_activo:1
+        }
+
         $("#modalCrearCategory").modal("show")
+
       },
 
       abrirModalEditarGasto(g){
