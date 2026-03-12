@@ -301,7 +301,17 @@ Flight::route('POST /reg/pos_gasto_rubro/crear', function () {
 
     // compatibilidad: acepta category_id o rubro_category_id
     $rubro_category_id = (int)($data['rubro_category_id'] ?? ($data['category_id'] ?? 0));
-    $tipo_costo_category_id = !empty($data['tipo_costo_category_id']) ? (int)$data['tipo_costo_category_id'] : null;
+
+    $tipo_costo_category_id = null;
+
+    if (!empty($data['tipo_costo_category_id'])) {
+
+        $tipo_costo_category_id = is_array($data['tipo_costo_category_id'])
+            ? (int)$data['tipo_costo_category_id']['tipo_costo_category_id']
+            : (int)$data['tipo_costo_category_id'];
+
+    }
+
 
     $fecha = trim($data['fecha'] ?? '');
     $concepto = trim($data['concepto'] ?? '');
