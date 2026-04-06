@@ -6,7 +6,7 @@
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Login</title>      
       <base href="<?php echo $mBase ?>">
-      <link rel="stylesheet" type="text/css" href="css/login.css">
+      <link rel="stylesheet" type="text/css" href="css/login.css?version=<?php echo $version ?>">
       <?php
       boot::jquery2();
       boot::vuejs2();

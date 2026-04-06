@@ -26,7 +26,7 @@
     boot::facebox();
     boot::apprise();
     boot::block_ui();
-    boot::perso();
+    boot::perso($version);
     boot::notify();
     h2::todohost($apphost, $varhost);
     boot::datatables();

@@ -494,11 +494,11 @@ css(self::$boot . "/dropzone/dropzone.min.css");
 js(self::$boot . "/dropzone/dropzone.min.js");
 }
 
-public static function perso()
+public static function perso($version = null)
 {
 com("PERSO");
-css(self::$boot . "/perso/perso.css");
-js(self::$boot . "/perso/perso.js");
+css(self::$boot . "/perso/perso.css?version=" . $version);
+js(self::$boot . "/perso/perso.js?version=" . $version);
 }
 
 public static function collapser($cant = "100")
