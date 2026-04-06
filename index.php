@@ -22,6 +22,7 @@ require_once VARPATH."/classes/Lorem.class.php";
 require_once VARPATH."/classes/boot.class.php";
 require_once VARPATH."/classes/commons.php";
 
+$version = "1";
 
 boot::config($varhost);   
 

@@ -42,3 +42,4 @@
   global $file_log;
   global $varpath_tmp;
   global $varhost_tmp;
+  global $version;

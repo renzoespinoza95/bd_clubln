@@ -693,12 +693,16 @@ Flight::route('GET /imp_ventas_fecha', function(){
     // ===============================
     // DATA PARA MUSTACHE
     // ===============================
+
+    $ini_fmt = date('d/m/Y', strtotime($ini));
+    $fin_fmt = date('d/m/Y', strtotime($fin));
+    
     $template_data = [
         'informacion' => [[
             'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
             'ruc'            => vari('RUC'),
             'logo'           => $varhost . '/public/admin/login/images/logo_login.png',
-            'titulo_reporte' => "REPORTE DE VENTAS DEL $ini AL $fin",
+            'titulo_reporte' => "RESUMEN DE VENTAS DEL $ini_fmt AL $fin_fmt",
             'fecha'          => date('d/m/Y H:i'),
             'total_items'    => count($ventas),
             'total_costo_general' => number_format($total_costo_general, 2),
@@ -1416,7 +1420,7 @@ Flight::route('GET /imp_resumen_categoria', function(){
 
     $ini_fmt = date('d/m/Y', strtotime($ini));
     $fin_fmt = date('d/m/Y', strtotime($fin));
-    
+
     $template_data = [
         'informacion' => [[
             'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',

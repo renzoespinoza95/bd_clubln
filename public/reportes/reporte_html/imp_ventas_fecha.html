@@ -9,23 +9,6 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   font-size: 12px;
 }
-
-.header {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.header-left {
-  float: left;
-  width: 60%;
-}
-
-.header-right {
-  float: right;
-  width: 40%;
-  text-align: right;
-}
-
 .clearfix {
   clear: both;
 }
@@ -72,39 +55,80 @@ th {
   padding: 10px;
   height: 30px; /* 🔥 MISMO TAMAÑO */
 }
+
+.header {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.header-table {
+  width: 100%;
+  border: none;
+}
+
+.header-table td {
+  border: none;
+  vertical-align: middle;
+}
+
+.header-logo {
+  width: 70px;
+}
+
+.header-center {
+  text-align: center;
+}
+
+.header-right {
+  text-align: right;
+  font-size: 12px;
+}
+
+.titulo-empresa {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.titulo {
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 4px;
+}
 </style>
 </head>
 
-<body>
-
 <!-- =========================
-     CABECERA
+     CABECERA PRO
 ========================== -->
+{{#informacion}}
 <div class="header">
 
-  <div class="header-left">
-    {{#informacion}}
-    <table width="100%" cellspacing="0" cellpadding="0" style="border:none">
-      <tr>
-        <td style="border:none; width:80px;">
-          <img src="{{ logo }}" style="width:140px;">
-        </td>
-        <td style="border:none;">
-          <div class="titulo-empresa">{{ razon_social }}</div>
-          <div class="titulo">{{ titulo_reporte }}</div>
-        </td>
-      </tr>
-    </table>
-    {{/informacion}}
-  </div>
+  <table class="header-table">
+    <tr>
 
-  <div class="header-right">
-    {{#informacion}}
-      <div><strong>Fecha:</strong> {{ fecha }}</div>
-      <div><strong>Total ventas:</strong> {{ total_items }}</div>
-      <div><strong>RUC:</strong> {{ ruc }}</div>
-    {{/informacion}}
-  </div>
+      <!-- LOGO -->
+      <td class="header-logo">
+        <img src="{{ logo }}" style="width:120px;">
+      </td>
+
+      <!-- CENTRO -->
+      <td class="header-center">
+        <div class="titulo-empresa">{{ razon_social }}</div>
+        <div class="titulo">{{ titulo_reporte }}</div>
+      </td>
+
+      <!-- DERECHA -->
+      <td class="header-right">
+        <div><strong>Fecha:</strong> {{ fecha }}</div>
+        <div><strong>Cant. ventas:</strong> {{ total_items }}</div>
+        <div><strong>RUC:</strong> {{ ruc }}</div>
+      </td>
+
+    </tr>
+  </table>
+
+</div>
+{{/informacion}}
 
 </div>
 
