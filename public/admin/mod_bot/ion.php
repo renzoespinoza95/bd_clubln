@@ -999,6 +999,8 @@ Flight::route('POST /api/order/submitMesa', function () {
 
         $total = round((float)$total, 2);
 
+
+
         // =====================================================
         // 🧾 SERIAL
         // =====================================================
@@ -1026,6 +1028,30 @@ Flight::route('POST /api/order/submitMesa', function () {
         DB::update('mesa', [
             'estado' => 'DISPONIBLE'
         ], 'mesa_id = %i', $mesa_id);
+
+        $items = DB::query("
+            SELECT product_order_detail_id, product_id
+            FROM product_order_detail
+            WHERE order_id = %i
+        ", $order_id);
+
+        foreach ($items as $it) {
+
+            $costo = DB::queryFirstField("
+                SELECT precio_unitario 
+                FROM inventario_movimiento
+                WHERE product_id=%i
+                  AND origen='COMPRA'
+                ORDER BY inventario_movimiento_id DESC
+                LIMIT 1
+            ", $it['product_id']);
+
+            if (!$costo) $costo = 0;
+
+            DB::update('product_order_detail', [
+                'costo_unitario' => $costo
+            ], "product_order_detail_id=%i", $it['product_order_detail_id']);
+        }
 
         DB::commit();
 
