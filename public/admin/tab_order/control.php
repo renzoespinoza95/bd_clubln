@@ -628,14 +628,20 @@ Flight::route('GET /imp_ventas_fecha', function(){
             po.product_order_id,
             po.fecha_creacion,
             po.total_fees,
-            po.cliente_id AS cliente,
+            cl.nombre AS cliente,
             a.nombres_apellidos AS administrador
         FROM product_order po
+
+        LEFT JOIN cliente cl 
+            ON cl.cliente_id = po.cliente_id
+
         LEFT JOIN administradortbl a 
-               ON a.administrador_id = po.administrador_id
+            ON a.administrador_id = po.administrador_id
+
         WHERE po.fecha_creacion BETWEEN %s AND %s
-        ORDER BY po.product_order_id
-    ", $ini.' 00:00:00', $fin.' 23:59:59');
+
+        ORDER BY po.product_order_id ASC
+    ", $ini, $fin);
 
     $listado = [];
     $total_general = 0;

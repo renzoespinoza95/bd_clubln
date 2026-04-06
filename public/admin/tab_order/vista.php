@@ -402,10 +402,10 @@
 
       <div class="modal-body">
         <label>Fecha Inicio</label>
-        <input type="date" v-model="reporte.fecha_inicio">
+        <input type="datetime-local" v-model="reporte.fecha_inicio">
 
         <label>Fecha Fin</label>
-        <input type="date" v-model="reporte.fecha_fin">
+        <input type="datetime-local" v-model="reporte.fecha_fin">
       </div>
 
       <div class="modal-footer">
@@ -854,10 +854,12 @@ new Vue({
 
 
     reporteVentasPDF(){
-      const { fecha_inicio, fecha_fin } = this.reporte;
+      let ini = this.reporte.fecha_inicio.replace('T',' ');
+      let fin = this.reporte.fecha_fin.replace('T',' ');
+
       window.open(
-        `${this.apphost}/imp_ventas_fecha?ini=${fecha_inicio}&fin=${fecha_fin}`,
-        '_blank'
+        this.apphost + "/imp_ventas_fecha?ini=" + encodeURIComponent(ini) +
+        "&fin=" + encodeURIComponent(fin)
       );
     },
 
@@ -1132,6 +1134,15 @@ new Vue({
     if(jwt){
       axios.defaults.headers.common['Authorization'] = `Bearer ${jwt}`;
     }
+
+    const hoy = new Date();
+
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth()+1).padStart(2,'0');
+    const dd = String(hoy.getDate()).padStart(2,'0');
+
+    this.reporte.fecha_inicio = `${yyyy}-${mm}-${dd}T00:00`;
+    this.reporte.fecha_fin    = `${yyyy}-${mm}-${dd}T23:59`;
     
     this.cargarProductos();
     this.listar();
