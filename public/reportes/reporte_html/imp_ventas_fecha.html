@@ -108,12 +108,12 @@ th {
 <table>
   <thead>
     <tr>
-      <th colspan="4">VENTA #{{ product_order_id }}</th>
+      <th colspan="5">VENTA #{{ product_order_id }}</th>
     </tr>
   </thead>
   <tbody>
     <tr class="subtitulo">
-      <td colspan="4">
+      <td colspan="5">
         <strong>Cliente:</strong> {{ cliente }} |
         <strong>Fecha:</strong> {{ fecha_creacion }} |
         <strong>Total:</strong> S/ {{ total_fees }}
@@ -122,6 +122,7 @@ th {
     <tr>
       <th>Producto</th>
       <th>Cantidad</th>
+      <th>Costo</th>
       <th>Precio</th>
       <th>Subtotal</th>
     </tr>
@@ -130,6 +131,7 @@ th {
     <tr>
       <td>{{ producto }}</td>
       <td>{{ cantidad }}</td>
+      <td>{{ costo_unitario }}</td>
       <td>{{ precio }}</td>
       <td>{{ subtotal }}</td>
     </tr>
@@ -152,6 +154,17 @@ th {
     ">
       TOTAL GENERAL: S/ {{ total_general }}
     </td>
+    <tr>
+    <td style="
+      text-align:right;
+      font-weight:bold;
+      font-size:14px;
+      background:#f9f9f9;
+      padding:8px;
+    ">
+      TOTAL COSTO: S/ {{ total_costo_general }}
+    </td>
+  </tr>
   </tr>
 </table>
 {{/informacion}}

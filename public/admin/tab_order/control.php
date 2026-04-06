@@ -207,20 +207,33 @@ Flight::route('POST /product_order/crear', function () {
                 // ===============================
                 foreach ($d['items'] as $i) {
 
-            DB::insert('product_order_detail', [
-                'order_id'       => $order_id,
-                'product_id'     => $i['product_id'],
-                'product_name'   => DB::queryFirstField(
-                    "SELECT name FROM product WHERE product_id = %i",
-                    $i['product_id']
-                ),
-                'amount'         => $i['amount'],
-                'price_item'     => $i['price_item'],
-                'created_at'     => $now,
-                'last_update'    => $now,
-                'fecha_creacion' => date('Y-m-d H:i:s'),
-                'fecha_modificacion' => date('Y-m-d H:i:s')
-            ]);
+                    // 🔥 obtener costo actual del producto
+                    $costo = DB::queryFirstField("
+                        SELECT precio_unitario 
+                        FROM inventario_movimiento
+                        WHERE product_id=%i
+                        ORDER BY inventario_movimiento_id DESC
+                        LIMIT 1
+                    ", $i['product_id']);
+
+                    // fallback si no existe
+                    if (!$costo) $costo = 0;
+
+                    DB::insert('product_order_detail', [
+                        'order_id'       => $order_id,
+                        'product_id'     => $i['product_id'],
+                        'product_name'   => DB::queryFirstField(
+                            "SELECT name FROM product WHERE product_id = %i",
+                            $i['product_id']
+                        ),
+                        'amount'         => $i['amount'],
+                        'price_item'     => $i['price_item'],
+                        'costo_unitario' => $costo, // 🔥 AQUÍ ESTÁ LA MAGIA
+                        'created_at'     => $now,
+                        'last_update'    => $now,
+                        'fecha_creacion' => date('Y-m-d H:i:s'),
+                        'fecha_modificacion' => date('Y-m-d H:i:s')
+                    ]);
 
             registrar_movimiento_inventario(
                 $i['product_id'],
@@ -646,6 +659,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
     $listado = [];
     $total_general = 0;
     $i = 1;
+    $total_costo_general = 0;
 
     foreach ($ventas as &$v) {
 
@@ -653,11 +667,13 @@ Flight::route('GET /imp_ventas_fecha', function(){
         // DETALLES POR VENTA
         // ===============================
         $detalles = DB::query("
-            SELECT 
+           SELECT 
                 d.product_name AS producto,
                 d.amount AS cantidad,
+                d.costo_unitario,
                 d.price_item AS precio,
-                (d.amount * d.price_item) AS subtotal
+                (d.amount * d.price_item) AS subtotal,
+                (d.amount * d.costo_unitario) AS subtotal_costo
             FROM product_order_detail d
             WHERE d.order_id = %i
         ", $v['product_order_id']);
@@ -667,6 +683,10 @@ Flight::route('GET /imp_ventas_fecha', function(){
         $total_general += $v['total_fees'];
 
         $listado[] = $v;
+
+        foreach ($detalles as $d) {
+            $total_costo_general += $d['subtotal_costo'];
+        }
     }
 
     // ===============================
@@ -680,6 +700,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
             'titulo_reporte' => "REPORTE DE VENTAS DEL $ini AL $fin",
             'fecha'          => date('d/m/Y H:i'),
             'total_items'    => count($ventas),
+            'total_costo_general' => number_format($total_costo_general, 2),
             'total_general'  => number_format($total_general, 2)
         ]],
         'listado' => $listado
