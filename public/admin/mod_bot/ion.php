@@ -765,11 +765,24 @@ Flight::route('POST /api/order/submit', function () {
                 );
             }
 
+             // 🔥 🔥 OBTENER COSTO (AQUÍ VA TU LÓGICA)
+            $costo = DB::queryFirstField("
+                SELECT precio_unitario 
+                FROM inventario_movimiento
+                WHERE product_id=%i
+                  AND origen='COMPRA'
+                ORDER BY inventario_movimiento_id DESC
+                LIMIT 1
+            ", $d['product_id']);
+
+            if (!$costo) $costo = 0;
+
             DB::insert('product_order_detail', [
                 'order_id'     => $order_id,
                 'product_id'   => $d['product_id'],
                 'product_name' => $product_name,
                 'amount'       => $d['amount'],
+                'costo_unitario' => $costo, // 🔥 AQUÍ
                 'price_item'   => $d['price_item'],
                 'created_at'   => $nowMs,
                 'last_update'  => $nowMs

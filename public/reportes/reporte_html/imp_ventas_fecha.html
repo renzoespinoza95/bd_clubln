@@ -108,12 +108,12 @@ th {
 <table>
   <thead>
     <tr>
-      <th colspan="5">VENTA #{{ product_order_id }}</th>
+      <th colspan="6">VENTA #{{ product_order_id }}</th>
     </tr>
   </thead>
   <tbody>
     <tr class="subtitulo">
-      <td colspan="5">
+      <td colspan="6">
         <strong>Cliente:</strong> {{ cliente }} |
         <strong>Fecha:</strong> {{ fecha_creacion }} |
         <strong>Total:</strong> S/ {{ total_fees }}
@@ -122,9 +122,10 @@ th {
     <tr>
       <th>Producto</th>
       <th>Cantidad</th>
-      <th>Costo</th>
-      <th>Precio</th>
-      <th>Subtotal</th>
+      <th>C.U.</th>
+      <th>Total C.U</th>
+      <th>P.V.</th>
+      <th>Subtotal P.V</th>
     </tr>
 
     {{#detalles}}
@@ -132,6 +133,7 @@ th {
       <td>{{ producto }}</td>
       <td>{{ cantidad }}</td>
       <td>{{ costo_unitario }}</td>
+      <td>{{ total_costo }}</td>
       <td>{{ precio }}</td>
       <td>{{ subtotal }}</td>
     </tr>

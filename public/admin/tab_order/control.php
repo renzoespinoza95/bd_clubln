@@ -672,6 +672,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
                 d.amount AS cantidad,
                 d.costo_unitario,
                 d.price_item AS precio,
+                (d.amount * d.costo_unitario) AS total_costo,
                 (d.amount * d.price_item) AS subtotal,
                 (d.amount * d.costo_unitario) AS subtotal_costo
             FROM product_order_detail d
