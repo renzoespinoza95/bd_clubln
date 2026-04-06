@@ -2,128 +2,190 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Ventas por Categoría</title>
+<title>Resumen de Ventas</title>
 
 <style>
-body{
-  font-family: Arial, Helvetica, sans-serif;
+body {
+  font-family: Arial;
   font-size: 12px;
 }
 
-.header{
-  width:100%;
-  margin-bottom:10px;
-}
-
-.header-left{
-  float:left;
-  width:60%;
-}
-
-.header-right{
-  float:right;
-  width:40%;
-  text-align:right;
-}
-
-.clearfix{
-  clear:both;
-}
-
-table{
+table {
   border-collapse: collapse;
-  width:100%;
+  width: 100%;
+  margin-bottom: 10px;
 }
 
-th,td{
-  border:1px solid #000;
-  padding:6px;
+th, td {
+  border: 1px solid #000;
+  padding: 5px;
 }
 
-th{
-  background:#1997AD;
-  color:#fff;
+th {
+  background: #1997AD;
+  color: #fff;
 }
 
-.titulo-empresa{
-  text-align:center;
-  font-size:20px;
-  font-weight:bold;
+.subtitulo {
+  background: #f0f0f0;
+  font-weight: bold;
 }
 
-.titulo{
-  text-align:center;
-  font-size:18px;
-  font-weight:bold;
-  margin-top:6px;
+.total-box {
+  text-align: right;
+  font-weight: bold;
+  background: #f5f5f5;
 }
 
-.total{
-  font-weight:bold;
-  background:#eee;
+.titulo {
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+}
+.header {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.header-table {
+  width: 100%;
+  border: none;
+}
+
+.header-table td {
+  border: none;
+  vertical-align: middle;
+}
+
+.header-logo {
+  width: 80px;
+}
+
+.header-center {
+  text-align: center;
+}
+
+.titulo-empresa {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.titulo {
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+.header-right {
+  text-align: right;
+  font-size: 12px;
 }
 </style>
 </head>
-
-<body>
-
 <!-- =========================
-     CABECERA
+     CABECERA NUEVA PRO
 ========================== -->
+{{#informacion}}
 <div class="header">
 
-  <div class="header-left">
-    {{#informacion}}
-    <table width="100%" style="border:none">
-      <tr>
-        <td style="border:none;width:80px">
-          <img src="{{ logo }}" style="width:140px">
-        </td>
-        <td style="border:none">
-          <div class="titulo-empresa">{{ razon_social }}</div>
-          <div class="titulo">{{ titulo_reporte }}</div>
-        </td>
-      </tr>
-    </table>
-    {{/informacion}}
-  </div>
+  <table class="header-table">
+    <tr>
 
-  <div class="header-right">
-    {{#informacion}}
-      <div><strong>Fecha:</strong> {{ fecha }}</div>
-      <div><strong>Categorías:</strong> {{ total_items }}</div>
-      <div><strong>RUC:</strong> {{ ruc }}</div>
-    {{/informacion}}
-  </div>
+      <!-- LOGO -->
+      <td class="header-logo">
+        <img src="{{ logo }}" style="width:120px;">
+      </td>
+
+      <!-- CENTRO -->
+      <td class="header-center">
+        <div class="titulo-empresa">{{ razon_social }}</div>
+        <div class="titulo">{{ titulo_reporte }}</div>
+      </td>
+
+      <!-- DERECHA -->
+      <td class="header-right">
+        <div><strong>Fecha:</strong> {{ fecha }}</div>
+        <div><strong>Dias:</strong> {{ total_items }}</div>
+        <div><strong>RUC:</strong> {{ ruc }}</div>
+      </td>
+
+    </tr>
+  </table>
+
+</div>
+{{/informacion}}
 
 </div>
 
 <div class="clearfix"></div>
 
 <!-- =========================
-     TABLA
+     LISTADO POR DÍA
+========================== -->
+
+{{#dias}}
+<table>
+  <tr class="subtitulo">
+    <td colspan="6">{{ fecha }}</td>
+  </tr>
+
+  <tr>
+    <th>Producto</th>
+    <th>Cant</th>
+    <th>C.U</th>
+    <th>P.V</th>
+    <th>Total compras</th>
+    <th>Total venta</th>
+  </tr>
+
+  {{#items}}
+  <tr>
+    <td>{{ producto }}</td>
+    <td>{{ cantidad }}</td>
+    <td>{{ costo_unitario }}</td>
+    <td>{{ precio }}</td>
+    <td>{{ total_costo }}</td>
+    <td>{{ total_venta }}</td>
+  </tr>
+  {{/items}}
+
+  <tr>
+    <td colspan="4"></td>
+    <td class="total-box">Total ventas</td>
+    <td class="total-box">{{ total_ventas }}</td>
+  </tr>
+
+  <tr>
+    <td colspan="4"></td>
+    <td class="total-box">Total compras</td>
+    <td class="total-box">{{ total_compras }}</td>
+  </tr>
+
+  <tr>
+    <td colspan="4"></td>
+    <td class="total-box">Ganancia</td>
+    <td class="total-box">{{ ganancia }}</td>
+  </tr>
+
+</table>
+{{/dias}}
+
+<!-- =========================
+     TOTAL GENERAL
 ========================== -->
 <table>
-
-<tr>
-  <th>Categoría</th>
-  <th>Total Ventas</th>
-</tr>
-
-{{#listado}}
-<tr>
-  <td>{{ categoria }}</td>
-  <td>S/ {{ total }}</td>
-</tr>
-{{/listado}}
-
-{{#informacion}}
-<tr class="total">
-  <td>TOTAL GENERAL</td>
-  <td>S/ {{ total_general }}</td>
-</tr>
-{{/informacion}}
-
+  <tr>
+    <td class="total-box">Total ventas</td>
+    <td class="total-box">{{ total_ventas_general }}</td>
+  </tr>
+  <tr>
+    <td class="total-box">Total compras</td>
+    <td class="total-box">{{ total_compras_general }}</td>
+  </tr>
+  <tr>
+    <td class="total-box">Total ganancia</td>
+    <td class="total-box">{{ total_ganancia_general }}</td>
+  </tr>
 </table>
 
 </body>

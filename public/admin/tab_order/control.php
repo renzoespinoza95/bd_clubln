@@ -702,6 +702,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
             'fecha'          => date('d/m/Y H:i'),
             'total_items'    => count($ventas),
             'total_costo_general' => number_format($total_costo_general, 2),
+            'ganancia' => number_format($total_general - $total_costo_general, 2),
             'total_general'  => number_format($total_general, 2)
         ]],
         'listado' => $listado
@@ -1313,7 +1314,6 @@ Flight::route('GET /imp_ventas_fecha_admin_excel', function(){
     echo "</table>";
 });
 
-
 Flight::route('GET /imp_resumen_categoria', function(){
 
     include DEFINITION;
@@ -1331,57 +1331,111 @@ Flight::route('GET /imp_resumen_categoria', function(){
     DB::query("SET NAMES 'utf8mb4'");
 
     // ===============================
-    // VENTAS POR CATEGORIA
+    // 🔥 DATA AGRUPADA POR DÍA + PRODUCTO
     // ===============================
     $rows = DB::query("
-        SELECT
-            c.name AS categoria,
-            SUM(d.amount * d.price_item) AS total
+        SELECT 
+            DATE(po.fecha_creacion) AS fecha,
+            p.name AS producto,
+            SUM(d.amount) AS cantidad,
+            d.costo_unitario,
+            d.price_item
         FROM product_order_detail d
-
-        INNER JOIN product_order po
+        INNER JOIN product_order po 
             ON po.product_order_id = d.order_id
-
-        INNER JOIN product_category pc
-            ON pc.product_id = d.product_id
-
-        INNER JOIN category c
-            ON c.id = pc.category_id
-
+        INNER JOIN product p 
+            ON p.product_id = d.product_id
         WHERE po.fecha_creacion BETWEEN %s AND %s
-
-        GROUP BY c.id
-        ORDER BY total DESC
+        GROUP BY fecha, d.product_id, d.costo_unitario, d.price_item
+        ORDER BY fecha ASC
     ", $ini.' 00:00:00', $fin.' 23:59:59');
 
+    // ===============================
+    // 🔥 PROCESAR POR DÍA
+    // ===============================
+    $dias = [];
+    $total_compras_general = 0;
+    $total_ventas_general = 0;
 
-    $total_general = array_sum(array_column($rows,'total'));
+    foreach($rows as $r){
+
+        $fecha = $r['fecha'];
+
+        if(!isset($dias[$fecha])){
+            $dias[$fecha] = [
+                'fecha' => date('d/m/Y', strtotime($fecha)),
+                'items' => [],
+                'total_compras' => 0,
+                'total_ventas' => 0
+            ];
+        }
+
+        $cantidad = (int)$r['cantidad'];
+        $costo_unitario = (float)$r['costo_unitario'];
+        $precio = (float)$r['price_item'];
+
+        $total_costo = $cantidad * $costo_unitario;
+        $total_venta = $cantidad * $precio;
+
+        $dias[$fecha]['items'][] = [
+            'producto' => $r['producto'],
+            'cantidad' => $cantidad,
+            'costo_unitario' => number_format($costo_unitario,2),
+            'precio' => number_format($precio,2),
+            'total_costo' => number_format($total_costo,2),
+            'total_venta' => number_format($total_venta,2)
+        ];
+
+        $dias[$fecha]['total_compras'] += $total_costo;
+        $dias[$fecha]['total_ventas'] += $total_venta;
+
+        $total_compras_general += $total_costo;
+        $total_ventas_general += $total_venta;
+    }
 
     // ===============================
-    // DATA PARA MUSTACHE
+    // 🔥 FORMATEAR TOTALES POR DÍA
     // ===============================
+    $dias = array_map(function($d){
+
+        $ganancia = $d['total_ventas'] - $d['total_compras'];
+
+        return [
+            'fecha' => $d['fecha'],
+            'items' => $d['items'],
+            'total_compras' => number_format($d['total_compras'],2),
+            'total_ventas' => number_format($d['total_ventas'],2),
+            'ganancia' => number_format($ganancia,2)
+        ];
+
+    }, array_values($dias));
+
+    // ===============================
+    // 🔥 DATA PARA MUSTACHE
+    // ===============================
+
+    $ini_fmt = date('d/m/Y', strtotime($ini));
+    $fin_fmt = date('d/m/Y', strtotime($fin));
+    
     $template_data = [
         'informacion' => [[
             'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
             'ruc'            => vari('RUC'),
             'logo'           => $varhost . '/public/admin/login/images/logo_login.png',
-            'titulo_reporte' => "VENTAS POR CATEGORÍA DEL $ini AL $fin",
+            'titulo_reporte' => "RESUMEN DE VENTAS DEL $ini_fmt AL $fin_fmt",
             'fecha'          => date('d/m/Y H:i'),
-            'total_items'    => count($rows),
-            'total_general'  => number_format($total_general, 2)
+            'total_items'    => count($dias) // 🔥 número de días
         ]],
 
-        'listado' => array_map(function($r){
-            return [
-                'categoria' => $r['categoria'],
-                'total' => number_format($r['total'],2)
-            ];
-        }, $rows)
+        'dias' => $dias,
+
+        'total_compras_general' => number_format($total_compras_general,2),
+        'total_ventas_general' => number_format($total_ventas_general,2),
+        'total_ganancia_general' => number_format($total_ventas_general - $total_compras_general,2)
     ];
 
-
     // ===============================
-    // RENDER HTML
+    // 🔥 RENDER HTML
     // ===============================
     $html = (new Mustache)->render(
         file_get_contents(
@@ -1390,21 +1444,18 @@ Flight::route('GET /imp_resumen_categoria', function(){
         $template_data
     );
 
-
     // ===============================
-    // GENERAR PDF
+    // 🔥 GENERAR PDF
     // ===============================
     global $wkh_pdf;
 
-    $pdf = $varpath_tmp . 'resumen_categoria_'
-         . time() . '.pdf';
+    $pdf = $varpath_tmp . 'resumen_categoria_' . time() . '.pdf';
 
     $wkh_pdf->addPage($html);
     exec($wkh_pdf->getCommand($pdf));
 
-
     // ===============================
-    // DESCARGA
+    // 🔥 DESCARGA
     // ===============================
     Flight::redirect(
         $varhost_tmp . basename($pdf)

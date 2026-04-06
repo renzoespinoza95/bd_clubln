@@ -63,6 +63,15 @@ th {
   font-weight: bold;
   background: #f0f0f0;
 }
+
+.total-box {
+  text-align: right;
+  font-weight: bold;
+  font-size: 16px;
+  background: #f0f0f0;
+  padding: 10px;
+  height: 30px; /* 🔥 MISMO TAMAÑO */
+}
 </style>
 </head>
 
@@ -147,26 +156,19 @@ th {
 {{#informacion}}
 <table>
   <tr>
-    <td style="
-      text-align:right;
-      font-weight:bold;
-      font-size:16px;
-      background:#f0f0f0;
-      padding:8px;
-    ">
-      TOTAL GENERAL: S/ {{ total_general }}
-    </td>
-    <tr>
-    <td style="
-      text-align:right;
-      font-weight:bold;
-      font-size:14px;
-      background:#f9f9f9;
-      padding:8px;
-    ">
-      TOTAL COSTO: S/ {{ total_costo_general }}
+    <td class="total-box">
+      TOTAL VENTAS S/. {{ total_general }}
     </td>
   </tr>
+  <tr>
+    <td class="total-box">
+      COSTO TOTAL S/. {{ total_costo_general }}
+    </td>
+  </tr>
+  <tr>
+    <td class="total-box">
+      GANANCIA S/. {{ ganancia }}
+    </td>
   </tr>
 </table>
 {{/informacion}}
