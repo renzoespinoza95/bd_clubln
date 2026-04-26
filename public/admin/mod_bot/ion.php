@@ -478,10 +478,9 @@ Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
         FROM product_order
         WHERE mesa_id = %i
           AND modo_order_id = 2
-          AND created_at BETWEEN %i AND %i
         ORDER BY product_order_id DESC
         LIMIT 1
-    ", $mesa_id, $todayStart, $todayEnd);
+    ", $mesa_id);
 
     // 🔴 NO HAY PEDIDO ACTIVO
     if (!$order) {
