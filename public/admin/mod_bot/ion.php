@@ -505,41 +505,120 @@ Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
 });
 
 
-
 Flight::route('POST /api/mesa/agregar-productos', function () {
 
+    // ======================================
+    // 📥 LEER PAYLOAD
+    // ======================================
     $payload = json_decode(file_get_contents('php://input'), true);
+
+    if (
+        empty($payload) ||
+        !isset($payload['order_id']) ||
+        !isset($payload['items']) ||
+        !is_array($payload['items'])
+    ) {
+        Flight::json([
+            'status' => 'failed',
+            'msg' => 'Payload inválido'
+        ], 400);
+        return;
+    }
 
     DB::startTransaction();
 
     try {
 
+        $order_id = intval($payload['order_id']);
+
+        // ======================================
+        // 🔁 INSERTAR ITEMS
+        // ======================================
         foreach ($payload['items'] as $d) {
 
             DB::insert('product_order_detail', [
-                'order_id'    => $payload['order_id'],
-                'product_id'  => $d['product_id'],
-                'product_name'=> $d['product_name'],
-                'amount'      => $d['amount'],
-                'price_item'  => $d['price_item'],
-                'created_at'  => $d['created_at'],
-                'last_update' => $d['last_update']
+                'order_id'     => $order_id,
+                'product_id'   => intval($d['product_id']),
+                'product_name' => trim($d['product_name']),
+                'amount'       => intval($d['amount']),
+                'price_item'   => floatval($d['price_item']),
+                'created_at'   => isset($d['created_at']) ? intval($d['created_at']) : round(microtime(true) * 1000),
+                'last_update'  => isset($d['last_update']) ? intval($d['last_update']) : round(microtime(true) * 1000)
             ]);
-
-            DB::query("
-                UPDATE inventario
-                SET stock_actual = stock_actual - %i
-                WHERE product_id = %i
-            ", $d['amount'], $d['product_id']);
         }
+
+        // ======================================
+        // 📦 OBTENER ESTADO ACTUAL DEL PEDIDO
+        // ======================================
+        $items_actuales = DB::query("
+            SELECT 
+                product_id,
+                product_name,
+                amount,
+                price_item,
+                (amount * price_item) AS total
+            FROM product_order_detail
+            WHERE order_id = %i
+        ", $order_id);
+
+        // ======================================
+        // 📊 CALCULAR TOTALES
+        // ======================================
+        $total_items = 0;
+        $total_amount = 0;
+
+        foreach ($items_actuales as $it) {
+            $total_items += intval($it['amount']);
+            $total_amount += floatval($it['total']);
+        }
+
+        // ======================================
+        // 🔍 OBTENER MESA
+        // ======================================
+        $order = DB::queryFirstRow("
+            SELECT mesa_id
+            FROM product_order
+            WHERE product_order_id = %i
+        ", $order_id);
+
+        $mesa_id = $order ? $order['mesa_id'] : null;
+
+        // ======================================
+        // 🧾 SNAPSHOT
+        // ======================================
+        $snapshot = [
+            'order_id'     => $order_id,
+            'mesa_id'      => $mesa_id,
+            'total_items'  => $total_items,
+            'total_amount' => round($total_amount, 2),
+            'items'        => $items_actuales
+        ];
+
+        // ======================================
+        // 💾 GUARDAR LOG (SIN fecha manual)
+        // ======================================
+        DB::insert('log_pedido', [
+            'order_id'     => $order_id,
+            'mesa_id'      => $mesa_id,
+            'total_items'  => $total_items,
+            'total_amount' => round($total_amount, 2),
+            'snapshot_json'=> json_encode($snapshot, JSON_UNESCAPED_UNICODE)
+        ]);
 
         DB::commit();
 
-        Flight::json(['status' => 'success']);
+        Flight::json([
+            'status' => 'success'
+        ]);
 
     } catch (Exception $e) {
+
         DB::rollback();
-        Flight::json(['status' => 'failed']);
+
+        Flight::json([
+            'status' => 'failed',
+            'msg' => $e->getMessage()
+        ], 500);
     }
 });
 
