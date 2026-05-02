@@ -1270,3 +1270,54 @@ new Vue({
 
 });
 </script>
+<style>
+@media (max-width: 768px) {
+
+  #tablaOrder td:nth-child(1)::before { content: "ID"; }
+  #tablaOrder td:nth-child(2)::before { content: "Código"; }
+  #tablaOrder td:nth-child(3)::before { content: "Cliente"; }
+  #tablaOrder td:nth-child(4)::before { content: "Mesa"; }
+  #tablaOrder td:nth-child(5)::before { content: "Modo"; }
+  #tablaOrder td:nth-child(6)::before { content: "Administrador"; }
+  #tablaOrder td:nth-child(7)::before { content: "Tipo pago"; }
+  #tablaOrder td:nth-child(8)::before { content: "Fecha"; }
+  #tablaOrder td:nth-child(9)::before { content: "Total"; }
+  #tablaOrder td:nth-child(10)::before { content: "Acciones"; }
+
+  #tablaOrder td::before {
+    position: absolute;
+    left: 10px;
+    top: 5px;
+    font-weight: bold;
+    text-align: left;
+    color: #555;
+  }
+
+  #tablaOrder thead {
+    display: none;
+  }
+
+  #tablaOrder tr {
+    display: block;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    padding: 10px;
+  }
+
+  #tablaOrder td {
+    display: block;
+    text-align: right;
+    position: relative;
+    padding-left: 50%;
+  }
+
+  #tablaOrder td::before {
+    position: absolute;
+    left: 10px;
+    top: 5px;
+    font-weight: bold;
+    text-align: left;
+  }
+
+}
+</style>

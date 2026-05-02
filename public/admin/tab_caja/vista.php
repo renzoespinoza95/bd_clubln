@@ -396,4 +396,58 @@ new Vue({
   background-color: #f2f2f2;
   color: #777;
 }  
+
+/* =========================================
+   RESPONSIVE TABLA CAJA 🔥
+========================================= */
+
+@media (max-width: 768px) {
+
+  #appCaja table thead {
+    display: none;
+  }
+
+  #appCaja table tr {
+    display: block;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    background: #fff;
+  }
+
+  #appCaja table td {
+    display: block;
+    text-align: right;
+    position: relative;
+    padding: 8px 10px 8px 50%;
+    border: none;
+    border-bottom: 1px solid #eee;
+  }
+
+  #appCaja table td:last-child {
+    border-bottom: none;
+  }
+
+  #appCaja table td::before {
+    position: absolute;
+    left: 10px;
+    top: 8px;
+    font-weight: bold;
+    text-align: left;
+    color: #555;
+    white-space: nowrap;
+  }
+
+  /* =========================================
+     LABELS SEGÚN TU TABLA 🔥
+  ========================================= */
+
+  #appCaja table td:nth-child(1)::before { content: "ID Caja"; }
+  #appCaja table td:nth-child(2)::before { content: "Administrador"; }
+  #appCaja table td:nth-child(3)::before { content: "Fecha Apertura"; }
+  #appCaja table td:nth-child(4)::before { content: "Efectivo Inicial"; }
+  #appCaja table td:nth-child(5)::before { content: "Acciones"; }
+
+}
 </style>

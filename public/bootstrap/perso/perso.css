@@ -96,3 +96,39 @@ a.paginate:hover {
   padding: 10px;
   border-bottom: 1px solid #ddd;
 }
+
+/* =========================
+   DESKTOP (como ya tienes)
+========================= */
+.modal {
+  width: 600px;
+  left: 50% !important;
+  margin-left: -300px;
+}
+
+/* =========================
+   CENTRADO VERTICAL
+========================= */
+.modal.fade.in {
+  top: 50% !important;
+  transform: translateY(-50%);
+}
+
+/* =========================
+   MOBILE RESPONSIVE 🔥
+========================= */
+@media (max-width: 768px) {
+
+  .modal {
+    width: 95% !important;
+    left: 50% !important;
+    margin-left: -47.5% !important; /* mitad de 95% */
+    max-width: none !important;
+  }
+
+  .modal.fade.in {
+    top: 10% !important; /* mejor que 50% en mobile */
+    transform: none;
+  }
+
+}

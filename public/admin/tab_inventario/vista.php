@@ -115,6 +115,49 @@
       </div>
     </div>
 
+<div id="modalAjusteInv" class="modal hide fade">
+  <div class="modal-header">
+    <h3>Ajuste de Inventario</h3>
+  </div>
+
+  <div class="modal-body">
+
+    <p><b>Producto:</b> {{ ajuste.producto }}</p>
+    <p><b>Stock actual:</b> {{ ajuste.stock_actual }}</p>
+
+    <div class="control-group">
+      <label>Stock real (conteo físico)</label>
+      <div class="controls">
+        <input type="number" v-model.number="ajuste.stock_real">
+      </div>
+    </div>
+
+    <!-- PREVIEW DIFERENCIA -->
+    <div v-if="ajuste.stock_real !== null" style="margin-top:10px;">
+      <b>Diferencia:</b>
+      <span v-if="diferencia > 0" style="color:green;">
+        +{{ diferencia }} (ENTRADA)
+      </span>
+      <span v-else-if="diferencia < 0" style="color:red;">
+        {{ diferencia }} (SALIDA)
+      </span>
+      <span v-else>
+        0 (sin cambios)
+      </span>
+    </div>
+
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-primary" @click="guardarAjuste">
+      Guardar ajuste
+    </button>
+    <button class="btn" data-dismiss="modal">
+      Cancelar
+    </button>
+  </div>
+</div>    
+
     <div id="modalLimitesInv" class="modal hide fade">
   <div class="modal-header">
     <h3>Establecer límites</h3>
@@ -165,6 +208,13 @@ new Vue({
     detalle:{inventario:{},movimientos:[]},
     nuevo:{ producto_id:null, stock_actual:0, stock_min:0, stock_max:999 },
     form:{},
+    ajuste:{
+  inventario_id:null,
+  product_id:null,
+  producto:'',
+  stock_actual:0,
+  stock_real:null
+},
     dt:null
   },
 
@@ -198,6 +248,11 @@ new Vue({
                 const item=self.inventario.find(x=>x.inventario_id==id);
                 self.abrirEditar(item);
               })
+              .on("click","a.ajuste",function(){
+                const id=$(this).data("id");
+                const item=self.inventario.find(x=>x.inventario_id==id);
+                self.abrirAjuste(item);
+              })              
               .on("click","a.limites",function(){
                 const id = $(this).data("id");
                 const item = self.inventario.find(x => x.inventario_id == id);
@@ -234,6 +289,11 @@ new Vue({
                       Eliminar
                     </a>
                   </li>
+                  <li>
+                    <a href="#" class="ajuste" data-id="${i.inventario_id}">
+                      Ajustar stock
+                    </a>
+                  </li>              
                 </ul>
               </div>`;
 
@@ -296,6 +356,33 @@ new Vue({
       axios.post(`${this.apphost}/inventario/crear`,this.nuevo)
            .then(()=>{ $("#modalCrearInv").modal("hide"); this.listar(); });
     },
+    abrirAjuste(i){
+      this.ajuste = {
+        inventario_id: i.inventario_id,
+        product_id: i.product_id,
+        producto: i.producto,
+        stock_actual: parseInt(i.stock_actual),
+        stock_real: parseInt(i.stock_actual)
+      };
+      $("#modalAjusteInv").modal("show");
+    },
+
+    guardarAjuste(){
+
+      if(this.ajuste.stock_real === null){
+        alert("Ingresa stock real");
+        return;
+      }
+
+      axios.post(`${this.apphost}/inventario/ajuste`,{
+        product_id: this.ajuste.product_id,
+        stock_real: this.ajuste.stock_real
+      })
+      .then(r=>{
+        $("#modalAjusteInv").modal("hide");
+        this.listar();
+      });
+    },    
 
     abrirEditar(i){
       this.form = JSON.parse(JSON.stringify(i));
@@ -320,6 +407,12 @@ new Vue({
   mounted(){
     this.cargarProductos();
     this.listar();
-  }
+  },
+  computed:{
+    diferencia(){
+      if(this.ajuste.stock_real === null) return 0;
+      return this.ajuste.stock_real - this.ajuste.stock_actual;
+    }
+  },
 });
 </script>

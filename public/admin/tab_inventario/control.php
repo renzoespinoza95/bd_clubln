@@ -192,3 +192,96 @@ Flight::route('POST /inventario/limites', function () {
 
     Flight::json(['status'=>'ok']);
 });
+
+
+Flight::route('POST /inventario/ajuste', function () {
+
+    $d = Flight::request()->data;
+
+    $product_id   = intval($d['product_id']);
+    $stock_real   = intval($d['stock_real']); // 👈 lo que escribe el usuario
+
+    if (!$product_id) {
+        Flight::json(['status'=>'error','msg'=>'product_id requerido'], 400);
+        return;
+    }
+
+    // ======================================
+    // 📦 OBTENER INVENTARIO ACTUAL
+    // ======================================
+    $inv = DB::queryFirstRow("
+        SELECT * 
+        FROM inventario 
+        WHERE product_id=%i
+    ", $product_id);
+
+    if (!$inv) {
+        Flight::json(['status'=>'error','msg'=>'Inventario no encontrado'], 404);
+        return;
+    }
+
+    $stock_actual = intval($inv['stock_actual']);
+
+    // ======================================
+    // 🧠 CALCULAR DIFERENCIA
+    // ======================================
+    $diferencia = $stock_real - $stock_actual;
+
+    if ($diferencia == 0) {
+        Flight::json([
+            'status' => 'ok',
+            'msg' => 'No hay cambios en stock'
+        ]);
+        return;
+    }
+
+    // ======================================
+    // 🔄 DEFINIR TIPO
+    // ======================================
+    $tipo = $diferencia > 0 ? 'ENTRADA' : 'SALIDA';
+    $cantidad = abs($diferencia);
+
+    DB::startTransaction();
+
+    try {
+
+        // ======================================
+        // 📝 REGISTRAR MOVIMIENTO
+        // ======================================
+        DB::insert("inventario_movimiento", [
+            "product_id"      => $product_id,
+            "tipo"            => $tipo,
+            "origen"          => "AJUSTE",
+            "cantidad"        => $cantidad,
+            "precio_unitario" => 0,
+            "referencia_id"   => null,
+            "referencia_tabla"=> null,
+            "stock_resultante"=> $stock_real
+        ]);
+
+        // ======================================
+        // 📦 ACTUALIZAR STOCK
+        // ======================================
+        DB::update("inventario", [
+            "stock_actual" => $stock_real
+        ], "inventario_id=%i", $inv['inventario_id']);
+
+        DB::commit();
+
+        Flight::json([
+            'status' => 'ok',
+            'stock_anterior' => $stock_actual,
+            'stock_nuevo'    => $stock_real,
+            'diferencia'     => $diferencia
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        Flight::json([
+            'status'=>'error',
+            'msg'=>$e->getMessage()
+        ], 500);
+    }
+});
