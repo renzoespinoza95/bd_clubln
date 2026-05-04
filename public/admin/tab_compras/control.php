@@ -365,8 +365,8 @@ Flight::route('GET /imp_compras_fecha', function(){
     ]];
 
     $i = 1;
-    foreach ($rows as &$r) {
-        $r['indice'] = $i++;
+    foreach ($rows as $k => $r) {
+        $rows[$k]['indice'] = $i++;
     }
 
     $template_data['listado'] = $rows;
