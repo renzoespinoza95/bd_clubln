@@ -1,6 +1,6 @@
 <div class="row-fluid" id="appCategory">
   <div class="span12">
-    <h2 class="titulo-fijo">Gastos - Utilidades</h2>
+    <h2 class="titulo-fijo">Socios</h2>
     <div class="form-actions">
       <button class="btn btn-success" @click="abrirModalCrear">
         <i class="icon-plus icon-white"></i> Agregar categoría
