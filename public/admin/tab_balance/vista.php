@@ -305,6 +305,7 @@
 
           <thead>
             <tr>
+              <th>ID</th>
               <th>Entidad</th>
               <th>Tipo</th>
               <th>Total</th>
@@ -316,6 +317,7 @@
 
           <tbody>
             <tr v-for="d in deudas">
+              <td>{{ d.deuda_id }}</td>
               <td>
                 {{ d.tipo_entidad == 'PERSONA'
                 ? d.nombre_persona
@@ -736,6 +738,7 @@
 
       <thead>
         <tr>
+          <th>ID</th>
           <th>Fecha</th>
           <th>Tipo</th>
           <th>Número</th>
@@ -746,7 +749,7 @@
 
       <tbody>
         <tr v-for="c in comprobantes">
-
+          <td>{{ c.comprobante_id }}</td>
           <td>{{ formatearFecha(c.fecha) }}</td>
 
           <td>{{ c.tipo_comprobante }}</td>
@@ -1061,7 +1064,20 @@ getFechaHoy(){
 
 },
 
-abrirCrearDeuda(){ $('#modalCrearDeuda').modal('show'); },
+abrirCrearDeuda(){
+
+  this.deuda = {
+    tipo_entidad: 'PERSONA',
+    nombre_persona: '',
+    proveedor_id: null,
+    proveedor_obj: null,
+    monto_total: '',
+    descripcion: ''
+  };
+
+  $('#modalCrearDeuda').modal('show');
+
+},
 
 guardarDeuda(){
 

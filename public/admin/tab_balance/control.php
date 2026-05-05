@@ -221,20 +221,6 @@ Flight::route('GET /LF4f/comprobante/listar', function(){
 /* ============================================
  * DEUDAS
  * ============================================ */
-Flight::route('GET /deuda/listar', function(){
-
-    $rows = DB::query("
-        SELECT 
-            d.*,
-            IFNULL(SUM(p.monto),0) pagado
-        FROM deuda d
-        LEFT JOIN deuda_pago p ON p.deuda_id=d.deuda_id
-        GROUP BY d.deuda_id
-    ");
-
-    Flight::json($rows);
-});
-
 
 Flight::route('POST /deuda/crear', function(){
 
