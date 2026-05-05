@@ -1140,19 +1140,36 @@ guardarComp(){
 
 abrirCajaChica(){
 
+  console.log('🚀 [1] iniciar abrirCajaChica');
+
   axios.get(this.apphost + '/LF4f/caja_chica/listar')
   .then(r=>{
 
+    console.log('📦 [2] respuesta axios recibida');
+    console.log('📊 data cruda:', r.data);
+    console.log('📊 cantidad registros:', r.data.length);
+
+    // asignar data
     this.cajaMovimientos = r.data;
+
+    console.log('🧠 [3] data asignada a Vue (cajaMovimientos)');
+    console.log('🧠 estado actual:', this.cajaMovimientos);
 
     this.$nextTick(()=>{
 
+      console.log('🎯 [4] nextTick → DOM ya renderizado');
+      console.log('🔎 filas en DOM:', $('#tablaCaja tbody tr').length);
+
       // 🔴 destruir si existe
       if ($.fn.DataTable.isDataTable('#tablaCaja')) {
+        console.log('♻️ [5] destruyendo DataTable existente');
         $('#tablaCaja').DataTable().destroy();
+      } else {
+        console.log('ℹ️ [5] no había DataTable previo');
       }
 
-      // 🔵 crear nuevamente
+      console.log('⚙️ [6] inicializando DataTable...');
+
       $('#tablaCaja').DataTable({
         language: (typeof dt_language !== 'undefined' ? dt_language : undefined),
         scrollX: true,
@@ -1160,10 +1177,17 @@ abrirCajaChica(){
         order: [[0,'desc']]
       });
 
+      console.log('✅ [7] DataTable inicializado');
+      console.log('🔎 filas finales en tabla:', $('#tablaCaja tbody tr').length);
+
     });
 
+    console.log('🪟 [8] mostrando modal');
     $('#modalCaja').modal('show');
 
+  })
+  .catch(err=>{
+    console.error('❌ ERROR axios:', err);
   });
 
 },
