@@ -543,14 +543,6 @@
           </thead>
 
           <tbody>
-            <tr v-for="c in cajaMovimientos" :key="c.caja_chica_id">
-              <td>{{ c.caja_chica_id }}</td>
-              <td>{{ c.fecha }}</td>
-              <td>{{ c.tipo }}</td>
-              <td>{{ c.categoria }}</td>
-              <td>{{ c.descripcion }}</td>
-              <td>{{ c.monto }}</td>
-            </tr>
           </tbody>
         </table>
 
@@ -1140,55 +1132,65 @@ guardarComp(){
 
 abrirCajaChica(){
 
-  console.log('🚀 [1] iniciar abrirCajaChica');
+  this.bloquear('Cargando caja chica…');
+
+  console.log('🚀 iniciar abrirCajaChica');
 
   axios.get(this.apphost + '/LF4f/caja_chica/listar')
   .then(r=>{
 
-    console.log('📦 [2] respuesta axios recibida');
-    console.log('📊 data cruda:', r.data);
-    console.log('📊 cantidad registros:', r.data.length);
+    console.log('📦 respuesta axios');
+    console.log('📊 registros:', r.data.length);
 
-    // asignar data
     this.cajaMovimientos = r.data;
-
-    console.log('🧠 [3] data asignada a Vue (cajaMovimientos)');
-    console.log('🧠 estado actual:', this.cajaMovimientos);
 
     this.$nextTick(()=>{
 
-      console.log('🎯 [4] nextTick → DOM ya renderizado');
-      console.log('🔎 filas en DOM:', $('#tablaCaja tbody tr').length);
+      // 🔥 inicializar SOLO UNA VEZ
+      if (!this.dtCaja) {
 
-      // 🔴 destruir si existe
-      if ($.fn.DataTable.isDataTable('#tablaCaja')) {
-        console.log('♻️ [5] destruyendo DataTable existente');
-        $('#tablaCaja').DataTable().destroy();
-        $('#tablaCaja tbody').empty();
-      } else {
-        console.log('ℹ️ [5] no había DataTable previo');
+        console.log('⚙️ creando DataTable');
+
+        this.dtCaja = $('#tablaCaja').DataTable({
+          language: (typeof dt_language !== 'undefined' ? dt_language : undefined),
+          scrollX: true,
+          dom: 'frtip',
+          order: [[0,'desc']]
+        });
+
       }
 
-      console.log('⚙️ [6] inicializando DataTable...');
+      console.log('♻️ limpiando tabla');
+      this.dtCaja.clear();
 
-      $('#tablaCaja').DataTable({
-        language: (typeof dt_language !== 'undefined' ? dt_language : undefined),
-        scrollX: true,
-        dom: 'frtip',
-        order: [[0,'desc']]
+      console.log('➕ agregando filas');
+
+      this.cajaMovimientos.forEach(c => {
+
+        this.dtCaja.row.add([
+          c.caja_chica_id,
+          c.fecha,
+          c.tipo,
+          c.categoria,
+          c.descripcion,
+          'S/ ' + parseFloat(c.monto).toFixed(2)
+        ]);
+
       });
 
-      console.log('✅ [7] DataTable inicializado');
-      console.log('🔎 filas finales en tabla:', $('#tablaCaja tbody tr').length);
+      console.log('🎯 dibujando tabla');
+      this.dtCaja.draw(false);
 
     });
 
-    console.log('🪟 [8] mostrando modal');
     $('#modalCaja').modal('show');
 
   })
   .catch(err=>{
-    console.error('❌ ERROR axios:', err);
+    console.error('❌ ERROR:', err);
+  })
+  .finally(()=>{
+    $.unblockUI();
   });
 
 },
@@ -1197,6 +1199,19 @@ verDetalle(){
   axios.get(this.apphost +'/balance/ingresos').then(r=>this.ingresos=r.data);
   axios.get(this.apphost +'/balance/egresos').then(r=>this.egresos=r.data);
   $('#modalIngresos').modal('show');
+},
+
+bloquear(msg){
+  $.blockUI({
+    message: `<h4>${msg}</h4>`,
+    css: { 
+      border: 'none', 
+      padding: '15px', 
+      backgroundColor: '#000', 
+      color: '#fff',
+      borderRadius: '8px'
+    }
+  });
 },
 
 listarDeudas(){
