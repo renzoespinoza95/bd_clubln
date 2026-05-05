@@ -1019,42 +1019,7 @@ getFechaHoy(){
   const mm = String(hoy.getMonth()+1).padStart(2,'0');
   const dd = String(hoy.getDate()).padStart(2,'0');
   return `${yyyy}-${mm}-${dd}`;
-},
-  abrirCajaChica(){
-
-    axios.get(this.apphost + '/LF4f/caja_chica/listar')
-    .then(r=>{
-
-      this.cajaMovimientos = r.data;
-
-      this.totalIngresos = r.data
-        .filter(x=>x.tipo=='INGRESO')
-        .reduce((a,b)=>a + parseFloat(b.monto),0);
-
-      this.totalEgresos = r.data
-        .filter(x=>x.tipo=='EGRESO')
-        .reduce((a,b)=>a + parseFloat(b.monto),0);
-
-      this.$nextTick(()=>{
-
-        if ($.fn.DataTable.isDataTable('#tablaCaja')) {
-          $('#tablaCaja').DataTable().destroy();
-        }
-
-        $('#tablaCaja').DataTable({
-                language: (typeof dt_language !== 'undefined' ? dt_language : undefined),
-                scrollX: true,
-                dom: 'frtip',
-                order: [[0,'desc']]
-              });
-
-      });
-
-      $('#modalCaja').modal('show');
-
-    });
-
-  },
+},  
 
   abrirRegistrarCaja(){
 
@@ -1171,6 +1136,36 @@ abrirCrearComprobante(){
 
 guardarComp(){
   axios.post('/comprobante/crear',this.comp);
+},
+
+abrirCajaChica(){
+
+  axios.get(this.apphost + '/LF4f/caja_chica/listar')
+  .then(r=>{
+
+    this.cajaMovimientos = r.data;
+
+    this.$nextTick(()=>{
+
+      // 🔴 destruir si existe
+      if ($.fn.DataTable.isDataTable('#tablaCaja')) {
+        $('#tablaCaja').DataTable().destroy();
+      }
+
+      // 🔵 crear nuevamente
+      $('#tablaCaja').DataTable({
+        language: (typeof dt_language !== 'undefined' ? dt_language : undefined),
+        scrollX: true,
+        dom: 'frtip',
+        order: [[0,'desc']]
+      });
+
+    });
+
+    $('#modalCaja').modal('show');
+
+  });
+
 },
 
 verDetalle(){
