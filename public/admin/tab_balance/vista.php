@@ -543,7 +543,7 @@
           </thead>
 
           <tbody>
-            <tr v-for="c in cajaMovimientos">
+            <tr v-for="c in cajaMovimientos" :key="c.caja_chica_id">
               <td>{{ c.caja_chica_id }}</td>
               <td>{{ c.fecha }}</td>
               <td>{{ c.tipo }}</td>
@@ -1164,6 +1164,7 @@ abrirCajaChica(){
       if ($.fn.DataTable.isDataTable('#tablaCaja')) {
         console.log('♻️ [5] destruyendo DataTable existente');
         $('#tablaCaja').DataTable().destroy();
+        $('#tablaCaja tbody').empty();
       } else {
         console.log('ℹ️ [5] no había DataTable previo');
       }
