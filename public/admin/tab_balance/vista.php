@@ -876,44 +876,6 @@ mesNombre(m){
   return ['','Enero','Febrero','Marzo','Abril','Mayo'][m];
 },
 
-abrirCajaChica(){
-
-  // 🔴 destruir ANTES
-  if ($.fn.DataTable.isDataTable('#tablaCaja')) {
-    $('#tablaCaja').DataTable().destroy();
-  }
-
-  axios.get(this.apphost + '/LF4f/caja_chica/listar')
-  .then(r=>{
-
-    this.cajaMovimientos = r.data;
-
-    this.totalIngresos = r.data
-      .filter(x=>x.tipo=='INGRESO')
-      .reduce((a,b)=>a + parseFloat(b.monto),0);
-
-    this.totalEgresos = r.data
-      .filter(x=>x.tipo=='EGRESO')
-      .reduce((a,b)=>a + parseFloat(b.monto),0);
-
-    this.$nextTick(()=>{
-
-      // 🔵 volver a crear DataTable limpio
-      $('#tablaCaja').DataTable({
-                language: (typeof dt_language !== 'undefined' ? dt_language : undefined),
-                scrollX: true,
-                dom: 'frtip',
-                order: [[0,'desc']]
-              });
-
-    });
-
-    $('#modalCaja').modal('show');
-
-  });
-
-},
-
 calcularInforme(){
 
   if(!this.filtro.fecha_inicio || !this.filtro.fecha_fin){
@@ -1136,9 +1098,8 @@ getFechaHoy(){
   .then(()=>{
     $('#modalRegistrarCaja').modal('hide');
 
-    setTimeout(()=>{
-      this.abrirCajaChica();
-    },300);
+    this.abrirCajaChica();
+
   });
 
 },
