@@ -76,6 +76,7 @@ Flight::route('GET /reg/category/listar', function () {
             porcentaje_propietario,
             is_activo
         FROM category
+        WHERE participa_reparto = 1
         ORDER BY id DESC
     ");
 
@@ -97,6 +98,7 @@ Flight::route('GET /reg/category/activas', function () {
             porcentaje_propietario
         FROM category
         WHERE is_activo = 1
+        AND participa_reparto = 1
         ORDER BY priority ASC, name ASC
     ");
 
@@ -109,7 +111,7 @@ Flight::route('POST /reg/category/crear', function () {
 
     $name = trim($data['name'] ?? '');
     $color = trim($data['color'] ?? '#000000');
-    $priority = isset($data['priority']) ? (int)$data['priority'] : 0;
+    $participa_reparto = 1;
     $draft = isset($data['draft']) ? (int)$data['draft'] : 0;
 
     // nuevos campos de negocio
@@ -163,7 +165,7 @@ Flight::route('POST /reg/category/editar', function () {
     $id = (int)($data['id'] ?? 0);
     $name = trim($data['name'] ?? '');
     $color = trim($data['color'] ?? '#000000');
-    $priority = isset($data['priority']) ? (int)$data['priority'] : 0;
+    $participa_reparto = 1;
     $draft = isset($data['draft']) ? (int)$data['draft'] : 0;
 
     $participa_reparto = !empty($data['participa_reparto']) ? 1 : 0;

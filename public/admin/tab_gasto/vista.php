@@ -52,13 +52,7 @@
         <input type="color" v-model="nuevo.color">
       </div>
     </div>
-    <div class="control-group">
-      <label>Prioridad</label>
-      <div class="controls">
-        <input type="number" v-model.number="nuevo.priority">
-      </div>
-    </div>
-    <div class="control-group">
+    <div class="control-group" style="padding: 4px;">
       <label class="checkbox">
         <input type="checkbox" v-model="nuevo.participa_reparto">
         Participa reparto
@@ -119,13 +113,7 @@
         <input type="color" v-model="form.color">
       </div>
     </div>
-    <div class="control-group">
-      <label>Prioridad</label>
-      <div class="controls">
-        <input type="number" v-model.number="form.priority">
-      </div>
-    </div>
-    <div class="control-group">
+    <div class="control-group" style="padding: 4px;">
       <label class="checkbox">
         <input type="checkbox" v-model="form.participa_reparto">
         Participa reparto
