@@ -74,6 +74,31 @@ Flight::route('POST /product/crear', function () {
         $product_id = DB::insertId();
 
         // ==========================
+        // INVENTARIO BASE
+        // ==========================
+        DB::insert('inventario', [
+            'product_id'   => $product_id,
+            'stock_actual' => 0,
+            'stock_min'    => 0,
+            'stock_max'    => 999999
+        ]);
+
+        // ==========================
+        // MOVIMIENTO INICIAL (KARDEX)
+        // ==========================
+        DB::insert('inventario_movimiento', [
+            'product_id'        => $product_id,
+            'tipo'              => 'AJUSTE',
+            'origen'            => 'AJUSTE',
+            'cantidad'          => 0,
+            'precio_unitario'   => 0,
+            'stock_resultante'  => 0,
+            'fecha'             => date("Y-m-d H:i:s"),
+            'referencia_id'     => $product_id,
+            'referencia_tabla'  => 'product'
+        ]);
+
+        // ==========================
         // INSERT CATEGORÍAS
         // ==========================
         if (!empty($d['categorias'])) {
