@@ -777,41 +777,45 @@ Flight::route('POST /api/order/submit', function () {
         // =====================================================
         // ➕ CREAR PRODUCT_ORDER SI NO EXISTE
         // =====================================================
-        // =====================================================
-        // ➕ CREAR PRODUCT_ORDER (PAGO DIRECTO)
-        // =====================================================
         if (!$order_id) {
 
-            $modo_order_id = 1; // ✅ PAGO DIRECTO
-            $serial = 'POS-' . date('Y') . '-' . strtoupper(bin2hex(random_bytes(3)));
+            $modo_order_id = 1;
+
+            $serial = 'POS-' . date('Y') . '-' .
+                strtoupper(bin2hex(random_bytes(3)));
 
             DB::insert('product_order', [
+
                 'cliente_id'       => $o['cliente_id'] ?? null,
                 'administrador_id' => $o['administrador_id'] ?? null,
                 'caja_id'          => $o['caja_id'] ?? null,
                 'tipo_pago_id'     => $o['tipo_pago_id'] ?? null,
 
-                'mesa_id'          => null,              // 👈 DIRECTO, no mesa
-                'modo_order_id'    => $modo_order_id,    // 👈 1 = DIRECTO
+                'mesa_id'          => null,
+                'modo_order_id'    => $modo_order_id,
 
                 'total_fees'       => $o['total_fees'] ?? 0,
                 'tax'              => $o['tax'] ?? 0,
                 'serial'           => $serial,
 
                 'fecha_inicio'     => null,
-                'fecha_fin'        => $nowSql,            // 👈 ya está pagado
+                'fecha_fin'        => $nowSql,
 
                 'created_at'       => $nowMs,
-                'last_update'      => $nowMs
+                'last_update'      => $nowMs,
+                'fecha_creacion'   => $nowSql,
+                'fecha_modificacion' => $nowSql
             ]);
 
             $order_id = DB::insertId();
 
             if (!$order_id) {
-                throw new Exception("No se pudo crear product_order", 200);
+                throw new Exception(
+                    "No se pudo crear product_order",
+                    200
+                );
             }
         }
-
 
         // =====================================================
         // 📦 INSERTAR DETALLES
@@ -819,75 +823,109 @@ Flight::route('POST /api/order/submit', function () {
         foreach ($details as $i => $d) {
 
             if (empty($d['product_id'])) {
-                throw new Exception("Detalle[$i]: product_id vacío", 300);
+                throw new Exception(
+                    "Detalle[$i]: product_id vacío",
+                    300
+                );
             }
 
             if (empty($d['amount'])) {
-                throw new Exception("Detalle[$i]: amount vacío", 301);
+                throw new Exception(
+                    "Detalle[$i]: amount vacío",
+                    301
+                );
             }
 
             if (!isset($d['price_item'])) {
-                throw new Exception("Detalle[$i]: price_item vacío", 302);
+                throw new Exception(
+                    "Detalle[$i]: price_item vacío",
+                    302
+                );
             }
 
-            // 🔍 OBTENER NOMBRE DEL PRODUCTO
+            // =================================================
+            // 🔍 OBTENER NOMBRE PRODUCTO
+            // =================================================
             $product_name = DB::queryFirstField(
-                "SELECT name FROM product WHERE product_id = %i",
+                "
+                SELECT name
+                FROM product
+                WHERE product_id = %i
+                ",
                 $d['product_id']
             );
 
             if (!$product_name) {
+
                 throw new Exception(
                     "Producto no existe (product_id={$d['product_id']})",
                     303
                 );
             }
 
-             // 🔥 🔥 OBTENER COSTO (AQUÍ VA TU LÓGICA)
+            // =================================================
+            // 💰 OBTENER COSTO ACTUAL
+            // =================================================
             $costo = DB::queryFirstField("
-                SELECT precio_unitario 
+                SELECT precio_unitario
                 FROM inventario_movimiento
-                WHERE product_id=%i
-                  AND origen='COMPRA'
+                WHERE product_id = %i
                 ORDER BY inventario_movimiento_id DESC
                 LIMIT 1
             ", $d['product_id']);
 
-            if (!$costo) $costo = 0;
+            if (!$costo) {
+                $costo = 0;
+            }
 
+            // =================================================
+            // 📦 INSERTAR DETALLE
+            // =================================================
             DB::insert('product_order_detail', [
-                'order_id'     => $order_id,
-                'product_id'   => $d['product_id'],
-                'product_name' => $product_name,
-                'amount'       => $d['amount'],
-                'costo_unitario' => $costo, // 🔥 AQUÍ
-                'price_item'   => $d['price_item'],
-                'created_at'   => $nowMs,
-                'last_update'  => $nowMs
+
+                'order_id'       => $order_id,
+                'product_id'     => $d['product_id'],
+                'product_name'   => $product_name,
+                'amount'         => $d['amount'],
+                'costo_unitario' => $costo,
+                'price_item'     => $d['price_item'],
+
+                'created_at'     => $nowMs,
+                'last_update'    => $nowMs,
+                'fecha_creacion' => $nowSql,
+                'fecha_modificacion' => $nowSql
             ]);
 
             // =================================================
-            // 📉 DESCONTAR STOCK
+            // 📉 MOVIMIENTO INVENTARIO
             // =================================================
-            $rows = DB::query("
-                UPDATE inventario
-                SET stock_actual = stock_actual - %i
-                WHERE product_id = %i
-            ", $d['amount'], $d['product_id']);
+            registrar_movimiento_inventario(
 
-            if (DB::affectedRows() === 0) {
-                throw new Exception(
-                    "Inventario no encontrado para product_id={$d['product_id']}",
-                    400
-                );
-            }
+                $d['product_id'],
+                'SALIDA',
+                'VENTA',
+
+                $d['amount'],
+                $d['price_item'],
+
+                $order_id,
+                'product_order'
+            );
         }
+
+        // =====================================================
+        // 🔥 RECALCULAR TOTAL
+        // =====================================================
+        recalcular_total_orden($order_id);
 
         DB::commit();
 
         Flight::json([
+
             'status' => 'success',
+
             'data' => [
+
                 'order_id' => $order_id,
                 'serial'   => $serial
             ]
@@ -898,15 +936,20 @@ Flight::route('POST /api/order/submit', function () {
         DB::rollback();
 
         Flight::json([
+
             'status' => 'failed',
+
             'error' => [
+
                 'code'    => $e->getCode(),
                 'message' => $e->getMessage(),
                 'file'    => $e->getFile(),
                 'line'    => $e->getLine(),
                 'trace'   => $e->getTraceAsString()
             ],
+
             'payload' => $payload ?? null
+
         ], 500);
     }
 });

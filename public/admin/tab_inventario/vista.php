@@ -10,8 +10,6 @@
           <th>ID</th>
           <th>Producto</th>
           <th>Stock</th>
-          <th>Mín</th>
-          <th>Máx</th>
           <th>Acciones</th>
         </tr>
       </thead>
@@ -277,18 +275,7 @@ new Vue({
                     <a href="#" class="detalle" data-id="${i.inventario_id}">
                       Detalle
                     </a>
-                  </li>
-                  <li>
-                    <a href="#" class="limites" data-id="${i.inventario_id}">
-                      Establecer límites
-                    </a>
-                  </li>
-                  <li class="divider"></li>
-                  <li>
-                    <a href="#" class="eliminar" data-id="${i.inventario_id}">
-                      Eliminar
-                    </a>
-                  </li>
+                  </li>                  
                   <li>
                     <a href="#" class="ajuste" data-id="${i.inventario_id}">
                       Ajustar stock
@@ -312,8 +299,6 @@ new Vue({
               i.inventario_id,
               i.producto,
               stockTxt,
-              i.stock_min,
-              i.stock_max,
               acciones
             ]);
           });
