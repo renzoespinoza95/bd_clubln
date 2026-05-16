@@ -459,34 +459,55 @@ Flight::route('POST /LF4f/balance/resumen', function(){
 
     $ventas = DB::queryFirstField("
         SELECT IFNULL(SUM(
+
             CASE 
                 WHEN c.participa_reparto = 1
-                THEN (d.amount * d.price_item) * (c.porcentaje_propietario / 100)
+                THEN (d.amount * d.price_item) 
+                     * (c.porcentaje_propietario / 100)
+
                 ELSE (d.amount * d.price_item)
             END
+
         ),0)
+
         FROM product_order_detail d
+
         INNER JOIN product_order o 
             ON o.product_order_id = d.order_id
+
+        INNER JOIN product p
+            ON p.product_id = d.product_id
+
         INNER JOIN product_category pc 
             ON pc.product_id = d.product_id
+
         INNER JOIN category c 
             ON c.id = pc.category_id
+
         WHERE o.fecha_creacion BETWEEN %s AND %s
+
+        AND o.borrado_el IS NULL
+        AND p.borrado_el IS NULL
+        AND c.borrado_el IS NULL
     ", $ini, $fin);
 
 
     $caja_ing = DB::queryFirstField("
         SELECT IFNULL(SUM(monto),0)
+
         FROM caja_chica_movimiento
+
         WHERE tipo='INGRESO'
         AND categoria='CAJA_CHICA'
         AND fecha BETWEEN %s AND %s
     ", $ini, $fin);
 
+
     $facturado_ing = DB::queryFirstField("
         SELECT IFNULL(SUM(monto),0)
+
         FROM caja_chica_movimiento
+
         WHERE tipo='INGRESO'
         AND categoria='FACTURADO'
         AND fecha BETWEEN %s AND %s
@@ -499,29 +520,42 @@ Flight::route('POST /LF4f/balance/resumen', function(){
 
     $caja_eg = DB::queryFirstField("
         SELECT IFNULL(SUM(monto),0)
+
         FROM caja_chica_movimiento
+
         WHERE tipo='EGRESO'
         AND categoria='CAJA_CHICA'
         AND fecha BETWEEN %s AND %s
     ", $ini, $fin);
 
+
     $pago_deuda = DB::queryFirstField("
         SELECT IFNULL(SUM(monto),0)
+
         FROM caja_chica_movimiento
+
         WHERE tipo='EGRESO'
         AND categoria='PAGO_DEUDA'
         AND fecha BETWEEN %s AND %s
     ", $ini, $fin);
 
+
     $compras = DB::queryFirstField("
         SELECT IFNULL(SUM(total_compra),0)
+
         FROM compra
+
         WHERE fecha_creacion BETWEEN %s AND %s
+
+        AND borrado_el IS NULL
     ", $ini, $fin);
+
 
     $facturado_eg = DB::queryFirstField("
         SELECT IFNULL(SUM(monto),0)
+
         FROM caja_chica_movimiento
+
         WHERE tipo='EGRESO'
         AND categoria='FACTURADO'
         AND fecha BETWEEN %s AND %s
@@ -533,42 +567,71 @@ Flight::route('POST /LF4f/balance/resumen', function(){
      * ============================================ */
 
     $detalle_ingresos = DB::query("
+
         SELECT
+
             c.id,
             c.name,
+
             c.porcentaje_socio,
             c.porcentaje_propietario,
 
             SUM(d.amount * d.price_item) AS total_venta,
 
             SUM(
+
                 CASE 
+
                     WHEN c.participa_reparto = 1
-                    THEN (d.amount * d.price_item) * (c.porcentaje_propietario / 100)
+
+                    THEN (d.amount * d.price_item)
+                         * (c.porcentaje_propietario / 100)
+
                     ELSE (d.amount * d.price_item)
+
                 END
+
             ) AS ingreso_empresa,
 
             SUM(
+
                 CASE 
+
                     WHEN c.participa_reparto = 1
-                    THEN (d.amount * d.price_item) * (c.porcentaje_socio / 100)
+
+                    THEN (d.amount * d.price_item)
+                         * (c.porcentaje_socio / 100)
+
                     ELSE 0
+
                 END
+
             ) AS ingreso_socio
 
         FROM product_order_detail d
+
         INNER JOIN product_order o 
             ON o.product_order_id = d.order_id
+
+        INNER JOIN product p
+            ON p.product_id = d.product_id
+
         INNER JOIN product_category pc 
             ON pc.product_id = d.product_id
+
         INNER JOIN category c 
             ON c.id = pc.category_id
 
         WHERE o.fecha_creacion BETWEEN %s AND %s
 
+        AND o.borrado_el IS NULL
+        AND p.borrado_el IS NULL
+        AND c.borrado_el IS NULL
+
         GROUP BY c.id
+
         ORDER BY c.name ASC
+
     ", $ini, $fin);
 
 
@@ -577,113 +640,203 @@ Flight::route('POST /LF4f/balance/resumen', function(){
      * ============================================ */
 
     $detalle_egresos = DB::query("
+
         SELECT
+
             c.id,
             c.name,
+
             c.porcentaje_socio,
             c.porcentaje_propietario,
 
             SUM(g.monto) AS total_gasto,
 
-            SUM(g.monto * (c.porcentaje_propietario / 100)) AS gasto_empresa,
-            SUM(g.monto * (c.porcentaje_socio / 100)) AS gasto_socio
+            SUM(
+                g.monto * (c.porcentaje_propietario / 100)
+            ) AS gasto_empresa,
+
+            SUM(
+                g.monto * (c.porcentaje_socio / 100)
+            ) AS gasto_socio
 
         FROM pos_gasto_rubro g
+
         INNER JOIN category c 
             ON c.id = g.rubro_category_id
 
         WHERE g.fecha BETWEEN %s AND %s
 
+        AND c.borrado_el IS NULL
+
         GROUP BY c.id
+
         ORDER BY c.name ASC
+
     ", $ini, $fin);
 
 
     /* ============================================
-     * UTILIDAD POR CATEGORY (SOCIO vs EMPRESA)
+     * UTILIDAD POR CATEGORY
      * ============================================ */
 
     $detalle_utilidad = DB::query("
+
         SELECT
+
             c.id,
             c.name,
+
             c.porcentaje_socio,
             c.porcentaje_propietario,
 
             IFNULL(ing.total_venta,0) AS total_venta,
 
             IFNULL(
+
                 CASE 
+
                     WHEN c.participa_reparto = 1
-                    THEN ing.total_venta * (c.porcentaje_propietario / 100)
+
+                    THEN ing.total_venta
+                         * (c.porcentaje_propietario / 100)
+
                     ELSE ing.total_venta
+
                 END
+
             ,0) AS ingreso_empresa,
 
             IFNULL(
+
                 CASE 
+
                     WHEN c.participa_reparto = 1
-                    THEN ing.total_venta * (c.porcentaje_socio / 100)
+
+                    THEN ing.total_venta
+                         * (c.porcentaje_socio / 100)
+
                     ELSE 0
+
                 END
+
             ,0) AS ingreso_socio,
 
             IFNULL(gas.total_gasto,0) AS total_gasto,
 
-            IFNULL(gas.total_gasto * (c.porcentaje_propietario / 100),0) AS gasto_empresa,
-            IFNULL(gas.total_gasto * (c.porcentaje_socio / 100),0) AS gasto_socio,
+            IFNULL(
+                gas.total_gasto * (c.porcentaje_propietario / 100)
+            ,0) AS gasto_empresa,
+
+            IFNULL(
+                gas.total_gasto * (c.porcentaje_socio / 100)
+            ,0) AS gasto_socio,
 
             (
+
                 IFNULL(
+
                     CASE 
+
                         WHEN c.participa_reparto = 1
-                        THEN ing.total_venta * (c.porcentaje_propietario / 100)
+
+                        THEN ing.total_venta
+                             * (c.porcentaje_propietario / 100)
+
                         ELSE ing.total_venta
+
                     END
+
                 ,0)
+
                 -
-                IFNULL(gas.total_gasto * (c.porcentaje_propietario / 100),0)
+
+                IFNULL(
+                    gas.total_gasto
+                    * (c.porcentaje_propietario / 100)
+                ,0)
+
             ) AS utilidad_empresa,
 
             (
+
                 IFNULL(
+
                     CASE 
+
                         WHEN c.participa_reparto = 1
-                        THEN ing.total_venta * (c.porcentaje_socio / 100)
+
+                        THEN ing.total_venta
+                             * (c.porcentaje_socio / 100)
+
                         ELSE 0
+
                     END
+
                 ,0)
+
                 -
-                IFNULL(gas.total_gasto * (c.porcentaje_socio / 100),0)
+
+                IFNULL(
+                    gas.total_gasto
+                    * (c.porcentaje_socio / 100)
+                ,0)
+
             ) AS utilidad_socio
 
         FROM category c
 
         LEFT JOIN (
+
             SELECT
+
                 pc.category_id,
-                SUM(d.amount * d.price_item) AS total_venta
+
+                SUM(
+                    d.amount * d.price_item
+                ) AS total_venta
+
             FROM product_order_detail d
+
             INNER JOIN product_order o 
                 ON o.product_order_id = d.order_id
+
+            INNER JOIN product p
+                ON p.product_id = d.product_id
+
             INNER JOIN product_category pc 
                 ON pc.product_id = d.product_id
+
             WHERE o.fecha_creacion BETWEEN %s AND %s
+
+            AND o.borrado_el IS NULL
+            AND p.borrado_el IS NULL
+
             GROUP BY pc.category_id
+
         ) ing ON ing.category_id = c.id
 
         LEFT JOIN (
+
             SELECT
+
                 rubro_category_id,
+
                 SUM(monto) AS total_gasto
+
             FROM pos_gasto_rubro
+
             WHERE fecha BETWEEN %s AND %s
+
             GROUP BY rubro_category_id
+
         ) gas ON gas.rubro_category_id = c.id
 
         WHERE c.participa_reparto = 1
 
+        AND c.borrado_el IS NULL
+
         ORDER BY c.name ASC
+
     ", $ini, $fin, $ini, $fin);
 
 
@@ -691,9 +844,22 @@ Flight::route('POST /LF4f/balance/resumen', function(){
      * TOTALES
      * ============================================ */
 
-    $total_ingresos = $ventas + $caja_ing + $facturado_ing;    
-    $total_egresos  = $caja_eg + $compras + $facturado_eg + $pago_deuda;
-    $utilidad       = $total_ingresos - $total_egresos;
+    $total_ingresos = 
+        $ventas
+        + $caja_ing
+        + $facturado_ing;
+
+
+    $total_egresos  = 
+        $caja_eg
+        + $compras
+        + $facturado_eg
+        + $pago_deuda;
+
+
+    $utilidad = 
+        $total_ingresos
+        - $total_egresos;
 
 
     /* ============================================

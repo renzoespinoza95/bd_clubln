@@ -260,6 +260,36 @@
 
 </div>
 
+<hr>
+
+  <!-- =========================
+       TOTALES
+  ========================== -->
+  <div style="text-align:center;">
+
+    <h3>
+      TOTAL INGRESOS:
+      <span style="color:#27ae60;">
+        S/ {{ fmt(resumenMes.total_ingresos) }}
+      </span>
+    </h3>
+
+    <h3>
+      TOTAL EGRESOS:
+      <span style="color:#c0392b;">
+        S/ {{ fmt(resumenMes.total_egresos) }}
+      </span>
+    </h3>
+
+    <h2>
+      UTILIDAD:
+      <span :style="{color: resumenMes.utilidad >= 0 ? '#27ae60' : '#c0392b'}">
+        S/ {{ fmt(resumenMes.utilidad) }}
+      </span>
+    </h2>
+
+  </div>
+
 
 
   <hr>
@@ -340,37 +370,7 @@
         </td>
       </tr>
     </tbody>
-  </table>
-
-  <hr>
-
-  <!-- =========================
-       TOTALES
-  ========================== -->
-  <div style="text-align:center;">
-
-    <h3>
-      TOTAL INGRESOS:
-      <span style="color:#27ae60;">
-        S/ {{ fmt(resumenMes.total_ingresos) }}
-      </span>
-    </h3>
-
-    <h3>
-      TOTAL EGRESOS:
-      <span style="color:#c0392b;">
-        S/ {{ fmt(resumenMes.total_egresos) }}
-      </span>
-    </h3>
-
-    <h2>
-      UTILIDAD:
-      <span :style="{color: resumenMes.utilidad >= 0 ? '#27ae60' : '#c0392b'}">
-        S/ {{ fmt(resumenMes.utilidad) }}
-      </span>
-    </h2>
-
-  </div>
+  </table>  
 
 </div>
 
