@@ -20,10 +20,14 @@
     <!-- INFORME ECONOMICO -->
     <div class="well" style="background:#fff; border:1px solid #ddd; padding:20px; margin-bottom:20px;">
 
-      <div style="margin-bottom:20px;">
+<!-- =========================================
+     FILTROS
+========================================= -->
+<div style="margin-bottom:20px;">
 
   <div class="row-fluid">
 
+    <!-- FECHA INICIO -->
     <div class="span3">
       <label>Fecha inicio</label>
       <input 
@@ -32,6 +36,7 @@
         v-model="filtro.fecha_inicio">
     </div>
 
+    <!-- FECHA FIN -->
     <div class="span3">
       <label>Fecha término</label>
       <input 
@@ -40,6 +45,7 @@
         v-model="filtro.fecha_fin">
     </div>
 
+    <!-- BOTON -->
     <div class="span2" style="padding-top:25px;">
       <button 
         class="btn btn-danger"
@@ -49,9 +55,100 @@
       </button>
     </div>
 
+    <!-- SELECT MES -->
+<div class="span4" style="padding-top:25px; text-align:right;">
+
+  <div style="
+    display:inline-block;
+    position:relative;
+  ">
+
+    <!-- ICONO -->
+    <i class="icon-calendar" style="
+      position:absolute;
+      left:12px;
+      top:13px;
+      color:#ffffff;
+      font-size:14px;
+      z-index:2;
+      pointer-events:none;
+    "></i>
+
+    <select 
+      class="input-xlarge"
+      v-model="mesSeleccionado"
+      @change="seleccionarMes"
+
+      :style="{
+        height:'42px',
+        paddingLeft:'38px',
+        paddingRight:'15px',
+
+        border:'none',
+        borderRadius:'10px',
+
+        background:'linear-gradient(135deg,#ff512f 0%,#dd2476 100%)',
+
+        color: mesSeleccionado ? '#ffffff' : '#ffe5f1',
+
+        fontWeight:'700',
+        fontSize:'14px',
+
+        boxShadow:'0 6px 18px rgba(221,36,118,0.35)',
+
+        outline:'none',
+        cursor:'pointer',
+
+        appearance:'none',
+        WebkitAppearance:'none',
+        MozAppearance:'none'
+      }"
+
+      onmouseover="
+        this.style.transform='translateY(-2px)';
+        this.style.boxShadow='0 10px 24px rgba(221,36,118,0.45)';
+      "
+
+      onmouseout="
+        this.style.transform='translateY(0px)';
+        this.style.boxShadow='0 6px 18px rgba(221,36,118,0.35)';
+      "
+    >
+
+      <!-- DEFAULT -->
+      <option 
+        disabled
+        value=""
+        style="
+          color:#555;
+          background:#fff;
+        ">
+        📅 Seleccionar mes
+      </option>
+
+      <!-- MESES -->
+      <option 
+        v-for="m in mesesDisponibles"
+        :value="m.value"
+        style="
+          color:#111;
+          background:#fff;
+        ">
+
+        {{ m.label }}
+
+      </option>
+
+    </select>
+
   </div>
 
 </div>
+
+  </div>
+
+</div>
+      
 
   
   <div style="text-align:center; margin-bottom:30px;">
@@ -78,14 +175,32 @@
       INFORME ECONÓMICO MENSUAL
     </h2>
 
-    <p style="
-      text-align:center;
-      color:#6b7280;
-      margin-bottom:15px;
-      font-size:13px;
-    ">
-      Del {{ fechaInicioMes }} al {{ fechaHoy }}
-    </p>
+<p style="
+  text-align:center;
+  margin-bottom:15px;
+  font-size:13px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.6px;
+">
+
+  <span style="color:#6b7280;">
+    DEL
+  </span>
+
+  <span style="color:#ef4444;">
+    {{ fechaInicioMesTexto }}
+  </span>
+
+  <span style="color:#6b7280;">
+    AL
+  </span>
+
+  <span style="color:#ef4444;">
+    {{ fechaFinMesTexto }}
+  </span>
+
+</p>
 
     <hr style="margin:15px 0; border-color:#f1f5f9;">
 
@@ -808,6 +923,10 @@ data:{
   balances:[],
   apphost: (typeof apphost !== 'undefined' ? apphost : ''),
   ingresos:[],
+  mesSeleccionado:'',
+  mesesDisponibles:[],
+  fechaInicioMesTexto:'',
+  fechaFinMesTexto:'',
   deuda:{
     tipo_entidad:'PERSONA',
     nombre_persona:'',
@@ -896,21 +1015,39 @@ cargarInformeActual(){
   const hoy = new Date();
 
   const yyyy = hoy.getFullYear();
-  const mm = String(hoy.getMonth()+1).padStart(2,'0');
-  const dd = String(hoy.getDate()).padStart(2,'0');
 
-  this.fechaInicioMes = `01/${mm}/${yyyy}`;
-  this.fechaHoy = `${dd}/${mm}/${yyyy}`;
+  const mm = String(
+    hoy.getMonth() + 1
+  ).padStart(2,'0');
+
+  const dd = String(
+    hoy.getDate()
+  ).padStart(2,'0');
 
   const fecha_inicio = `${yyyy}-${mm}-01`;
+
   const fecha_fin = `${yyyy}-${mm}-${dd}`;
 
-  axios.post(this.apphost + '/LF4f/balance/resumen', {
+  this.filtro.fecha_inicio = fecha_inicio;
+  this.filtro.fecha_fin = fecha_fin;
+
+  this.mesSeleccionado = `${yyyy}-${mm}`;
+
+  this.actualizarTextoFechas(
     fecha_inicio,
     fecha_fin
+  );
+
+  axios.post(this.apphost + '/LF4f/balance/resumen', {
+
+    fecha_inicio,
+    fecha_fin
+
   })
   .then(r=>{
+
     this.resumenMes = r.data;
+
   });
 
 },
@@ -1092,6 +1229,103 @@ guardarDeuda(){
   });
 
 },
+generarMeses(){
+
+  const meses = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre'
+  ];
+
+  const hoy = new Date();
+
+  const anio = 2026;
+
+  const mesActual = hoy.getFullYear() === 2026
+    ? hoy.getMonth() + 1
+    : 12;
+
+  this.mesesDisponibles = [];
+
+  for(let i = 1; i <= mesActual; i++){
+
+    this.mesesDisponibles.push({
+
+      value: `${anio}-${String(i).padStart(2,'0')}`,
+
+      label: `${meses[i - 1]} - ${anio}`
+
+    });
+
+  }
+
+},
+
+seleccionarMes(){
+
+  if(!this.mesSeleccionado){
+    return;
+  }
+
+  const partes = this.mesSeleccionado.split('-');
+
+  const anio = partes[0];
+  const mes  = partes[1];
+
+  const inicio = `${anio}-${mes}-01`;
+
+  const ultimoDia = new Date(anio, mes, 0).getDate();
+
+  const fin = `${anio}-${mes}-${String(ultimoDia).padStart(2,'0')}`;
+
+  this.filtro.fecha_inicio = inicio;
+  this.filtro.fecha_fin = fin;
+
+  this.actualizarTextoFechas(
+    inicio,
+    fin
+  );
+
+  this.calcularBalance();
+
+},
+
+actualizarTextoFechas(inicio, fin){
+
+  const meses = [
+    'ENERO',
+    'FEBRERO',
+    'MARZO',
+    'ABRIL',
+    'MAYO',
+    'JUNIO',
+    'JULIO',
+    'AGOSTO',
+    'SEPTIEMBRE',
+    'OCTUBRE',
+    'NOVIEMBRE',
+    'DICIEMBRE'
+  ];
+
+  const fi = new Date(inicio + 'T00:00:00');
+  const ff = new Date(fin + 'T00:00:00');
+
+  this.fechaInicioMesTexto =
+  `${String(fi.getDate()).padStart(2,'0')} ${meses[fi.getMonth()]}`;
+
+this.fechaFinMesTexto =
+  `${String(ff.getDate()).padStart(2,'0')} ${meses[ff.getMonth()]}`;
+
+},
 cargarProveedores(){
   axios.get(this.apphost + '/LF4f/proveedor/listar')
   .then(r=>{
@@ -1240,6 +1474,7 @@ listarDeudas(){
 
 mounted(){
   this.cargarProveedores();
+  this.generarMeses();
   this.cargarClientes(); 
   this.cargarInformeActual();
 }
