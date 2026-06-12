@@ -103,7 +103,6 @@
               <td>
                 <button
                   class="btn btn-mini btn-danger"
-                  v-if="!ordenCerrada"
                   @click="eliminarDetail(d)">
                   X
                 </button>
@@ -900,25 +899,21 @@ new Vue({
 
     crearOrder() {
 
-      // 1️⃣ Cliente obligatorio
       if(!this.nueva.cliente_id){
         apprise('Debe seleccionar un cliente');
         return;
       }
 
-      // 2️⃣ Mesa obligatoria
       if(!this.nueva.mesa){
         apprise('Debe seleccionar una mesa o DIRECTO');
         return;
       }
 
-      // 3️⃣ Items
       if(this.nueva.items.length === 0){
         apprise('Agregue al menos un ítem');
         return;
       }
 
-      // 4️⃣ Tipo de pago
       if(!this.nueva.tipo_pago_id){
         apprise('Seleccione tipo de pago');
         return;
@@ -934,12 +929,36 @@ new Vue({
         tipo_pago_id: this.nueva.tipo_pago_id,
         mesa_id: mesa_id,
         items: this.nueva.items
-      }).then(()=>{
+      })
+      .then(()=>{
         $('#modalCrearOrder').modal('hide');
         this.listar();
-        this.cargarMesas();  
-      }).catch(e=>{
-        apprise(e.response?.data?.msg || 'Error al crear la orden');
+        this.cargarMesas();
+      })
+      .catch(e=>{
+
+        const r = e.response?.data;
+
+        if(
+            r &&
+            r.status === 'error' &&
+            r.msg === 'Stock insuficiente'
+        ){
+
+            apprise(
+              'Stock insuficiente.<br><br>' +
+              '<b>Producto:</b> ' + r.producto + '<br>' +
+              '<b>Stock actual:</b> ' + r.stock_actual + '<br>' +
+              '<b>Cantidad solicitada:</b> ' + r.cantidad_solicitada
+            );
+
+            return;
+        }
+
+        apprise(
+          r?.msg || 'Error al crear la orden'
+        );
+
       });
     },
 

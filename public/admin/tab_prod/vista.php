@@ -21,15 +21,16 @@
     <!-- ===========================
           TABLA PRODUCTOS
     ============================ -->
-    <table id="tablaProduct" class="table table-bordered table-striped">
+    <table id="tablaProduct" class="table table-bordered">
       <thead>
         <tr>
           <th>ID</th>
-          <th>Nombre</th>
-          <th>Precio</th>
-          <th>Stock</th>
-          <th>Categorías</th>
-          <th>Acciones</th>
+<th>Nombre</th>
+<th>C.U.</th>
+<th>Precio</th>
+<th>Stock</th>
+<th>Categorías</th>
+<th>Acciones</th>
         </tr>
       </thead>
     </table>
@@ -283,8 +284,50 @@ new Vue({
                  </ul>
                </div>`;
             this.dt.row.add([
-              p.product_id, p.name, p.price, p.stock,
-              p.categories_names, actions
+                p.product_id,
+                p.name,
+
+                (() => {
+
+                    const cu = parseFloat(p.costo_unitario || 0);
+                    const pv = parseFloat(p.price || 0);
+
+                    if (cu > pv) {
+                        return `
+                            <span class="badge badge-important"
+                                  title="Costo mayor que precio de venta">
+                                <i class="fa fa-exclamation"></i>
+                                ${cu.toFixed(2)}
+                            </span>
+                        `;
+                    }
+
+                    return cu.toFixed(2);
+
+                })(),
+
+                p.price,
+
+                (() => {
+
+                    const stock = parseFloat(p.stock || 0);
+
+                    if (stock <= 0) {
+                        return `
+                            <span class="badge badge-important"
+                                  title="Producto sin stock">
+                                <i class="fa fa-exclamation"></i>
+                                ${stock}
+                            </span>
+                        `;
+                    }
+
+                    return stock;
+
+                })(),
+
+                p.categories_names,
+                actions
             ]);
           });
           this.dt.draw(false);

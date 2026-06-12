@@ -50,38 +50,9 @@ Flight::route('POST /product_order/crear', function () {
     include DEFINITION;
     login_admin::autentificar_administrador();
 
-    // ===============================
-    // 1) Validar sesión
-    // ===============================
-    if (!$sesion_admin_administrador_id) {
-        Flight::json([
-            'status' => 'error',
-            'msg'    => 'Sesión no válida'
-        ], 401);
-        return;
-    }
+    $administrador_id = (int)$info_admin['administrador_id'];
 
-    // ===============================
-    // 2) Obtener administrador_id
-    // ===============================
-    $valor_key = $nombre_app . vari("KEY");
-    $administrador_id = (int) str_replace(
-        "*",
-        "",
-        util::decrypt($sesion_admin_administrador_id, $valor_key)
-    );
 
-    if (!$administrador_id) {
-        Flight::json([
-            'status' => 'error',
-            'msg'    => 'Administrador inválido'
-        ], 401);
-        return;
-    }
-
-    // ===============================
-    // 3) Buscar caja ABIERTA del día
-    // ===============================
     $caja = DB::queryFirstRow("
         SELECT *
         FROM caja
@@ -100,14 +71,10 @@ Flight::route('POST /product_order/crear', function () {
         return;
     }
 
-    // ===============================
-    // 4) Leer payload
-    // ===============================
+
+
     $d = Flight::request()->data->getData();
 
-    // -------------------------------
-    // Validaciones obligatorias
-    // -------------------------------
     if (empty($d['cliente_id'])) {
         Flight::json([
             'status' => 'error',
@@ -132,10 +99,12 @@ Flight::route('POST /product_order/crear', function () {
         return;
     }
 
-    // ===============================
-    // 5) Lógica de mesa
-    // ===============================
-    $mesa_id = isset($d['mesa_id']) ? (int)$d['mesa_id'] : -1;
+
+            // dd($administrador_id);
+
+    $mesa_id = isset($d['mesa_id'])
+        ? (int)$d['mesa_id']
+        : -1;
 
     if ($mesa_id < 0) {
         Flight::json([
@@ -145,95 +114,147 @@ Flight::route('POST /product_order/crear', function () {
         return;
     }
 
-    // Valores por defecto: VENTA DIRECTA
-    // valores por defecto
-    $modo_order_id = 1; // PAGO DIRECTO
-    $mesa_id_db = null;
-    $fecha_inicio = null;
-    $fecha_fin = null;
+    $modo_order_id = 1;
+    $mesa_id_db    = null;
+    $fecha_inicio  = null;
 
-    // si es mesa
     if ($mesa_id > 0) {
 
         $ocupada = DB::queryFirstField("
-            SELECT COUNT(*) 
+            SELECT COUNT(*)
             FROM product_order
-            WHERE mesa_id=%i AND modo_order_id=2
+            WHERE mesa_id=%i
+              AND modo_order_id=2
+              AND borrado_el IS NULL
         ", $mesa_id);
 
         if ($ocupada) {
-            Flight::json(['status'=>'error','msg'=>'Mesa ocupada'],409);
+            Flight::json([
+                'status' => 'error',
+                'msg'    => 'Mesa ocupada'
+            ], 409);
             return;
         }
 
-        $modo_order_id = 2; // MESA PEDIDO
-        $mesa_id_db = $mesa_id;
-        $fecha_inicio = date('Y-m-d H:i:s');
-
-        DB::update('mesa',['estado'=>'OCUPADA'],"mesa_id=%i",$mesa_id);
+        $modo_order_id = 2;
+        $mesa_id_db    = $mesa_id;
+        $fecha_inicio  = date('Y-m-d H:i:s');
     }
 
-    // ===============================
-    // 6) Crear orden (TRANSACCIÓN)
-    // ===============================
+    /* =====================================
+       VALIDAR STOCK DE TODOS LOS PRODUCTOS
+    ====================================== */
+
+    foreach ($d['items'] as $item) {
+
+        $product_id = (int)$item['product_id'];
+        $cantidad   = (int)$item['amount'];
+
+        $producto = DB::queryFirstRow("
+            SELECT
+                p.name,
+                IFNULL(i.stock_actual,0) AS stock_actual
+            FROM product p
+            LEFT JOIN inventario i
+                ON i.product_id = p.product_id
+               AND i.borrado_el IS NULL
+            WHERE p.product_id=%i
+              AND p.borrado_el IS NULL
+        ", $product_id);
+
+        if (!$producto) {
+
+            Flight::json([
+                'status' => 'error',
+                'msg'    => 'Producto inexistente',
+                'product_id' => $product_id
+            ], 404);
+
+            return;
+        }
+
+        if ((int)$producto['stock_actual'] < $cantidad) {
+
+            Flight::json([
+                'status' => 'error',
+                'msg' => 'Stock insuficiente',
+                'producto' => $producto['name'],
+                'product_id' => $product_id,
+                'stock_actual' => (int)$producto['stock_actual'],
+                'cantidad_solicitada' => $cantidad
+            ], 409);
+
+            return;
+        }
+    }
+
     DB::startTransaction();
 
-            try {
+    try {
 
-                $now = time() * 1000;
+        if ($mesa_id > 0) {
 
-                DB::insert('product_order',[
-                  'serial' => generarCodigoOrden(),
-                  'administrador_id' => $administrador_id,
-                  'cliente_id' => $d['cliente_id'],
-                  'caja_id' => $caja['caja_id'],
-                  'tipo_pago_id' => $d['tipo_pago_id'],
-                  'mesa_id' => $mesa_id_db,
-                  'modo_order_id' => $modo_order_id,
-                  'total_fees' => 0,
-                  'tax' => 0,
-                  'fecha_inicio' => $fecha_inicio,
-                  'fecha_creacion' => date('Y-m-d H:i:s'),
-                  'fecha_modificacion' => date('Y-m-d H:i:s'),
-                  'created_at' => time()*1000,
-                  'last_update' => time()*1000
-                ]);
+            DB::update(
+                'mesa',
+                ['estado'=>'OCUPADA'],
+                "mesa_id=%i",
+                $mesa_id
+            );
+        }
 
+        $now = time() * 1000;
 
-                $order_id = DB::insertId();
+        DB::insert('product_order', [
+            'serial'              => generarCodigoOrden(),
+            'administrador_id'    => $administrador_id,
+            'cliente_id'          => $d['cliente_id'],
+            'caja_id'             => $caja['caja_id'],
+            'tipo_pago_id'        => $d['tipo_pago_id'],
+            'mesa_id'             => $mesa_id_db,
+            'modo_order_id'       => $modo_order_id,
+            'total_fees'          => 0,
+            'tax'                 => 0,
+            'fecha_inicio'        => $fecha_inicio,
+            'fecha_creacion'      => date('Y-m-d H:i:s'),
+            'fecha_modificacion'  => date('Y-m-d H:i:s'),
+            'created_at'          => $now,
+            'last_update'         => $now
+        ]);
 
-                // ===============================
-                // 7) Insertar detalles + inventario
-                // ===============================
-                foreach ($d['items'] as $i) {
+        $order_id = DB::insertId();
 
-                    // 🔥 obtener costo actual del producto
-                    $costo = DB::queryFirstField("
-                        SELECT precio_unitario 
-                        FROM inventario_movimiento
-                        WHERE product_id=%i
-                        ORDER BY inventario_movimiento_id DESC
-                        LIMIT 1
-                    ", $i['product_id']);
+        foreach ($d['items'] as $i) {
 
-                    // fallback si no existe
-                    if (!$costo) $costo = 0;
+            $costo = DB::queryFirstField("
+                SELECT precio_unitario
+                FROM inventario_movimiento
+                WHERE product_id=%i
+                ORDER BY inventario_movimiento_id DESC
+                LIMIT 1
+            ", $i['product_id']);
 
-                    DB::insert('product_order_detail', [
-                        'order_id'       => $order_id,
-                        'product_id'     => $i['product_id'],
-                        'product_name'   => DB::queryFirstField(
-                            "SELECT name FROM product WHERE product_id = %i",
-                            $i['product_id']
-                        ),
-                        'amount'         => $i['amount'],
-                        'price_item'     => $i['price_item'],
-                        'costo_unitario' => $costo, // 🔥 AQUÍ ESTÁ LA MAGIA
-                        'created_at'     => $now,
-                        'last_update'    => $now,
-                        'fecha_creacion' => date('Y-m-d H:i:s'),
-                        'fecha_modificacion' => date('Y-m-d H:i:s')
-                    ]);
+            if (!$costo) {
+                $costo = 0;
+            }
+
+            DB::insert('product_order_detail', [
+                'order_id'            => $order_id,
+                'product_id'          => $i['product_id'],
+                'product_name'        => DB::queryFirstField(
+                    "SELECT name
+                     FROM product
+                     WHERE product_id=%i",
+                    $i['product_id']
+                ),
+                'amount'              => $i['amount'],
+                'price_item'          => $i['price_item'],
+                'costo_unitario'      => $costo,
+                'created_at'          => $now,
+                'last_update'         => $now,
+                'fecha_creacion'      => date('Y-m-d H:i:s'),
+                'fecha_modificacion'  => date('Y-m-d H:i:s'),
+                'borrado_el'          => null
+            ]);
 
             registrar_movimiento_inventario(
                 $i['product_id'],
@@ -246,20 +267,13 @@ Flight::route('POST /product_order/crear', function () {
             );
         }
 
-        // 🔥 ESTA LÍNEA ES LA CLAVE
         recalcular_total_orden($order_id);
 
         DB::commit();
 
-
-        // ===============================
-        // 8) Respuesta final
-        // ===============================
         Flight::json([
             'status'           => 'ok',
             'product_order_id' => $order_id,
-            'modo'             => $modo,
-            'status_orden'     => $status_orden,
             'mesa_id'          => $mesa_id_db
         ]);
 
@@ -273,7 +287,6 @@ Flight::route('POST /product_order/crear', function () {
         ], 500);
     }
 });
-
 
 
 
@@ -298,10 +311,121 @@ Flight::route('POST /product_order/editar', function(){
 /* ======================================
    ELIMINAR ORDEN
 ====================================== */
-Flight::route('POST /product_order/eliminar', function(){
+Flight::route('POST /product_order/eliminar', function () {
+
     $d = Flight::request()->data->getData();
-    DB::delete('product_order',"product_order_id=%i",$d['product_order_id']);
-    Flight::json(['status'=>'ok']);
+
+    $product_order_id = (int)$d['product_order_id'];
+
+    DB::startTransaction();
+
+    try {
+
+        $fecha_borrado = date('Y-m-d H:i:s');
+
+        // ==========================
+        // OBTENER ORDEN
+        // ==========================
+        $orden = DB::queryFirstRow("
+            SELECT *
+            FROM product_order
+            WHERE product_order_id=%i
+              AND borrado_el IS NULL
+        ", $product_order_id);
+
+        if (!$orden) {
+
+            DB::rollback();
+
+            Flight::json([
+                'status' => 'error',
+                'msg'    => 'La orden no existe'
+            ], 404);
+
+            return;
+        }
+
+        // ==========================
+        // OBTENER DETALLES
+        // ==========================
+        $detalles = DB::query("
+            SELECT *
+            FROM product_order_detail
+            WHERE order_id=%i
+              AND borrado_el IS NULL
+        ", $product_order_id);
+
+        // ==========================
+        // DEVOLVER STOCK
+        // ==========================
+        foreach ($detalles as $it) {
+
+            registrar_movimiento_inventario(
+                $it['product_id'],
+                'ENTRADA',
+                'DEVOLUCION',
+                $it['amount'],
+                $it['costo_unitario'],
+                $product_order_id,
+                'product_order'
+            );
+        }
+
+        // ==========================
+        // BORRADO LOGICO DETALLE
+        // ==========================
+        DB::update(
+            'product_order_detail',
+            [
+                'borrado_el' => $fecha_borrado
+            ],
+            "order_id=%i AND borrado_el IS NULL",
+            $product_order_id
+        );
+
+        // ==========================
+        // BORRADO LOGICO ORDEN
+        // ==========================
+        DB::update(
+            'product_order',
+            [
+                'borrado_el' => $fecha_borrado,
+                'fecha_modificacion' => $fecha_borrado
+            ],
+            "product_order_id=%i",
+            $product_order_id
+        );
+
+        // ==========================
+        // LIBERAR MESA
+        // ==========================
+        if (!empty($orden['mesa_id'])) {
+
+            DB::update(
+                'mesa',
+                [
+                    'estado' => 'LIBRE'
+                ],
+                "mesa_id=%i",
+                $orden['mesa_id']
+            );
+        }
+
+        DB::commit();
+
+        Flight::json([
+            'status' => 'ok'
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        Flight::json([
+            'status' => 'error',
+            'msg'    => $e->getMessage()
+        ], 500);
+    }
 });
 
 Flight::route('GET /product_order/detalle/@id', function($id){
@@ -311,19 +435,31 @@ Flight::route('GET /product_order/detalle/@id', function($id){
         SELECT o.*,
                tp.descripcion AS tipo_pago
         FROM product_order o
-        LEFT JOIN tipo_pago tp 
+        LEFT JOIN tipo_pago tp
                ON tp.tipo_pago_id = o.tipo_pago_id
         WHERE o.product_order_id = %i
+          AND o.borrado_el IS NULL
     ", $id);
 
-    // Detalles (items)
+    if (!$order) {
+
+        Flight::json([
+            'status' => 'error',
+            'msg'    => 'Orden no encontrada'
+        ], 404);
+
+        return;
+    }
+
+    // Detalles activos
     $det = DB::query("
         SELECT d.*,
                p.name AS product_name
         FROM product_order_detail d
-        LEFT JOIN product p 
+        LEFT JOIN product p
                ON p.product_id = d.product_id
         WHERE d.order_id = %i
+          AND d.borrado_el IS NULL
         ORDER BY d.product_order_detail_id ASC
     ", $id);
 
@@ -381,48 +517,78 @@ Flight::route('POST /product_order_detail/crear', function(){
     }
 });
 
-Flight::route('POST /product_order_detail/eliminar', function(){
+Flight::route('POST /product_order_detail/eliminar', function () {
 
     $d = Flight::request()->data->getData();
 
-    $item = DB::queryFirstRow(
-        "SELECT * FROM product_order_detail WHERE product_order_detail_id=%i",
-        $d['product_order_detail_id']
-    );
+    $product_order_detail_id = (int)$d['product_order_detail_id'];
 
     DB::startTransaction();
+
     try {
 
-        // devolver stock
+        $detalle = DB::queryFirstRow("
+            SELECT *
+            FROM product_order_detail
+            WHERE product_order_detail_id=%i
+              AND borrado_el IS NULL
+        ", $product_order_detail_id);
+
+        if (!$detalle) {
+
+            DB::rollback();
+
+            Flight::json([
+                'status' => 'error',
+                'msg' => 'Detalle no encontrado'
+            ], 404);
+
+            return;
+        }
+
+        // 🔥 DEVOLVER STOCK
         registrar_movimiento_inventario(
-            $item['product_id'],
+            $detalle['product_id'],
             'ENTRADA',
-            'DEVOLUCION_VENTA',
-            $item['amount'],
-            $item['price_item'],
-            $item['order_id'],
+            'DEVOLUCION',
+            $detalle['amount'],
+            $detalle['costo_unitario'],
+            $detalle['order_id'],
             'product_order'
         );
 
-        actualizar_estado_orden($d['order_id'], 'EDITADO');
-
-        DB::delete(
+        // 🔥 BORRADO LÓGICO
+        DB::update(
             'product_order_detail',
+            [
+                'borrado_el' => date('Y-m-d H:i:s'),
+                'fecha_modificacion' => date('Y-m-d H:i:s')
+            ],
             "product_order_detail_id=%i",
-            $d['product_order_detail_id']
+            $product_order_detail_id
         );
 
-        recalcular_total_orden($item['order_id']);
+        // 🔥 RECALCULAR TOTAL
+        recalcular_total_orden(
+            $detalle['order_id']
+        );
 
         DB::commit();
-        Flight::json(['status'=>'ok']);
 
-    } catch(Exception $e){
+        Flight::json([
+            'status' => 'ok'
+        ]);
+
+    } catch (Exception $e) {
+
         DB::rollback();
-        Flight::json(['status'=>'error','msg'=>$e->getMessage()],500);
+
+        Flight::json([
+            'status' => 'error',
+            'msg' => $e->getMessage()
+        ], 500);
     }
 });
-
 
 Flight::route('POST /product_order_detail/editar', function () {
 
@@ -651,7 +817,8 @@ Flight::route('GET /imp_ventas_fecha', function(){
         LEFT JOIN administradortbl a 
             ON a.administrador_id = po.administrador_id
 
-        WHERE po.fecha_creacion BETWEEN %s AND %s
+        WHERE po.borrado_el IS NULL
+        AND po.fecha_creacion BETWEEN %s AND %s
 
         ORDER BY po.product_order_id ASC
     ", $ini, $fin);
@@ -676,7 +843,8 @@ Flight::route('GET /imp_ventas_fecha', function(){
                 (d.amount * d.price_item) AS subtotal,
                 (d.amount * d.costo_unitario) AS subtotal_costo
             FROM product_order_detail d
-            WHERE d.order_id = %i
+                WHERE d.order_id = %i
+                AND d.borrado_el IS NULL
         ", $v['product_order_id']);
 
         $v['indice']   = $i++;

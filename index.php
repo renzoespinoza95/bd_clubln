@@ -73,12 +73,16 @@ $simple_image = new SimpleImage();
 
 // dd("ss", $sesion_admin_administrador_id);
 
+$administrador_actual = null;
+
 if($sesion_admin_administrador_id) {
     // AUTENTIFICACION
     //================
     $valor_key = $nombre_app . vari("KEY");              
     $administrador_id = str_replace("*", "", util::decrypt($sesion_admin_administrador_id, $valor_key));              
     $info_admin = login_admin::informacion_administrador_por_id(util::decrypt($sesion_admin_administrador_id,$valor_key ));
+
+    $administrador_actual = $info_admin;
 
 } 
 
@@ -96,7 +100,7 @@ if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 $wkh_pdf = new WkHtmlToPdf($options);
 
 
-$administrador_actual = login_admin::informacion_administrador_por_id($sesion_admin_administrador_id);
+
 
 Flight::set('flight.handle_errors', false);
 

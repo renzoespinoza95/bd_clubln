@@ -77,6 +77,7 @@ Flight::route('GET /reg/category/listar', function () {
             is_activo
         FROM category
         WHERE participa_reparto = 1
+        AND borrado_el IS NULL
         ORDER BY id DESC
     ");
 

@@ -93,6 +93,7 @@ Flight::route('GET /api/category/list', function () {
             last_update
         FROM category
         WHERE draft = 0
+        AND borrado_el IS NULL
         ORDER BY priority ASC, name
     ");
 
@@ -118,9 +119,12 @@ Flight::route('GET /api/product/list', function () {
     $category_id = Flight::request()->query['category_id'] ?? null;
 
     // ============================
-    // 🧠 WHERE dinámico (actualizado)
+    // 🧠 WHERE dinámico
     // ============================
-    $where  = "1=1";
+    $where = "
+        p.borrado_el IS NULL
+    ";
+
     $params = [];
 
     if ($q !== '') {
@@ -139,7 +143,15 @@ Flight::route('GET /api/product/list', function () {
     $count_total = DB::queryFirstField("
         SELECT COUNT(DISTINCT p.product_id)
         FROM product p
-        LEFT JOIN product_category pc ON pc.product_id = p.product_id
+
+        LEFT JOIN product_category pc
+            ON pc.product_id = p.product_id
+           AND pc.borrado_el IS NULL
+
+        LEFT JOIN category c
+            ON c.id = pc.category_id
+           AND c.borrado_el IS NULL
+
         WHERE $where
     ", ...$params);
 
@@ -155,14 +167,26 @@ Flight::route('GET /api/product/list', function () {
             p.name,
             p.price,
             p.price_discount,
+            p.description,
             p.created_at,
             p.last_update,
             p.fecha_creacion,
             p.fecha_modificacion
+
         FROM product p
-        LEFT JOIN product_category pc ON pc.product_id = p.product_id
+
+        LEFT JOIN product_category pc
+            ON pc.product_id = p.product_id
+           AND pc.borrado_el IS NULL
+
+        LEFT JOIN category c
+            ON c.id = pc.category_id
+           AND c.borrado_el IS NULL
+
         WHERE $where
+
         ORDER BY p.product_id DESC
+
         LIMIT %i OFFSET %i
     ", ...$params);
 
@@ -368,6 +392,7 @@ Flight::route(
                 fecha_fin
             FROM product_order
             WHERE administrador_id = %i
+              AND borrado_el IS NULL
               AND modo_order_id IN (1,3)
               AND DATE(fecha_fin) = %s
             ORDER BY fecha_fin ASC
@@ -382,6 +407,7 @@ Flight::route(
                 IFNULL(SUM(total_fees), 0) AS total_dia
             FROM product_order
             WHERE administrador_id = %i
+              AND borrado_el IS NULL
               AND modo_order_id IN (1,3)
               AND DATE(fecha_fin) = %s
         ", $administrador_id, $fecha);
@@ -1456,13 +1482,21 @@ Flight::route('GET /ion/pantallaYape/@product_order_id', function ($product_orde
 
 Flight::route('POST /pos/eliminarDetallePedido', function () {
 
-    $payload = json_decode(file_get_contents('php://input'), true);
+    $payload = json_decode(
+        file_get_contents('php://input'),
+        true
+    );
 
-    if (!$payload || empty($payload['product_order_detail_id'])) {
+    if (
+        !$payload ||
+        empty($payload['product_order_detail_id'])
+    ) {
+
         Flight::json([
             'status' => 'failed',
             'msg'    => 'product_order_detail_id requerido'
         ]);
+
         return;
     }
 
@@ -1472,22 +1506,81 @@ Flight::route('POST /pos/eliminarDetallePedido', function () {
 
     try {
 
-        // 🔎 Verificar que exista el detalle
-        $exists = DB::queryFirstField("
-            SELECT COUNT(*)
+        // =====================================
+        // OBTENER DETALLE ACTIVO
+        // =====================================
+        $detalle = DB::queryFirstRow("
+            SELECT *
             FROM product_order_detail
             WHERE product_order_detail_id = %i
+              AND borrado_el IS NULL
         ", $detail_id);
 
-        if ($exists == 0) {
-            throw new Exception("Detalle no encontrado");
+        if (!$detalle) {
+            throw new Exception(
+                "Detalle no encontrado"
+            );
         }
 
-        // 🗑️ Eliminar SOLO el detalle seleccionado
-        DB::query("
-            DELETE FROM product_order_detail
-            WHERE product_order_detail_id = %i
-        ", $detail_id);
+        // =====================================
+        // DEVOLVER STOCK
+        // =====================================
+        registrar_movimiento_inventario(
+            $detalle['product_id'],
+            'ENTRADA',
+            'DEVOLUCION',
+            $detalle['amount'],
+            $detalle['costo_unitario'],
+            $detalle['order_id'],
+            'product_order'
+        );
+
+        // =====================================
+        // BORRADO LÓGICO DEL DETALLE
+        // =====================================
+        DB::update(
+            'product_order_detail',
+            [
+                'borrado_el' => date('Y-m-d H:i:s'),
+                'fecha_modificacion' => date('Y-m-d H:i:s')
+            ],
+            "product_order_detail_id=%i",
+            $detail_id
+        );
+
+        // =====================================
+        // RECALCULAR TOTAL DE LA ORDEN
+        // =====================================
+        recalcular_total_orden(
+            $detalle['order_id']
+        );
+
+        // =====================================
+        // VERIFICAR SI QUEDAN ITEMS
+        // =====================================
+        $items_restantes = DB::queryFirstField("
+            SELECT COUNT(*)
+            FROM product_order_detail
+            WHERE order_id = %i
+              AND borrado_el IS NULL
+        ", $detalle['order_id']);
+
+        // =====================================
+        // SI YA NO QUEDAN ITEMS
+        // MARCAR ORDEN COMO ELIMINADA
+        // =====================================
+        if ((int)$items_restantes === 0) {
+
+            DB::update(
+                'product_order',
+                [
+                    'borrado_el' => date('Y-m-d H:i:s'),
+                    'fecha_modificacion' => date('Y-m-d H:i:s')
+                ],
+                "product_order_id=%i",
+                $detalle['order_id']
+            );
+        }
 
         DB::commit();
 

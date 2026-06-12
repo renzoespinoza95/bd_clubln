@@ -12,7 +12,7 @@ Flight::route('GET /cat', function () {
    ============================================================ */
 Flight::route('GET /category/listar', function () {
     DB::query("SET NAMES 'utf8mb4'");
-    $rows = DB::query("SELECT * FROM category ORDER BY id DESC");
+    $rows = DB::query("SELECT * FROM category WHERE borrado_el IS NULL ORDER BY id DESC");
 
     Flight::json($rows);
 });
@@ -61,9 +61,79 @@ Flight::route('POST /category/editar', function () {
    ELIMINAR CATEGORÍA
    ============================================================ */
 Flight::route('POST /category/eliminar', function () {
+
     $d = Flight::request()->data->getData();
 
-    DB::delete('category', "id=%i", $d['id']);
+    $category_id = (int)$d['id'];
 
-    Flight::json(['status'=>'ok']);
+    DB::startTransaction();
+
+    try {
+
+        $fecha_borrado = date('Y-m-d H:i:s');
+
+        // =====================================
+        // OBTENER PRODUCTOS DE LA CATEGORÍA
+        // =====================================
+        $productos = DB::query("
+            SELECT DISTINCT product_id
+            FROM product_category
+            WHERE category_id = %i
+              AND borrado_el IS NULL
+        ", $category_id);
+
+        // =====================================
+        // BORRADO LÓGICO DE PRODUCTOS
+        // =====================================
+        foreach ($productos as $p) {
+
+            DB::update(
+                'product',
+                [
+                    'borrado_el' => $fecha_borrado
+                ],
+                "product_id=%i AND borrado_el IS NULL",
+                $p['product_id']
+            );
+        }
+
+        // =====================================
+        // BORRADO LÓGICO PRODUCT_CATEGORY
+        // =====================================
+        DB::update(
+            'product_category',
+            [
+                'borrado_el' => $fecha_borrado
+            ],
+            "category_id=%i AND borrado_el IS NULL",
+            $category_id
+        );
+
+        // =====================================
+        // BORRADO LÓGICO CATEGORY
+        // =====================================
+        DB::update(
+            'category',
+            [
+                'borrado_el' => $fecha_borrado
+            ],
+            "id=%i AND borrado_el IS NULL",
+            $category_id
+        );
+
+        DB::commit();
+
+        Flight::json([
+            'status' => 'ok'
+        ]);
+
+    } catch (Exception $e) {
+
+        DB::rollback();
+
+        Flight::json([
+            'status' => 'error',
+            'msg'    => $e->getMessage()
+        ], 500);
+    }
 });

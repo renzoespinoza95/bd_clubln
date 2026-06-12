@@ -121,6 +121,7 @@ Flight::route('GET /compra/listar', function () {
             c.observaciones
         FROM compra c
         LEFT JOIN proveedor p ON p.proveedor_id = c.proveedor_id
+        WHERE borrado_el is null
         ORDER BY c.compra_id DESC
     ";
 
@@ -269,15 +270,31 @@ Flight::route('POST /compra/editar', function () {
  * ============================================ */
 Flight::route('POST /compra/eliminar', function () {
 
-    $compra_id = intval(Flight::request()->data->compra_id);
+    $compra_id = intval(
+        Flight::request()->data->compra_id
+    );
 
     DB::startTransaction();
+
     try {
 
-        // obtener detalle
-        $det = DB::query("SELECT * FROM compra_detalle WHERE compra_id=%i", $compra_id);
+        $fecha_borrado = date('Y-m-d H:i:s');
 
+        // ==========================
+        // OBTENER DETALLE ACTIVO
+        // ==========================
+        $det = DB::query("
+            SELECT *
+            FROM compra_detalle
+            WHERE compra_id=%i
+              AND borrado_el IS NULL
+        ", $compra_id);
+
+        // ==========================
+        // DEVOLVER STOCK
+        // ==========================
         foreach ($det as $it) {
+
             registrar_movimiento_inventario(
                 $it['product_id'],
                 'SALIDA',
@@ -289,18 +306,46 @@ Flight::route('POST /compra/eliminar', function () {
             );
         }
 
-        DB::delete('compra_detalle', "compra_id=%i", $compra_id);
-        DB::delete('compra', "compra_id=%i", $compra_id);
+        // ==========================
+        // BORRADO LÓGICO DETALLE
+        // ==========================
+        DB::update(
+            'compra_detalle',
+            [
+                'borrado_el' => $fecha_borrado
+            ],
+            "compra_id=%i AND borrado_el IS NULL",
+            $compra_id
+        );
+
+        // ==========================
+        // BORRADO LÓGICO CABECERA
+        // ==========================
+        DB::update(
+            'compra',
+            [
+                'borrado_el' => $fecha_borrado
+            ],
+            "compra_id=%i AND borrado_el IS NULL",
+            $compra_id
+        );
 
         DB::commit();
-        Flight::json(['status'=>'ok']);
+
+        Flight::json([
+            'status' => 'ok'
+        ]);
 
     } catch (Exception $e) {
+
         DB::rollback();
-        Flight::json(['status'=>'error','msg'=>$e->getMessage()], 500);
+
+        Flight::json([
+            'status' => 'error',
+            'msg'    => $e->getMessage()
+        ], 500);
     }
 });
-
 
 /* ============================================
  *  GET /inventario/movimientos/@producto_id
@@ -349,7 +394,8 @@ Flight::route('GET /imp_compras_fecha', function(){
             c.total_compra
         FROM compra c
         LEFT JOIN proveedor p ON p.proveedor_id = c.proveedor_id
-        WHERE c.fecha_creacion BETWEEN %s AND %s
+        WHERE c.borrado_el IS NULL
+        AND c.fecha_creacion BETWEEN %s AND %s
         ORDER BY c.fecha_creacion
     ", $ini . ' 00:00:00', $fin . ' 23:59:59');
 
