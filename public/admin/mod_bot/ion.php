@@ -220,17 +220,23 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
             p.fecha_modificacion,
             IFNULL(i.stock_actual, 0) AS stock
         FROM product p
+
         LEFT JOIN inventario i 
             ON i.product_id = p.product_id
+
         WHERE p.product_id = %i
+          AND p.borrado_el IS NULL
+
         LIMIT 1
     ", $id);
 
     if (!$product) {
+
         Flight::json([
             'status' => 'failed',
-            'msg' => 'Product not found'
+            'msg'    => 'Product not found'
         ]);
+
         return;
     }
 
@@ -238,7 +244,9 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
     // 🖼️ IMÁGENES
     // ============================
     $product_images = DB::query("
-        SELECT product_id, name
+        SELECT
+            product_id,
+            name
         FROM product_image
         WHERE product_id = %i
     ", $id);
@@ -254,10 +262,16 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
             c.brief,
             c.color,
             c.priority
+
         FROM category c
-        INNER JOIN product_category pc 
+
+        INNER JOIN product_category pc
             ON pc.category_id = c.id
+           AND pc.borrado_el IS NULL
+
         WHERE pc.product_id = %i
+          AND c.borrado_el IS NULL
+
         ORDER BY c.priority ASC
     ", $id);
 
@@ -266,25 +280,28 @@ Flight::route('GET /api/product/detail/@id', function ($id) {
     // ============================
     Flight::json([
         'status' => 'success',
+
         'product' => [
+
             'product_id'         => (int)$product['product_id'],
             'name'               => $product['name'],
             'price'              => (float)$product['price'],
             'price_discount'     => (float)$product['price_discount'],
             'description'        => $product['description'],
+
             'created_at'         => (int)$product['created_at'],
             'last_update'        => (int)$product['last_update'],
+
             'fecha_creacion'     => $product['fecha_creacion'],
             'fecha_modificacion' => $product['fecha_modificacion'],
+
             'stock'              => (int)$product['stock'],
+
             'categories'         => $categories,
             'product_images'     => $product_images
         ]
     ]);
 });
-
-
-
 
 Flight::route('GET /api/tipo-pago/list', function () {
 
@@ -504,6 +521,7 @@ Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
         FROM product_order
         WHERE mesa_id = %i
           AND modo_order_id = 2
+          AND borrado_el IS NULL
         ORDER BY product_order_id DESC
         LIMIT 1
     ", $mesa_id);
@@ -521,6 +539,7 @@ Flight::route('GET /api/mesa/pedido-activo/@mesa_id', function ($mesa_id) {
         SELECT *
         FROM product_order_detail
         WHERE order_id = %i
+        AND borrado_el IS NULL
     ", $order['product_order_id']);
 
     Flight::json([
@@ -558,6 +577,29 @@ Flight::route('POST /api/mesa/agregar-productos', function () {
         $order_id = intval($payload['order_id']);
 
         // ======================================
+        // ✅ VALIDAR PEDIDO ACTIVO
+        // ======================================
+        $order = DB::queryFirstRow("
+            SELECT product_order_id
+            FROM product_order
+            WHERE product_order_id = %i
+              AND borrado_el IS NULL
+        ", $order_id);
+
+        if (!$order) {
+
+            DB::rollback();
+
+            Flight::json([
+                'status' => 'failed',
+                'msg' => 'Pedido no existe o fue eliminado'
+            ], 404);
+
+            return;
+        }
+
+
+        // ======================================
         // 🔁 INSERTAR ITEMS
         // ======================================
         foreach ($payload['items'] as $d) {
@@ -585,6 +627,7 @@ Flight::route('POST /api/mesa/agregar-productos', function () {
                 (amount * price_item) AS total
             FROM product_order_detail
             WHERE order_id = %i
+            AND borrado_el IS NULL
         ", $order_id);
 
         // ======================================
@@ -605,6 +648,7 @@ Flight::route('POST /api/mesa/agregar-productos', function () {
             SELECT mesa_id
             FROM product_order
             WHERE product_order_id = %i
+            AND borrado_el IS NULL
         ", $order_id);
 
         $mesa_id = $order ? $order['mesa_id'] : null;
@@ -791,6 +835,7 @@ Flight::route('POST /api/order/submit', function () {
                 WHERE mesa_id = %i
                   AND status = 'ABIERTA'
                   AND fecha_fin IS NULL
+                  AND borrado_el IS NULL
                 ORDER BY product_order_id DESC
                 LIMIT 1
             ", $mesa_id);
@@ -877,6 +922,7 @@ Flight::route('POST /api/order/submit', function () {
                 SELECT name
                 FROM product
                 WHERE product_id = %i
+                AND borrado_el IS NULL
                 ",
                 $d['product_id']
             );
@@ -990,6 +1036,7 @@ Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
         WHERE mesa_id = %i
           AND modo_order_id = 2
           AND fecha_fin IS NULL
+          AND borrado_el IS NULL
         ORDER BY product_order_id DESC
         LIMIT 1
     ", $mesa_id);
@@ -1012,6 +1059,7 @@ Flight::route('GET /api/mesa/pedido-abierto/@mesa_id', function ($mesa_id) {
             (amount * price_item) AS total
         FROM product_order_detail
         WHERE order_id = %i
+        AND borrado_el IS NULL
     ", $order['product_order_id']);
 
     // 🧮 Totales
@@ -1063,6 +1111,8 @@ Flight::route('GET /api/order/detail/@id', function ($id) {
         INNER JOIN product_order o 
             ON o.product_order_id = d.order_id
         WHERE d.order_id = %i
+        AND d.borrado_el IS NULL
+        AND o.borrado_el IS NULL
         ORDER BY d.product_order_detail_id ASC
     ", $orderId);
 
@@ -1125,6 +1175,7 @@ Flight::route('POST /api/order/submitMesa', function () {
             WHERE mesa_id = %i
               AND modo_order_id = 2
               AND fecha_fin IS NULL
+              AND borrado_el IS NULL
             ORDER BY product_order_id DESC
             LIMIT 1
         ", $mesa_id);
@@ -1142,6 +1193,7 @@ Flight::route('POST /api/order/submitMesa', function () {
             SELECT IFNULL(SUM(amount * price_item), 0)
             FROM product_order_detail
             WHERE order_id = %i
+            AND borrado_el IS NULL
         ", $order_id);
 
         $total = round((float)$total, 2);
@@ -1180,6 +1232,7 @@ Flight::route('POST /api/order/submitMesa', function () {
             SELECT product_order_detail_id, product_id
             FROM product_order_detail
             WHERE order_id = %i
+            AND borrado_el IS NULL
         ", $order_id);
 
         foreach ($items as $it) {
