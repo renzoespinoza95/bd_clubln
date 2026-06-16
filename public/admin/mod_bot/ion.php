@@ -613,6 +613,20 @@ Flight::route('POST /api/mesa/agregar-productos', function () {
                 'created_at'   => isset($d['created_at']) ? intval($d['created_at']) : round(microtime(true) * 1000),
                 'last_update'  => isset($d['last_update']) ? intval($d['last_update']) : round(microtime(true) * 1000)
             ]);
+
+            // ======================================
+            // 📉 DESCONTAR INVENTARIO
+            // ======================================
+            registrar_movimiento_inventario(
+                intval($d['product_id']),
+                'SALIDA',
+                'VENTA',
+                intval($d['amount']),
+                floatval($d['price_item']),
+                $order_id,
+                'product_order'
+            );
+            
         }
 
         // ======================================

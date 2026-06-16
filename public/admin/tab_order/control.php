@@ -30,6 +30,7 @@ Flight::route('GET /product_order/listar', function(){
         LEFT JOIN modo_order mo ON mo.modo_order_id = po.modo_order_id
         LEFT JOIN tipo_pago tp ON tp.tipo_pago_id = po.tipo_pago_id
         LEFT JOIN administradortbl a ON a.administrador_id = po.administrador_id
+        WHERE po.borrado_el IS NULL
         ORDER BY po.product_order_id DESC
     ");
 
