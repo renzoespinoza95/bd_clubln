@@ -819,7 +819,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
             ON a.administrador_id = po.administrador_id
 
         WHERE po.borrado_el IS NULL
-        AND po.fecha_creacion BETWEEN %s AND %s
+          AND po.fecha_creacion BETWEEN %s AND %s
 
         ORDER BY po.product_order_id ASC
     ", $ini, $fin);
@@ -832,7 +832,10 @@ Flight::route('GET /imp_ventas_fecha', function(){
     foreach ($ventas as &$v) {
 
         // ===============================================================
-        // 🛠️ DETALLES POR VENTA (CÁLCULO DINÁMICO DE COSTO DE ADQUISICIÓN)
+        // 🛠️ DETALLES POR VENTA (CÁLCULO SEGURO DE PRECIO Y COSTO)
+        // ===============================================================
+        // ===============================================================
+        // 🛠️ DETALLES POR VENTA (EXTRACCIÓN ESTRICTA DE COSTO DE ADQUISICIÓN)
         // ===============================================================
         $detalles = DB::query("
             SELECT 
@@ -841,24 +844,20 @@ Flight::route('GET /imp_ventas_fecha', function(){
                 d.price_item AS precio,
                 (d.amount * d.price_item) AS subtotal,
                 
-                -- 🔍 Subconsulta para encontrar el costo real del producto al momento de la venta
+                -- 🔥 BUSCAR EL COSTO REAL VIGENTE EN EL KARDEX HASTA LA FECHA DE LA VENTA
                 IFNULL(
                     (
                         SELECT im.precio_unitario
                         FROM inventario_movimiento im
-                        LEFT JOIN compra comp ON comp.compra_id = im.referencia_id AND im.referencia_tabla = 'compra'
                         WHERE im.product_id = d.product_id
-                          AND im.fecha <= %s -- Contexto temporal del día de la venta
-                          
-                          -- Regla de Exclusión: Si el movimiento proviene de una compra, esta NO debe estar eliminada
-                          AND (im.referencia_tabla != 'compra' OR comp.borrado_el IS NULL)
-                          
-                          -- Filtro radical de seguridad: Ignoramos el ajuste erróneo de la compra anulada
-                          AND (im.referencia_id != 23 OR im.referencia_tabla != 'compra')
-                          AND im.precio_unitario != 10.00
+                          AND im.tipo = 'ENTRADA'           -- ◄ Trae los ingresos de mercadería
+                          AND im.origen = 'COMPRA'          -- ◄ Filtra por facturas de proveedores
+                          AND im.fecha <= %s                -- ◄ Contexto de la fecha de la venta
                         ORDER BY im.inventario_movimiento_id DESC
                         LIMIT 1
-                    ), d.costo_unitario
+                    ), 
+                    -- Fallback: Si no encuentra compra previa a la venta, usa el costo grabado en el detalle
+                    IFNULL(d.costo_unitario, 0.00)
                 ) AS costo_unitario
             FROM product_order_detail d
             WHERE d.order_id = %i
@@ -866,17 +865,17 @@ Flight::route('GET /imp_ventas_fecha', function(){
         ", $v['fecha_creacion'], $v['product_order_id']);
 
         // ===============================================================
-        // 🧮 PROCESAMIENTO DE OPERACIONES Y SUBTOTALES EN CÓDIGO (VUE/MUSTACHE)
+        // 🧮 PROCESAMIENTO DE OPERACIONES Y SUBTOTALES EN CÓDIGO
         // ===============================================================
         foreach ($detalles as &$d) {
             $d['costo_unitario'] = floatval($d['costo_unitario']);
             $d['precio']         = floatval($d['precio']);
             $d['cantidad']       = intval($d['cantidad']);
             
-            // Recalcular montos con el costo unitario correcto (S/ 2.67)
-            $d['total_costo']    = $d['cantidad'] * $d['costo_unitario'];
-            $d['subtotal_costo'] = $d['cantidad'] * $d['costo_unitario'];
+            // Forzamos el cálculo matemático correcto en el Backend para evitar desajustes en la vista
             $d['subtotal']       = $d['cantidad'] * $d['precio'];
+            $d['total_costo']    = $d['cantidad'] * $d['costo_unitario'];
+            $d['subtotal_costo'] = $d['total_costo'];
             
             $total_costo_general += $d['subtotal_costo'];
         }
@@ -912,6 +911,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
     // ===============================
     // RENDER HTML
     // ===============================
+
     $html = (new Mustache)->render(
         file_get_contents(
             VARPATH . '/public/reportes/reporte_html/imp_ventas_fecha.html'
@@ -927,8 +927,7 @@ Flight::route('GET /imp_ventas_fecha', function(){
     // ===============================
     global $wkh_pdf;
 
-    $pdf = $varpath_tmp . 'ventas_'
-         . time() . '.pdf';
+    $pdf = $varpath_tmp . 'ventas_' . time() . '.pdf';
 
     $wkh_pdf->addPage($html);
     exec($wkh_pdf->getCommand($pdf));
