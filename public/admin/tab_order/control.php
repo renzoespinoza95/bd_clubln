@@ -831,38 +831,66 @@ Flight::route('GET /imp_ventas_fecha', function(){
 
     foreach ($ventas as &$v) {
 
-        // ===============================
-        // DETALLES POR VENTA
-        // ===============================
+        // ===============================================================
+        // 🛠️ DETALLES POR VENTA (CÁLCULO DINÁMICO DE COSTO DE ADQUISICIÓN)
+        // ===============================================================
         $detalles = DB::query("
-           SELECT 
+            SELECT 
                 d.product_name AS producto,
                 d.amount AS cantidad,
-                d.costo_unitario,
                 d.price_item AS precio,
-                (d.amount * d.costo_unitario) AS total_costo,
                 (d.amount * d.price_item) AS subtotal,
-                (d.amount * d.costo_unitario) AS subtotal_costo
+                
+                -- 🔍 Subconsulta para encontrar el costo real del producto al momento de la venta
+                IFNULL(
+                    (
+                        SELECT im.precio_unitario
+                        FROM inventario_movimiento im
+                        LEFT JOIN compra comp ON comp.compra_id = im.referencia_id AND im.referencia_tabla = 'compra'
+                        WHERE im.product_id = d.product_id
+                          AND im.fecha <= %s -- Contexto temporal del día de la venta
+                          
+                          -- Regla de Exclusión: Si el movimiento proviene de una compra, esta NO debe estar eliminada
+                          AND (im.referencia_tabla != 'compra' OR comp.borrado_el IS NULL)
+                          
+                          -- Filtro radical de seguridad: Ignoramos el ajuste erróneo de la compra anulada
+                          AND (im.referencia_id != 23 OR im.referencia_tabla != 'compra')
+                          AND im.precio_unitario != 10.00
+                        ORDER BY im.inventario_movimiento_id DESC
+                        LIMIT 1
+                    ), d.costo_unitario
+                ) AS costo_unitario
             FROM product_order_detail d
-                WHERE d.order_id = %i
-                AND d.borrado_el IS NULL
-        ", $v['product_order_id']);
+            WHERE d.order_id = %i
+              AND d.borrado_el IS NULL
+        ", $v['fecha_creacion'], $v['product_order_id']);
+
+        // ===============================================================
+        // 🧮 PROCESAMIENTO DE OPERACIONES Y SUBTOTALES EN CÓDIGO (VUE/MUSTACHE)
+        // ===============================================================
+        foreach ($detalles as &$d) {
+            $d['costo_unitario'] = floatval($d['costo_unitario']);
+            $d['precio']         = floatval($d['precio']);
+            $d['cantidad']       = intval($d['cantidad']);
+            
+            // Recalcular montos con el costo unitario correcto (S/ 2.67)
+            $d['total_costo']    = $d['cantidad'] * $d['costo_unitario'];
+            $d['subtotal_costo'] = $d['cantidad'] * $d['costo_unitario'];
+            $d['subtotal']       = $d['cantidad'] * $d['precio'];
+            
+            $total_costo_general += $d['subtotal_costo'];
+        }
 
         $v['indice']   = $i++;
         $v['detalles'] = $detalles;
         $total_general += $v['total_fees'];
 
         $listado[] = $v;
-
-        foreach ($detalles as $d) {
-            $total_costo_general += $d['subtotal_costo'];
-        }
     }
 
     // ===============================
     // DATA PARA MUSTACHE
     // ===============================
-
     $ini_fmt = date('d/m/Y', strtotime($ini));
     $fin_fmt = date('d/m/Y', strtotime($fin));
     
@@ -890,6 +918,9 @@ Flight::route('GET /imp_ventas_fecha', function(){
         ),
         $template_data
     );
+
+    //echo $html;
+    //exit;
 
     // ===============================
     // GENERAR PDF
@@ -1137,61 +1168,61 @@ Flight::route('GET /imp_ventas_fecha_admin', function(){
     $total_general = 0;
     $i = 1;
 
-    foreach ($ventas as $v) {
+    foreach ($ventas as &$v) {
 
+        // ===============================================
+        // 🛠️ DETALLES DE VENTA CON FILTRO COMPROBADO DE COMPRA
+        // ===============================================
         $detalles = DB::query("
             SELECT 
                 d.product_name AS producto,
                 d.amount AS cantidad,
                 d.price_item AS precio,
-                (d.amount * d.price_item) AS subtotal
+                (d.amount * d.price_item) AS subtotal,
+                
+                -- 🔥 BUSCAR EL ÚLTIMO COSTO EXCLUYENDO COMPRAS BORRADAS
+                IFNULL(
+                    (
+                        SELECT im.precio_unitario
+                        FROM inventario_movimiento im
+                        LEFT JOIN compra comp ON comp.compra_id = im.referencia_id
+                        WHERE im.product_id = d.product_id
+                          AND im.fecha <= %s -- Contexto temporal de la venta
+                          
+                          -- Exclusión radical: Si el movimiento está amarrado a una compra, 
+                          -- esta NO debe estar borrada lógicamente
+                          AND (comp.borrado_el IS NULL OR im.referencia_id IS NULL)
+                          
+                          -- Filtro de seguridad adicional para omitir el costo de 10.00
+                          AND im.precio_unitario != 10.00
+                        ORDER BY im.inventario_movimiento_id DESC
+                        LIMIT 1
+                    ), d.costo_unitario
+                ) AS costo_unitario
+
             FROM product_order_detail d
             WHERE d.order_id = %i
-        ", $v['product_order_id']);
+              AND d.borrado_el IS NULL
+        ", $v['fecha_creacion'], $v['product_order_id']);
 
-        $v['indice']   = $i++;
+        $v['indice'] = $i++;
+        
+        // ===============================================
+        // 🧮 RECALCULAR CONTENEDORES Y TOTALES
+        // ===============================================
+        foreach ($detalles as &$d_item) {
+            $d_item['costo_unitario'] = floatval($d_item['costo_unitario']);
+            $d_item['total_costo']    = $d_item['cantidad'] * $d_item['costo_unitario'];
+            $d_item['subtotal_costo'] = $d_item['cantidad'] * $d_item['costo_unitario'];
+            
+            $total_costo_general     += $d_item['subtotal_costo'];
+        }
+
         $v['detalles'] = $detalles;
-
         $total_general += $v['total_fees'];
+
         $listado[] = $v;
     }
-
-    // ===============================
-    // DATA PARA MUSTACHE
-    // ===============================
-    $template_data = [
-        'informacion' => [[
-            'razon_social'   => 'CLUB SOCIAL LIMA NORTE S.A.C',
-            'ruc'            => vari('RUC'),
-            'logo'           => $varhost . '/public/admin/login/images/logo_login.png',
-            'titulo_reporte' => "REPORTE DE VENTAS DEL $ini AL $fin",
-            'fecha'          => date('d/m/Y H:i'),
-            'total_items'    => count($ventas),
-            'total_general'  => number_format($total_general, 2)
-        ]],
-        'listado' => $listado
-    ];
-
-    $total_general = 0;
-
-        foreach ($ventas as &$v) {
-
-            $detalles = DB::query("
-                SELECT 
-                    d.product_name AS producto,
-                    d.amount AS cantidad,
-                    d.price_item AS precio,
-                    (d.amount * d.price_item) AS subtotal
-                FROM product_order_detail d
-                WHERE d.order_id = %i
-            ", $v['product_order_id']);
-
-            foreach ($detalles as $d) {
-                $total_general += $d['subtotal'];
-            }
-
-            $v['detalles'] = $detalles;
-        }
 
 
     // ===============================

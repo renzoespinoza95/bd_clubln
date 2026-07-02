@@ -9,32 +9,32 @@ Flight::route('GET /prod', function () {
 
 /* 🔵 1) LISTAR PRODUCTOS (con nombres y IDs de categorías) */
 Flight::route('GET /product/listar', function () {
-
     $rows = DB::query("
         SELECT
-       p.*,
-       GROUP_CONCAT(pc.category_id)        AS categories_ids,
-       GROUP_CONCAT(c.name SEPARATOR ', ') AS categories_names,
-       IFNULL(MAX(i.stock_actual), 0)      AS stock,
-
-       (
-          SELECT im.precio_unitario
-          FROM inventario_movimiento im
-          WHERE im.product_id = p.product_id
-          ORDER BY im.inventario_movimiento_id DESC
-          LIMIT 1
-       ) AS costo_unitario
-
-FROM product p
-LEFT JOIN product_category pc ON pc.product_id = p.product_id
-LEFT JOIN category c ON c.id = pc.category_id
-LEFT JOIN inventario i ON i.product_id = p.product_id
-WHERE p.borrado_el IS NULL
-GROUP BY p.product_id
-ORDER BY p.product_id DESC
+            p.*,
+            GROUP_CONCAT(DISTINCT pc.category_id)        AS categories_ids,
+            GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS categories_names,
+            IFNULL(MAX(i.stock_actual), 0)               AS stock,
+            (
+                SELECT im.precio_unitario
+                FROM inventario_movimiento im
+                LEFT JOIN compra comp ON comp.compra_id = im.referencia_id 
+                                     AND im.referencia_tabla = 'compra'
+                WHERE im.product_id = p.product_id
+                  -- Filtrar: O no viene de una compra, o la compra sigue activa
+                  AND (im.referencia_tabla != 'compra' OR comp.borrado_el IS NULL)
+                ORDER BY im.inventario_movimiento_id DESC
+                LIMIT 1
+            ) AS costo_unitario
+        FROM product p
+        LEFT JOIN product_category pc ON pc.product_id = p.product_id
+        LEFT JOIN category c ON c.id = pc.category_id
+        LEFT JOIN inventario i ON i.product_id = p.product_id
+        WHERE p.borrado_el IS NULL
+        GROUP BY p.product_id
+        ORDER BY p.product_id DESC
     ");
 
-    // Convertir a arrays
     foreach ($rows as &$r) {
         $r['categories_ids'] = $r['categories_ids'] ? array_map('intval', explode(',', $r['categories_ids'])) : [];
     }

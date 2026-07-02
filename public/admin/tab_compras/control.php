@@ -291,16 +291,33 @@ Flight::route('POST /compra/eliminar', function () {
         ", $compra_id);
 
         // ==========================
-        // DEVOLVER STOCK
+        // DEVOLVER STOCK Y RESTAURAR COSTO
         // ==========================
         foreach ($det as $it) {
+
+            // 🔍 Buscar el último costo válido anterior a esta compra
+            $costo_anterior = DB::queryFirstField("
+                SELECT im.precio_unitario
+                FROM inventario_movimiento im
+                LEFT JOIN compra comp ON comp.compra_id = im.referencia_id AND im.referencia_tabla = 'compra'
+                WHERE im.product_id = %i
+                  AND im.referencia_id != %i -- Que no sea la compra actual que estamos borrando
+                  AND (im.referencia_tabla != 'compra' OR comp.borrado_el IS NULL)
+                ORDER BY im.inventario_movimiento_id DESC
+                LIMIT 1
+            ", $it['product_id'], $compra_id);
+
+            // Si no hay un historial previo, por defecto se usa 0 o el costo del ítem
+            if ($costo_anterior === null) {
+                $costo_anterior = 0.00;
+            }
 
             registrar_movimiento_inventario(
                 $it['product_id'],
                 'SALIDA',
                 'DEVOLUCION',
                 $it['cantidad'],
-                $it['precio_unitario'],
+                $costo_anterior, // ◄ Se inyecta el costo real recuperado (2.67)
                 $compra_id,
                 'compra'
             );

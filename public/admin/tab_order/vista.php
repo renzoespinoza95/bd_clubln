@@ -19,9 +19,6 @@
             <a href="#" @click="abrirReporteVentas">Ventas por Fecha</a>
           </li>
           <li>
-            <a href="#" @click="abrirReporteVentasAdmin">Ventas por Fecha + vendedor</a>
-          </li>
-          <li>
             <a href="#" @click="abrirReporteResumenVentas">
               Resumen Ventas
             </a>
