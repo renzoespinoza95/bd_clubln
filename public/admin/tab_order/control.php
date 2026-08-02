@@ -405,7 +405,7 @@ Flight::route('POST /product_order/eliminar', function () {
             DB::update(
                 'mesa',
                 [
-                    'estado' => 'LIBRE'
+                    'estado' => 'DISPONIBLE'
                 ],
                 "mesa_id=%i",
                 $orden['mesa_id']
