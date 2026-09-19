@@ -1,0 +1,28 @@
+<div id="modalAgregarItemNuevaOrden" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Nuevo: Agregar prod.</h3>
+  </div>
+  <div class="modal-body">
+    <label>Producto</label>
+    <v-select
+      :options="productosSelect"
+      label="label"
+      v-model="itemForm.producto"
+      placeholder="Seleccione producto"
+    ></v-select>
+
+    <label>Cantidad</label>
+    <input type="number" v-model.number="itemForm.amount" min="1">
+
+    <label>Precio Unitario</label>
+    <input type="number" :value="itemForm.price_item" readonly>
+
+    <label>Total</label>
+    <input type="number" :value="totalItemNuevaOrden" readonly>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" @click="confirmarAgregarItem">Agregar</button>
+    <button class="btn" data-dismiss="modal">Cancelar</button>
+  </div>
+</div>

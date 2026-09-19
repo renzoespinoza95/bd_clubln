@@ -1,0 +1,75 @@
+<div id="modalCrearOrder" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Nueva Orden</h3>
+  </div>
+  <div class="modal-body">
+    <div class="control-group">
+      <label>Cliente</label>
+      <div class="controls">
+        <v-select
+          :options="clientes"
+          label="label"
+          v-model="nueva.cliente"
+          placeholder="Seleccionar cliente"
+        ></v-select>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Tipo de pago</label>
+      <div class="controls">
+        <select v-model="nueva.tipo_pago_id" style="width: 100%;">
+          <option value="">-- Seleccione --</option>
+          <option v-for="t in tiposPago" :value="t.tipo_pago_id" :key="t.tipo_pago_id">
+            {{ t.descripcion }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Mesa</label>
+      <div class="controls">
+        <v-select
+          :options="opcionesMesa"
+          label="label"
+          v-model="nueva.mesa"
+          placeholder="Seleccionar mesa o DIRECTO"
+        ></v-select>
+      </div>
+    </div>
+
+    <h4>Items</h4>
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cant.</th>
+          <th>Precio</th>
+          <th>Total</th>
+          <th>Acc.</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(i, idx) in nueva.items" :key="idx">
+          <td v-text="i.product_name"></td>
+          <td v-text="i.amount"></td>
+          <td v-text="i.price_item"></td>
+          <td v-text="(i.amount * i.price_item).toFixed(2)"></td>
+          <td>
+            <button class="btn btn-mini btn-danger" @click="nueva.items.splice(idx, 1)">X</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button class="btn btn-success" @click="abrirModalAgregarItemNuevaOrden">
+      Agregar productos
+    </button>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" @click="crearOrder">Crear</button>
+    <button class="btn" data-dismiss="modal">Cancelar</button>
+  </div>
+</div>

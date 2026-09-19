@@ -1,0 +1,39 @@
+<div id="modalEditarCompra" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Editar Compra</h3>
+  </div>
+  <div class="modal-body">
+    <p><strong>ID:</strong> <span v-text="form.compra_id"></span></p>
+
+    <div class="control-group">
+      <label>Proveedor</label>
+      <div class="controls">
+        <v-select
+          :options="proveedores"
+          label="nombre"
+          v-model="form.proveedor"
+          placeholder="Seleccione proveedor">
+        </v-select>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Fecha</label>
+      <div class="controls">
+        <input type="date" v-model="form.fecha_compra">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <label>Observación</label>
+      <div class="controls">
+        <textarea v-model="form.observaciones" class="input-xxlarge" rows="4"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" @click="guardarEdicion">Guardar</button>
+    <button class="btn" data-dismiss="modal">Cancelar</button>
+  </div>
+</div>

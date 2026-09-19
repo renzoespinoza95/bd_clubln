@@ -1,0 +1,28 @@
+<div class="row-fluid">
+  <div class="span12">
+    <h2>Compras</h2>
+
+    <div class="form-actions">
+      <button class="btn btn-success" @click="abrirModalCrear">
+        <i class="icon-plus icon-white"></i> Nueva Compra
+      </button>
+
+      <button class="btn btn-info" @click="abrirReporteFechas">
+        <i class="icon-print icon-white"></i> Reporte por Fechas
+      </button>
+    </div>
+
+    <table id="tablaCompra" class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Proveedor</th>
+          <th>Fecha</th>
+          <th>Total</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>

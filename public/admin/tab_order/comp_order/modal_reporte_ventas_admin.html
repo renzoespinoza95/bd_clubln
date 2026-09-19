@@ -1,0 +1,26 @@
+<div id="modalReporteVentasAdmin" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Reporte de Ventas por Fecha y Administrador</h3>
+  </div>
+  <div class="modal-body">
+    <label>Administrador</label>
+    <select v-model="reporte.admin_id" style="width: 100%;">
+      <option value="">-- Todos --</option>
+      <option v-for="a in administradores" :value="a.administrador_id" :key="a.administrador_id">
+        {{ a.nombres_apellidos }}
+      </option>
+    </select>
+
+    <label>Fecha Inicio</label>
+    <input type="date" v-model="reporte.fecha_inicio">
+
+    <label>Fecha Fin</label>
+    <input type="date" v-model="reporte.fecha_fin">
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" @click="reporteVentasAdminPDF">📄 PDF</button>
+    <button class="btn btn-success" @click="reporteVentasAdminExcel">📊 Excel</button>
+    <button class="btn" data-dismiss="modal">Cerrar</button>
+  </div>
+</div>

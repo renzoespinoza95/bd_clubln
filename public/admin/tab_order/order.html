@@ -1,0 +1,32 @@
+{{{header_html}}}
+{{> head}}
+
+<body>
+  <div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+      {{{menu_html}}}
+    </div>
+  </div>
+
+  <div class="container" id="appOrder">
+    {{> tabla_order}}
+    {{> modal_detalle}}
+    {{> modal_crear}}
+    {{> modal_editar}}
+    {{> modal_crear_detail}}
+    {{> modal_editar_detail}}
+    {{> modal_agregar_item_nueva_orden}}
+    {{> modal_clientes}}
+    {{> modal_nuevo_cliente}}
+    {{> modal_editar_cliente}}
+    {{> modal_mesas}}
+    {{> modal_reporte_ventas}}
+    {{> modal_reporte_ventas_admin}}
+    {{> modal_resumen_ventas}}
+
+    {{{footer_html}}}
+  </div>
+
+  {{> scripts}}
+</body>
+</html>

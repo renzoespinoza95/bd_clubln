@@ -1,0 +1,43 @@
+<div id="modalDetalleCompra" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Detalle de Compra</h3>
+  </div>
+  <div class="modal-body">
+    <p><strong>ID:</strong> <span v-text="detalle.cabecera.compra_id"></span></p>
+    <p><strong>Proveedor:</strong> <span v-text="detalle.cabecera.razon_social"></span></p>
+    <p><strong>Fecha:</strong> <span v-text="detalle.cabecera.fecha_compra"></span></p>
+    <p><strong>Total:</strong> S/ <span v-text="detalle.cabecera.total"></span></p>
+
+    <h4>Productos</h4>
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Costo</th>
+          <th>Cantidad</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="d in detalle.detalle" :key="d.compra_detalle_id">
+          <td v-text="d.producto"></td>
+          <td v-text="d.costo_unitario"></td>
+          <td v-text="d.cantidad"></td>
+          <td v-text="d.subtotal"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 15px;">
+      <h4>Observaciones</h4>
+      <div class="well well-small" style="background-color: #f9f9f9; min-height: 40px;">
+        <span v-if="detalle.cabecera.observaciones" v-text="detalle.cabecera.observaciones"></span>
+        <span v-else class="muted"><em>Sin observaciones.</em></span>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal">Cerrar</button>
+  </div>
+</div>

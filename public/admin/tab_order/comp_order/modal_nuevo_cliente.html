@@ -1,0 +1,20 @@
+<div id="modalNuevoCliente" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Nuevo Cliente</h3>
+  </div>
+  <div class="modal-body">
+    <label>DNI</label>
+    <div class="input-append">
+      <input v-model="clienteForm.dni">
+      <button class="btn" type="button" @click="generarDniFake">🎲</button>
+    </div>
+
+    <label>Nombre</label>
+    <input v-model="clienteForm.nombre" class="input-block-level">
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" @click="guardarCliente">Guardar</button>
+    <button class="btn" data-dismiss="modal">Cancelar</button>
+  </div>
+</div>

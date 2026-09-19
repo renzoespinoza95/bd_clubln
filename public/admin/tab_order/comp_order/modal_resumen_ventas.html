@@ -1,0 +1,17 @@
+<div id="modalResumenVentas" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Resumen de Ventas</h3>
+  </div>
+  <div class="modal-body">
+    <label>Fecha Inicio</label>
+    <input type="date" v-model="resumen.fecha_inicio">
+
+    <label>Fecha Fin</label>
+    <input type="date" v-model="resumen.fecha_fin">
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" @click="resumenVentasPDF">📄 PDF</button>
+    <button class="btn" data-dismiss="modal">Cerrar</button>
+  </div>
+</div>

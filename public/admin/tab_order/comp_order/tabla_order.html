@@ -1,0 +1,60 @@
+<div class="row-fluid">
+  <div class="span12">
+    <h2>Ventas</h2>
+
+    <div class="form-actions">
+      <button class="btn btn-success" @click="abrirModalCrear">
+        <i class="icon-plus icon-white"></i> Nueva venta
+      </button>
+      <button class="btn btn-info" @click="abrirModalClientes">
+        <i class="icon-user icon-white"></i> Clientes
+      </button>
+      <div class="btn-group">
+        <button class="btn btn-warning dropdown-toggle" data-toggle="dropdown">
+          <i class="icon-list icon-white"></i> Reportes <span class="caret"></span>
+        </button>
+        <ul class="dropdown-menu">
+          <li>
+            <a href="#" @click.prevent="abrirReporteVentas">Ventas por Fecha</a>
+          </li>
+          <li>
+            <a href="#" @click.prevent="abrirReporteResumenVentas">Resumen Ventas</a>
+          </li>
+          <li>
+            <a href="#" @click.prevent="abrirReporteVentasAdmin">Ventas por Administrador</a>
+          </li>
+        </ul>
+      </div>
+
+      <button class="btn btn-info" style="margin-left:5px" @click="abrirModalMesas">
+        <i class="icon-th-large icon-white"></i> Mesas
+      </button>
+
+      <button class="btn btn-inverse" style="margin-left:5px" @click="filtrarMesaPedido">
+        <i class="icon-shopping-cart icon-white"></i> Pedidos
+      </button>
+
+      <button class="btn btn-primary" style="margin-left:5px" @click="restablecerFiltroInicio">
+        <i class="icon-home icon-white"></i> Inicio
+      </button>
+    </div>
+
+    <table id="tablaOrder" class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Código</th>
+          <th>Cliente</th>
+          <th>Mesa</th>
+          <th>Modo</th>
+          <th>Administrador</th>
+          <th>Tipo de pago</th>
+          <th>Fecha</th>
+          <th>Total</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>

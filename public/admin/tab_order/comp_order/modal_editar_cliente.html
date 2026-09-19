@@ -1,0 +1,26 @@
+<div id="modalEditarCliente" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Editar Cliente</h3>
+  </div>
+  <div class="modal-body">
+    <label>DNI</label>
+    <input v-model="clienteEdit.dni" class="input-block-level">
+
+    <label>Nombre</label>
+    <input v-model="clienteEdit.nombre" class="input-block-level">
+
+    <label>Dirección</label>
+    <input v-model="clienteEdit.direccion" class="input-block-level">
+
+    <label>Teléfono</label>
+    <input v-model="clienteEdit.telefono" class="input-block-level">
+
+    <label>Email</label>
+    <input v-model="clienteEdit.email" class="input-block-level">
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" @click="actualizarCliente">Guardar</button>
+    <button class="btn" data-dismiss="modal">Cancelar</button>
+  </div>
+</div>

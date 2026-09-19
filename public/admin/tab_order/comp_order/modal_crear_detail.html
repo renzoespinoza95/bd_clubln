@@ -1,0 +1,25 @@
+<div id="modalCrearDetail" class="modal hide fade" tabindex="-1">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal">×</button>
+    <h3>Detalle: Agregar prod.</h3>
+  </div>
+  <div class="modal-body">
+    <label>Producto</label>
+    <v-select
+      :options="productosSelect"
+      label="label"
+      v-model="detailForm.producto"
+      placeholder="Seleccione producto"
+    ></v-select>
+
+    <label>Cantidad</label>
+    <input v-model.number="detailForm.amount" type="number" min="1">
+
+    <label>Total</label>
+    <input :value="totalDetalle.toFixed(2)" readonly>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-primary" @click="crearDetail">Agregar</button>
+    <button class="btn" data-dismiss="modal">Cancelar</button>
+  </div>
+</div>

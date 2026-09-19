@@ -1,0 +1,25 @@
+{{{header_html}}}
+{{> head}}
+
+<body>
+  <div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+      {{{menu_html}}}
+    </div>
+  </div>
+
+  <div class="container" id="appCompra">
+    {{> tabla_compras}}
+    {{> modal_detalle}}
+    {{> modal_crear}}
+    {{> modal_editar}}
+    {{> modal_reporte_fechas}}
+    {{> modal_add_items}}
+    {{> modal_agregar_item_temp}}
+
+    {{{footer_html}}}
+  </div>
+
+  {{> scripts}}
+</body>
+</html>
