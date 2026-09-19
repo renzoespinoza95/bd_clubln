@@ -22,10 +22,12 @@ if (!function_exists('actualizar_estado_orden')) {
 
 if (!function_exists('recalcular_total_orden')) {
     function recalcular_total_orden($order_id) {
+        // 🔥 Corrección: Excluir ítems con borrado lógico (borrado_el IS NULL)
         $total = DB::queryFirstField("
             SELECT IFNULL(SUM(amount * price_item), 0)
             FROM product_order_detail
-            WHERE order_id = %i AND borrado_el IS NULL
+            WHERE order_id = %i 
+              AND borrado_el IS NULL
         ", $order_id);
 
         DB::update('product_order', [
