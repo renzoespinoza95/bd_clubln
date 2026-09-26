@@ -8,11 +8,12 @@
     <v-select
       :options="productosSelectCompra"
       label="label"
-      v-model="itemTemp.producto">
+      v-model="itemTemp.producto"
+      placeholder="Seleccione un producto">
     </v-select>
 
     <label style="margin-top:10px;">Costo Unitario</label>
-    <input type="number" step="0.01" v-model.number="itemTemp.costo_unitario">
+    <input type="number" step="0.01" min="0" v-model.number="itemTemp.costo_unitario">
 
     <label>Cantidad</label>
     <input type="number" v-model.number="itemTemp.cantidad" min="1">

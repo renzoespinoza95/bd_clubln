@@ -36,13 +36,16 @@
       </thead>
       <tbody>
         <tr v-for="(it, i) in nuevo.items" :key="i">
-          <td>{{ it.producto }}</td>
-          <td>{{ it.costo_unitario }}</td>
-          <td>{{ it.cantidad }}</td>
-          <td>{{ (it.cantidad * it.costo_unitario).toFixed(2) }}</td>
-          <td>
-            <a href="#" @click.prevent="quitarItem(it)">×</a>
+          <td v-text="it.producto"></td>
+          <td v-text="Number(it.costo_unitario).toFixed(2)"></td>
+          <td v-text="it.cantidad"></td>
+          <td v-text="(it.cantidad * it.costo_unitario).toFixed(2)"></td>
+          <td style="text-align:center;">
+            <a href="#" class="text-error" @click.prevent="quitarItem(it)">×</a>
           </td>
+        </tr>
+        <tr v-if="nuevo.items.length === 0">
+          <td colspan="5" class="muted" style="text-align: center;">No hay productos agregados.</td>
         </tr>
       </tbody>
     </table>
@@ -52,7 +55,7 @@
     </button>
 
     <hr>
-    <h3>Total: S/ {{ totalNuevo.toFixed(2) }}</h3>
+    <h3>Total: S/ <span v-text="totalNuevo.toFixed(2)"></span></h3>
   </div>
   <div class="modal-footer">
     <button class="btn btn-primary" @click="crearCompra">Guardar</button>

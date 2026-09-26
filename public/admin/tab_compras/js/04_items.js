@@ -13,8 +13,19 @@ const itemsMethods = {
     });
   },
 
+  onSeleccionarProductoTemp(prod) {
+    if (prod) {
+      this.itemTemp.product_id = prod.product_id;
+      // Asigna el precio base como sugerencia de costo unitario si está disponible
+      this.itemTemp.costo_unitario = parseFloat(prod.price || prod.costo || 0);
+    } else {
+      this.itemTemp.product_id = null;
+      this.itemTemp.costo_unitario = 0;
+    }
+  },
+
   confirmarAgregarItemCompra() {
-    if (!this.itemTemp.producto) {
+    if (!this.itemTemp.producto || !this.itemTemp.producto.product_id) {
       apprise('Seleccione un producto');
       return;
     }
@@ -24,11 +35,13 @@ const itemsMethods = {
       return;
     }
 
+    const nombreProducto = this.itemTemp.producto.name || this.itemTemp.producto.label;
+
     this.nuevo.items.push({
       product_id: this.itemTemp.producto.product_id,
-      producto: this.itemTemp.producto.label,
-      cantidad: this.itemTemp.cantidad,
-      costo_unitario: this.itemTemp.costo_unitario
+      producto: nombreProducto,
+      cantidad: Number(this.itemTemp.cantidad),
+      costo_unitario: parseFloat(this.itemTemp.costo_unitario || 0)
     });
 
     $('#modalAgregarItemCompra').modal('hide');
